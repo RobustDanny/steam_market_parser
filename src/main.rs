@@ -4,7 +4,9 @@ use steam_market_parser::{Boolean, ItemVec, SortDirection, Sort};
 
 #[tokio::main]
 async fn main() {
-    // let mut i = 0; 
+
+    //-------------------
+    //Filters
     let count = None;
     let page = None;
     let game = None;
@@ -14,6 +16,7 @@ async fn main() {
     let price_min = Some(50);
     let price_max = Some(100);
     let sort_dir = Some(SortDirection::Asc);
+    //-------------------
 
     let query: Option<String> = None;
 
