@@ -1,4 +1,4 @@
-use std::arch::x86_64::_MM_FROUND_NO_EXC;
+use std::{arch::x86_64::_MM_FROUND_NO_EXC, array, collections::HashMap};
 
 use serde::{Deserialize, Serialize};
 // use serde_json::{Value};
@@ -22,6 +22,10 @@ pub enum SortDirection{
     Desc,
 }
 
+
+//----------------------------------
+//----------------------------------
+//Requests
 #[derive(Deserialize, Serialize, Debug)]
 struct MarketRequest{
     game: u32,
@@ -35,6 +39,19 @@ struct MarketRequest{
     price_max: u32,
 }
 
+#[derive(Deserialize, Serialize, Debug)]
+struct MostRecentItemsRequest{
+    country: String,
+    language: String,
+    currency: String,
+}
+//----------------------------------
+//----------------------------------
+
+
+//----------------------------------
+//----------------------------------
+//Response
 #[derive(Deserialize, Serialize, Debug)]
 struct SteamMarketResponse {
     success: bool,
@@ -56,13 +73,100 @@ struct SearchData {
 }
 
 #[derive(Deserialize, Serialize, Debug)]
+struct SteamMostRecentResponse {
+    success: bool,
+    more: bool,
+    results_html: bool,
+    listinginfo: HashMap<String, Listinginfo>,
+    purchaseinfo: Vec<Purchaseinfo>,
+    assets: HashMap<String, HashMap<String, HashMap<String, Assets>>>,
+    currency: Vec<Currency>,
+    app_data: HashMap<String, AppData>,
+    hovers: Option<bool>,
+    last_time: usize,
+    last_listing: String,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+struct Listinginfo{
+    listingid: String,
+    price: usize,
+    fee: usize,
+    publisher_fee_app: usize,
+    publisher_fee_percent: String,
+    currencyid: usize,
+    steam_fee: Option<usize>,
+    publisher_fee: Option<usize>,
+    converted_price: Option<usize>,
+    converted_fee: Option<usize>,
+    converted_currencyid: Option<usize>,
+    converted_steam_fee: Option<usize>,
+    converted_publisher_fee: Option<usize>,
+    converted_price_per_unit: Option<usize>,
+    converted_fee_per_unit: Option<usize>,
+    converted_steam_fee_per_unit: Option<usize>,
+    converted_publisher_fee_per_unit: Option<usize>,
+    asset: ListinginfoAsset,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+struct ListinginfoAsset{
+    currency: usize,
+    appid: usize,
+    contextid: String,
+    id: String,
+    amount: String,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+struct Assets{
+    currency: usize,
+    appid: usize,
+    contextid: String,
+    id: String,
+    classid: String,
+    instanceid: String,
+    amount: String,
+    status: usize,
+    original_amount: String,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+struct Purchaseinfo{}
+
+#[derive(Deserialize, Serialize, Debug)]
+struct Currency{}
+
+#[derive(Deserialize, Serialize, Debug)]
+struct AppData{
+    appid: usize,
+    name: String,
+    icon: String,
+    link: String,
+}
+//----------------------------------
+//----------------------------------
+
+//----------------------------------
+//----------------------------------
+//Serialized request data
+#[derive(Deserialize, Serialize, Debug)]
+pub struct MostRecentItemsVec{
+    listinginfo: HashMap<String, Listinginfo>,
+    purchaseinfo: Vec<Purchaseinfo>,
+    assets: HashMap<String, HashMap<String, HashMap<String, Assets>>>,
+    currency: Vec<Currency>,
+    app_data: HashMap<String, AppData>,
+
+}
+
+#[derive(Deserialize, Serialize, Debug)]
 pub struct ItemVec{
     pub vec: Vec<Item>,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Item {
-    // id: usize,
     name: String,
     hash_name: String,
     sell_listings: u32,
@@ -90,6 +194,8 @@ struct Description {
     market_hash_name: String,
     commodity: u32,
 }
+//----------------------------------
+//----------------------------------
 
 trait SteamRequest{
     
@@ -108,6 +214,19 @@ trait SteamRequest{
         Ok(json_response)
     }
 
+    async fn process_most_recent_items(country: &Option<String>, language: &Option<String>, currency: &Option<String>) -> Result<SteamMostRecentResponse>{
+
+        let request_parametrs = MostRecentItemsRequest::request_paramentrs(country, language, currency);
+
+        let url = Self::get_most_recent_items(request_parametrs).await;
+
+        let json_response = Self::send_most_recent_request(url).await?;
+
+        println!("{:#?}", json_response);
+
+        Ok(json_response)
+    }
+
     async fn make_custom_market_url(request: MarketRequest) -> String {
 
         let url = format!("https://steamcommunity.com/market/search/render/
@@ -116,6 +235,14 @@ trait SteamRequest{
 
         url
 
+    }
+
+    async fn get_most_recent_items(request: MostRecentItemsRequest) -> String{
+
+        let url = format!("https://steamcommunity.com/market/recent?country={}&language={}&currency={}&norender=1", 
+        request.country, request.language, request.currency);
+        println!("{url}");
+        url
     }
 
     async fn send_request(url: String) -> Result<SteamMarketResponse>{
@@ -131,6 +258,23 @@ trait SteamRequest{
             .await?;
 
         let respond: SteamMarketResponse = serde_json::from_str(&respond)?;
+        Ok(respond)
+    }
+
+    async fn send_most_recent_request(url: String) -> Result<SteamMostRecentResponse>{
+        
+        let client = reqwest::Client::new();
+
+        let respond = client
+            .get(url)
+            .header("Accept", "application/json")
+            .send()
+            .await?
+            .text()
+            .await?;
+        
+        let respond: SteamMostRecentResponse = serde_json::from_str(&respond)?;
+        println!("{respond:#?}");
         Ok(respond)
     }
 }
@@ -230,6 +374,37 @@ impl MarketRequest{
     }
 }
 
+impl MostRecentItemsRequest {
+    fn request_paramentrs(country: &Option<String>, language: &Option<String>, currency: &Option<String>)-> MostRecentItemsRequest{
+
+        let country = match country{
+            Some(country) => country.to_string(),
+            None => "US".to_string(),
+        };
+
+        let language = match language{
+            Some(language) => language.to_string(),
+            None => "english".to_string(),
+        };
+
+        let currency = match currency{
+            Some(currency) => currency.to_string(),
+            None => "3".to_string(),
+        };
+
+        let request = MostRecentItemsRequest{
+            country,
+            language,
+            currency,
+        };
+
+        // println!("{request:#?}");
+
+        request
+
+    }
+}
+
 impl ItemVec{
     pub async fn get_items_query(game: Option<u32>, count: Option<u32>, page: Option<u32>, query: Option<String>,
         sort: Option<Sort>, sort_dir: Option<SortDirection>, search_descriptions: Option<bool>, price_min: Option<u32>,
@@ -247,6 +422,19 @@ impl ItemVec{
         let response_result = Self::process_custom_market_url(game, count, page, query, sort, sort_dir, search_descriptions, price_min, price_max, next_page).await?;
 
         Ok(ItemVec { vec: response_result.results })
+    }
+
+    pub async fn get_most_recent_items_vec(country: &Option<String>, language: &Option<String>, currency: &Option<String>)-> Result<MostRecentItemsVec>{
+
+        let response_result = Self::process_most_recent_items(country, language, currency).await?;
+
+        Ok(MostRecentItemsVec{
+            listinginfo: response_result.listinginfo,
+            purchaseinfo: response_result.purchaseinfo,
+            assets: response_result.assets,
+            currency: response_result.currency,
+            app_data: response_result.app_data,
+        })
     }
 
     // pub async fn get_items_default()-> Result<Self>{
