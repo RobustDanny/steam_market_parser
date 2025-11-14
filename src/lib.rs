@@ -5,8 +5,9 @@ use serde::{Deserialize, Serialize};
 mod steam_request;
 use steam_request::{ProcessSteamRequest, SteamRequest};
 
-type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
+type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
+#[derive(Clone, Copy)]
 pub enum Sort{
     Name,
     Price,
@@ -14,6 +15,7 @@ pub enum Sort{
     Popular,
 }
 
+#[derive(Clone, Copy)]
 pub enum SortDirection{
     Asc,
     Desc,
@@ -148,11 +150,11 @@ pub struct AppData{
 //Serialized request data
 #[derive(Deserialize, Serialize, Debug)]
 pub struct MostRecentItems{
-    listinginfo: HashMap<String, Listinginfo>,
-    purchaseinfo: Vec<Purchaseinfo>,
-    assets: HashMap<String, HashMap<String, HashMap<String, Assets>>>,
-    currency: Vec<Currency>,
-    app_data: HashMap<String, AppData>,
+    pub listinginfo: HashMap<String, Listinginfo>,
+    pub purchaseinfo: Vec<Purchaseinfo>,
+    pub assets: HashMap<String, HashMap<String, HashMap<String, Assets>>>,
+    pub currency: Vec<Currency>,
+    pub app_data: HashMap<String, AppData>,
 
 }
 
@@ -163,19 +165,19 @@ pub struct CustomItems{
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Item {
-    name: String,
-    hash_name: String,
-    sell_listings: u32,
-    sell_price: u32,
-    sell_price_text: String,
-    app_icon: String,
-    app_name: String,
-    asset_description: Description,
-    sale_price_text: String,
+    pub name: String,
+    pub hash_name: String,
+    pub sell_listings: u32,
+    pub sell_price: u32,
+    pub sell_price_text: String,
+    pub app_icon: String,
+    pub app_name: String,
+    pub asset_description: Description,
+    pub sale_price_text: String,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
-struct Description {
+pub struct Description {
     appid: u32,
     classid: String,
     instanceid: String,
@@ -197,7 +199,7 @@ struct Description {
 //----------------------------------
 //Trait bounds
 
-//Allow to send requests
+//Allow to send requests and get access to ProcessSteamRequest methods
 impl SteamRequest for SteamMarketResponse{}
 impl SteamRequest for SteamMostRecentResponse{}
 
@@ -261,7 +263,6 @@ impl MarketRequest{
             Some(query) => query.to_string(),
             None => "".to_string(),
         };
-
         
         let sort = match sort{
             Some(sort) => {

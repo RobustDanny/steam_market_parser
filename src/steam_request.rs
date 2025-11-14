@@ -11,9 +11,7 @@ pub trait SteamRequest{}
 
 pub trait ProcessSteamRequest{
 
-    async fn process_request<T: SteamRequest + Debug + DeserializeOwned>(url: String) -> Result<T, Box<dyn std::error::Error>>{
-
-        // let url = Self::custom_market_url(parameters).await;
+    async fn process_request<T: SteamRequest + Debug + DeserializeOwned>(url: String) -> Result<T, Box<dyn std::error::Error + Send + Sync>>{
 
         let json_response = send_request(url).await?;
 
@@ -28,6 +26,7 @@ pub trait ProcessSteamRequest{
         let url = format!("https://steamcommunity.com/market/search/render/
         ?appid={}&start={}&query={}&sort={}&sort_dir={}&search_descriptions={}&price_min={}&price_max={}&norender=1",
         request.game, request.page, request.query, request.sort, request.sort_dir, request.search_descriptions, request.price_min, request.price_max);
+        println!("{url}");
         url
     }
 
@@ -39,7 +38,7 @@ pub trait ProcessSteamRequest{
     }
 }
 
-async fn send_request<T: SteamRequest + DeserializeOwned>(url: String) -> Result<T, Box<dyn std::error::Error>>{
+async fn send_request<T: SteamRequest + DeserializeOwned>(url: String) -> Result<T, Box<dyn std::error::Error + Send + Sync>>{
     // type SteamResponse: for<'de> Deserialize<'de>;
         
         let client = reqwest::Client::new();
