@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My List</title>
+</head>
+<body>
+    <h1>Items:</h1>
+    <ul>
+        {% for item in items %}
+            <li>{{ item.name }} — {{ item.sell_price_text }}</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
