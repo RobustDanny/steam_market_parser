@@ -221,7 +221,8 @@ impl CustomItems{
 }
 
 impl MostRecentItems{
-    pub async fn get_most_recent_items(country: Option<String>, language: Option<String>, currency: Option<String>, tx: mpsc::Sender<SteamMostRecentResponse>) -> Result<Self>{
+    pub async fn get_most_recent_items(country: Option<String>, language: Option<String>, currency: Option<String>, 
+        tx: mpsc::Sender<SteamMostRecentResponse>) -> Result<Self>{
         
         //Making request struct
         let most_recent_struct = MostRecentItemsRequest::request_paramenters(country, language, currency);
@@ -249,6 +250,12 @@ impl MostRecentItems{
         }
     }
 
+    
+    ///---------------------------------------------------------------------
+    ///Dont use more than 1 async thread for MostRecentItems for request!!!
+    ///fetch_items_loop is enough
+    ///---------------------------------------------------------------------
+
     async fn fetch_items_loop(url: String, tx: mpsc::Sender<SteamMostRecentResponse>) {
 
         loop {
@@ -259,30 +266,30 @@ impl MostRecentItems{
                     // let mut shared = response.write().await;
                     // *shared = items;
                     // println!("Updated items: {items:#?} listings fetched");
-                    tx.send(items.clone()).await.unwrap();
-                    items
+                    tx.send(items.clone()).await.unwrap()
+                    // items
                 }
                 Err(e) => {
                     eprintln!("Error fetching items: {e}");
-                    SteamMostRecentResponse{
-                        success: false,
-                        more: false,
-                        results_html: false,
-                        listinginfo: HashMap::new(),
-                        purchaseinfo: Vec::new(),
-                        assets: HashMap::new(),
-                        currency: Vec::new(),
-                        app_data: HashMap::new(),
-                        hovers: Some(false),
-                        last_time: 0,
-                        last_listing: "0".to_string(),
-                    }
+                    // SteamMostRecentResponse{
+                    //     success: false,
+                    //     more: false,
+                    //     results_html: false,
+                    //     listinginfo: HashMap::new(),
+                    //     purchaseinfo: Vec::new(),
+                    //     assets: HashMap::new(),
+                    //     currency: Vec::new(),
+                    //     app_data: HashMap::new(),
+                    //     hovers: Some(false),
+                    //     last_time: 0,
+                    //     last_listing: "0".to_string(),
+                    // }
                 }
             };
 
             // println!("Updated items: {items_vec:#?} listings fetched");
             
-            tokio::time::sleep(Duration::from_secs(3)).await;
+            tokio::time::sleep(Duration::from_secs(5)).await;
         }
     }
 }

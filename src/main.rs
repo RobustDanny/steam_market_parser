@@ -1,16 +1,22 @@
-use std::{time::Duration, sync::Arc};
+use std::{sync::{Arc, mpsc::Sender}, time::Duration};
 use steam_market_parser::{CustomItems, MostRecentItems, Sort, SortDirection, SteamMostRecentResponse};
 use actix_web::{web, App, HttpServer, Result, HttpResponse, Error, HttpRequest, rt,};
 use tera::{Context, Tera};
 use tokio::sync::mpsc;
 use serde_json;
 use actix_ws::AggregatedMessage;
-use futures_util::StreamExt as _;
-
+use futures_util::{StreamExt as _, lock::Mutex};
 mod db;
 use db::DataBase;
+
+use crate::db::MostRecent;
+
 //Best time
     //thread::sleep(Duration::from_millis(1000));
+
+//---------------------------------------------------------------------
+//Dont use more than 1 async thread for MostRecentItems for request!!!
+//---------------------------------------------------------------------
 
 async fn index(tmpl: web::Data<Tera>, items_data: web::Data<steam_market_parser::MostRecentItems>) -> Result<HttpResponse> {
     let mut context = Context::new();
@@ -52,17 +58,18 @@ async fn main()-> std::io::Result<()> {
     //     }
     // };
         let (tx, rx) = mpsc::channel(100);
+        let (sender, reciever) = mpsc::channel(100);
         
         tokio::spawn(async move {
-            tokio_receiver(rx, db).await;
+            tokio_receiver(rx, db, sender).await;
         });
 
         let items_result = MostRecentItems::get_most_recent_items(country, language, currency, tx).await;
-        if let Ok(items) = &items_result {
-            println!("{items:#?}");
-        } else if let Err(e) = &items_result {
-            eprintln!("Error fetching items: {e}");
-        }
+        // if let Ok(items) = &items_result {
+        //     println!("{items:#?}");
+        // } else if let Err(e) = &items_result {
+        //     eprintln!("Error fetching items: {e}");
+        // }
 
         //----------------------------------
         //----------------------------------
@@ -98,7 +105,6 @@ async fn main()-> std::io::Result<()> {
                     web::scope("/")
                         .route("/", web::get().to(index))
                         .route("/api/items", web::get().to(api_items))
-                        .route("/echo", web::get().to(echo))
                 )
         })
         .bind(("127.0.0.1", 8080))?
@@ -118,49 +124,14 @@ async fn api_items(items_data: web::Data<steam_market_parser::MostRecentItems>) 
         .body(json))
 }
 
-async fn tokio_receiver(mut rx: mpsc::Receiver<SteamMostRecentResponse>, db: DataBase){
+async fn tokio_receiver(mut rx: mpsc::Receiver<SteamMostRecentResponse>, db: DataBase, sender: Sender<Vec<MostRecent>>){
     while let Some(most_recent_items_response) = rx.recv().await {
+
         db.db_post_most_recent_items(most_recent_items_response);
+        let result = db.db_get_most_recent_items().unwrap();
+        sender.send(result);
 
-        let result = db.db_get_most_recent_items();
-
-        println!("got dammit= {result:#?}");
+        
+        // println!("got dammit= {result:#?}");
     }
-}
-
-async fn echo(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
-    let (res, mut session, stream) = actix_ws::handle(&req, stream)?;
-
-    let mut stream = stream
-        .aggregate_continuations()
-        // aggregate continuation frames up to 1MiB
-        .max_continuation_size(2_usize.pow(20));
-
-    // start task but don't wait for it
-    rt::spawn(async move {
-        // receive messages from websocket
-        while let Some(msg) = stream.next().await {
-            match msg {
-                Ok(AggregatedMessage::Text(text)) => {
-                    // echo text message
-                    session.text(text).await.unwrap();
-                }
-
-                Ok(AggregatedMessage::Binary(bin)) => {
-                    // echo binary message
-                    session.binary(bin).await.unwrap();
-                }
-
-                Ok(AggregatedMessage::Ping(msg)) => {
-                    // respond to PING frame with PONG frame
-                    session.pong(&msg).await.unwrap();
-                }
-
-                _ => {}
-            }
-        }
-    });
-
-    // respond immediately with response connected to WS session
-    Ok(res)
 }
