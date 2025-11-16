@@ -1,5 +1,5 @@
-use std::{collections::HashMap};
-
+use std::{collections::HashMap, sync::{Arc, mpsc::Sender}, time::Duration, fmt::Display};
+use tokio::sync::{RwLock, mpsc};
 use serde::{Deserialize, Serialize};
 
 mod steam_request;
@@ -37,7 +37,7 @@ pub struct MarketRequest{
     price_max: u32,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct MostRecentItemsRequest{
     country: String,
     language: String,
@@ -70,8 +70,8 @@ struct SearchData {
     class_prefix: String,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
-struct SteamMostRecentResponse {
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct SteamMostRecentResponse {
     success: bool,
     more: bool,
     results_html: bool,
@@ -82,10 +82,10 @@ struct SteamMostRecentResponse {
     app_data: HashMap<String, AppData>,
     hovers: Option<bool>,
     last_time: usize,
-    last_listing: String,
+    pub last_listing: String,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Listinginfo{
     listingid: String,
     price: usize,
@@ -107,7 +107,7 @@ pub struct Listinginfo{
     asset: ListinginfoAsset,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 struct ListinginfoAsset{
     currency: usize,
     appid: usize,
@@ -116,7 +116,7 @@ struct ListinginfoAsset{
     amount: String,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Assets{
     currency: usize,
     appid: usize,
@@ -129,13 +129,13 @@ pub struct Assets{
     original_amount: String,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Purchaseinfo{}
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Currency{}
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct AppData{
     appid: usize,
     name: String,
@@ -155,7 +155,6 @@ pub struct MostRecentItems{
     pub assets: HashMap<String, HashMap<String, HashMap<String, Assets>>>,
     pub currency: Vec<Currency>,
     pub app_data: HashMap<String, AppData>,
-
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -222,17 +221,69 @@ impl CustomItems{
 }
 
 impl MostRecentItems{
-    pub async fn get_most_recent_items(country: &Option<String>, language: &Option<String>, currency: &Option<String>)-> Result<MostRecentItems>{
+    pub async fn get_most_recent_items(country: Option<String>, language: Option<String>, currency: Option<String>, tx: mpsc::Sender<SteamMostRecentResponse>) -> Result<Self>{
+        
+        //Making request struct
+        let most_recent_struct = MostRecentItemsRequest::request_paramenters(country, language, currency);
 
-        let response_result = MostRecentItemsRequest::request_paramenters(country, language, currency).await?;
+        //Get url with request data
+        let url = MostRecentItemsRequest::most_recent_items_url(most_recent_struct.clone());
+        
+        //Make initial request
+        let response_result: Result<SteamMostRecentResponse> = MostRecentItemsRequest::process_request(url.clone()).await;
 
-        Ok(MostRecentItems{
-            listinginfo: response_result.listinginfo,
-            purchaseinfo: response_result.purchaseinfo,
-            assets: response_result.assets,
-            currency: response_result.currency,
-            app_data: response_result.app_data,
-        })
+        //Spawn background task for loop
+        tokio::spawn(async move {
+            Self::fetch_items_loop(url, tx).await;
+        });
+
+        match response_result {
+            Ok(response) => Ok(MostRecentItems{
+                listinginfo: response.listinginfo,
+                purchaseinfo: response.purchaseinfo,
+                assets: response.assets,
+                currency: response.currency,
+                app_data: response.app_data,
+            }),
+            Err(e) => Err(e),
+        }
+    }
+
+    async fn fetch_items_loop(url: String, tx: mpsc::Sender<SteamMostRecentResponse>) {
+
+        loop {
+            let response: Result<SteamMostRecentResponse> = MostRecentItemsRequest::process_request(url.clone()).await;
+
+            match response {
+                Ok(items) => {
+                    // let mut shared = response.write().await;
+                    // *shared = items;
+                    // println!("Updated items: {items:#?} listings fetched");
+                    tx.send(items.clone()).await.unwrap();
+                    items
+                }
+                Err(e) => {
+                    eprintln!("Error fetching items: {e}");
+                    SteamMostRecentResponse{
+                        success: false,
+                        more: false,
+                        results_html: false,
+                        listinginfo: HashMap::new(),
+                        purchaseinfo: Vec::new(),
+                        assets: HashMap::new(),
+                        currency: Vec::new(),
+                        app_data: HashMap::new(),
+                        hovers: Some(false),
+                        last_time: 0,
+                        last_listing: "0".to_string(),
+                    }
+                }
+            };
+
+            // println!("Updated items: {items_vec:#?} listings fetched");
+            
+            tokio::time::sleep(Duration::from_secs(3)).await;
+        }
     }
 }
 
@@ -324,7 +375,8 @@ impl MarketRequest{
 }
 
 impl MostRecentItemsRequest {
-    async fn request_paramenters(country: &Option<String>, language: &Option<String>, currency: &Option<String>)-> Result<SteamMostRecentResponse>{
+
+    fn request_paramenters(country: Option<String>, language: Option<String>, currency: Option<String>)-> MostRecentItemsRequest{
 
         let country = match country{
             Some(country) => country.to_string(),
@@ -341,16 +393,18 @@ impl MostRecentItemsRequest {
             None => "3".to_string(),
         };
 
-        let request = MostRecentItemsRequest{
+        let most_recent_items_request_struct = MostRecentItemsRequest{
             country,
             language,
             currency,
         };
 
-        let url = Self::most_recent_items_url(request);
+        // Regular url
+        // let url = Self::most_recent_items_url(request);
 
-        let response_result = Self::process_request(url).await?;
+        // Regular response
+        // let response_result = Self::process_request(url).await?;
 
-        Ok(response_result)
+        most_recent_items_request_struct
     }
 }

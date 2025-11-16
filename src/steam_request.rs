@@ -15,7 +15,7 @@ pub trait ProcessSteamRequest{
 
         let json_response = send_request(url).await?;
 
-        println!("{:#?}", json_response);
+        // println!("{:#?}", json_response);
 
         Ok(json_response)
     }
