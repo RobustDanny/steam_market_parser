@@ -46,6 +46,13 @@ pub struct MostRecentItemsRequest{
 //----------------------------------
 //----------------------------------
 
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct MostRecentItemsFilter{
+    pub appid: String,
+    pub price_min: String,
+    pub price_max: String,
+    pub query: String,
+}
 
 //----------------------------------
 //----------------------------------
@@ -75,11 +82,11 @@ pub struct SteamMostRecentResponse {
     success: bool,
     more: bool,
     results_html: bool,
-    listinginfo: HashMap<String, Listinginfo>,
+    pub listinginfo: HashMap<String, Listinginfo>,
     purchaseinfo: Vec<Purchaseinfo>,
-    assets: HashMap<String, HashMap<String, HashMap<String, Assets>>>,
+    pub assets: HashMap<String, HashMap<String, HashMap<String, Assets>>>,
     currency: Vec<Currency>,
-    app_data: HashMap<String, AppData>,
+    pub app_data: HashMap<String, AppData>,
     hovers: Option<bool>,
     last_time: usize,
     pub last_listing: String,
@@ -87,8 +94,8 @@ pub struct SteamMostRecentResponse {
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Listinginfo{
-    listingid: String,
-    price: usize,
+    pub listingid: String,
+    pub price: f64,
     fee: usize,
     publisher_fee_app: usize,
     publisher_fee_percent: String,
@@ -104,15 +111,15 @@ pub struct Listinginfo{
     converted_fee_per_unit: Option<usize>,
     converted_steam_fee_per_unit: Option<usize>,
     converted_publisher_fee_per_unit: Option<usize>,
-    asset: ListinginfoAsset,
+    pub asset: ListinginfoAsset,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
-struct ListinginfoAsset{
+pub struct ListinginfoAsset{
     currency: usize,
-    appid: usize,
-    contextid: String,
-    id: String,
+    pub appid: usize,
+    pub contextid: String,
+    pub id: String,
     amount: String,
 }
 
@@ -127,6 +134,37 @@ pub struct Assets{
     amount: String,
     status: usize,
     original_amount: String,
+    unowned_id: Option<String>,
+    unowned_contextid: Option<String>,
+    background_color: Option<String>,
+    pub icon_url: Option<String>,
+    icon_url_large: Option<String>,
+    descriptions: Option<Vec<AssetDescription>>,
+    tradable: Option<usize>,
+    owner_actions: Option<Vec<OwnerActions>>,
+    name: Option<String>,
+    name_color: Option<String>,
+    pub market_name: Option<String>,
+    pub market_hash_name: Option<String>,
+    market_fee_app: Option<isize>,
+    commodity: Option<isize>,
+    market_tradable_restriction: Option<isize>,
+    market_marketable_restriction: Option<isize>,
+    marketable: Option<usize>,
+    app_icon: Option<String>,
+    owner: Option<isize>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct OwnerActions{
+    link: Option<String>,
+    name: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct AssetDescription{
+    value: Option<String>,
+    color: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -138,8 +176,8 @@ pub struct Currency{}
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct AppData{
     appid: usize,
-    name: String,
-    icon: String,
+    pub name: String,
+    pub icon: String,
     link: String,
 }
 //----------------------------------
@@ -260,17 +298,17 @@ impl MostRecentItems{
 
         loop {
             let response: Result<SteamMostRecentResponse> = MostRecentItemsRequest::process_request(url.clone()).await;
-
+            // println!("response: {response:#?}");
             match response {
                 Ok(items) => {
                     // let mut shared = response.write().await;
                     // *shared = items;
-                    // println!("Updated items: {items:#?} listings fetched");
-                    tx.send(items.clone()).await.unwrap()
+                    println!("Updated items: {items:#?} listings fetched");
+                    tx.send(items.clone()).await.expect("kekw")
                     // items
                 }
                 Err(e) => {
-                    eprintln!("Error fetching items: {e}");
+                    eprintln!("Error fetching items: {e}")
                     // SteamMostRecentResponse{
                     //     success: false,
                     //     more: false,

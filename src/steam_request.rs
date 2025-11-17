@@ -12,7 +12,7 @@ pub trait SteamRequest{}
 pub trait ProcessSteamRequest{
 
     async fn process_request<T: SteamRequest + Debug + DeserializeOwned>(url: String) -> Result<T, Box<dyn std::error::Error + Send + Sync>>{
-
+        println!("{url}");
         let json_response = send_request(url).await?;
 
         // println!("{:#?}", json_response);

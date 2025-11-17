@@ -1,32 +1,71 @@
-use std::{sync::{Arc, mpsc::Sender}, time::Duration};
-use steam_market_parser::{CustomItems, MostRecentItems, Sort, SortDirection, SteamMostRecentResponse};
-use actix_web::{web, App, HttpServer, Result, HttpResponse, Error, HttpRequest, rt,};
+use std::{time::Duration};
+use steam_market_parser::{MostRecentItemsFilter, CustomItems, MostRecentItems, 
+    Sort, SortDirection, SteamMostRecentResponse};
+use actix_web::{App, Error, HttpRequest, HttpResponse, HttpServer, Responder, Result, web};
+use actix_files::Files;
 use tera::{Context, Tera};
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, Mutex, broadcast};
 use serde_json;
-use actix_ws::AggregatedMessage;
-use futures_util::{StreamExt as _, lock::Mutex};
+use actix::prelude::*;
+use actix_web_actors::ws;
+
+
 mod db;
 use db::DataBase;
 
 use crate::db::MostRecent;
 
+struct AppState {
+    tera: Tera,
+    items: Mutex<Vec<MostRecent>>,
+    broadcaster: broadcast::Sender<Vec<MostRecent>>,
+    filter: Mutex<MostRecentItemsFilter>,
+}
+
+struct WsActor {
+    state: web::Data<AppState>,
+}
+
+impl Actor for WsActor {
+    type Context = ws::WebsocketContext<Self>;
+
+    fn started(&mut self, ctx: &mut Self::Context) {
+        // Subscribe to broadcast channel and forward updates via actor messages
+        let mut rx = self.state.broadcaster.subscribe();
+        let addr = ctx.address();
+
+        tokio::spawn(async move {
+            while let Ok(items) = rx.recv().await {
+                let _ = addr.do_send(BroadcastItems(items));
+            }
+        });
+    }
+}
+
+impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsActor {
+    fn handle(&mut self, _msg: Result<ws::Message, ws::ProtocolError>, _ctx: &mut Self::Context) {
+        // No need to handle any incoming messages
+    }
+}
+
+struct BroadcastItems(Vec<MostRecent>);
+
+impl Message for BroadcastItems {
+    type Result = ();
+}
+
+impl Handler<BroadcastItems> for WsActor {
+    type Result = ();
+
+    fn handle(&mut self, msg: BroadcastItems, ctx: &mut Self::Context) {
+        if let Ok(json) = serde_json::to_string(&msg.0) {
+            ctx.text(json);
+        }
+    }
+}
+
 //Best time
     //thread::sleep(Duration::from_millis(1000));
-
-//---------------------------------------------------------------------
-//Dont use more than 1 async thread for MostRecentItems for request!!!
-//---------------------------------------------------------------------
-
-async fn index(tmpl: web::Data<Tera>, items_data: web::Data<steam_market_parser::MostRecentItems>) -> Result<HttpResponse> {
-    let mut context = Context::new();
-    context.insert("items", items_data.get_ref());
-    
-    let rendered = tmpl.render("index.html", &context)
-        .map_err(|e| actix_web::error::ErrorInternalServerError(e))?;
-    
-    Ok(HttpResponse::Ok().content_type("text/html").body(rendered))
-}
 
 #[actix_web::main]
 async fn main()-> std::io::Result<()> {
@@ -42,7 +81,7 @@ async fn main()-> std::io::Result<()> {
     // let sort_dir = Some(SortDirection::Asc);
     // let query = None; 
 
-    let country = Some("NL".to_string());
+    let country = Some("US".to_string());
     let language = Some("english".to_string());
     let currency = Some("3".to_string());
 
@@ -57,55 +96,39 @@ async fn main()-> std::io::Result<()> {
     //         eprintln!("Error fetching initial items: {e}");
     //     }
     // };
-        let (tx, rx) = mpsc::channel(100);
-        let (sender, reciever) = mpsc::channel(100);
+        let (request_sender, response_receiver) = mpsc::channel(100);
+        let (broadcast_sender_most_recent_items, _broadcast_reciever_most_recent_items) = 
+        broadcast::channel(32);
         
+        let state = web::Data::new(AppState {
+            tera: Tera::new("front/**/*").expect("Tera init failed"),
+            items: Mutex::new(Vec::new()),
+            broadcaster: broadcast_sender_most_recent_items,
+            filter: Mutex::new(MostRecentItemsFilter{
+                appid: "Steam".to_string(),
+                price_min: "100".to_string(),
+                price_max: "150".to_string(),
+                query: "".to_string(),
+            }),
+        });
+        let state_for_ws = state.clone();
+
         tokio::spawn(async move {
-            tokio_receiver(rx, db, sender).await;
+            tokio_receiver_most_recent_items_request(response_receiver, db, state_for_ws).await;
         });
 
-        let items_result = MostRecentItems::get_most_recent_items(country, language, currency, tx).await;
-        // if let Ok(items) = &items_result {
-        //     println!("{items:#?}");
-        // } else if let Err(e) = &items_result {
-        //     eprintln!("Error fetching items: {e}");
-        // }
-
-        //----------------------------------
-        //----------------------------------
-        //Tera HTML
-        let tera = Tera::new("front/**/*")
-        .map_err(|err| std::io::Error::new(std::io::ErrorKind::Other, err))?;
-    
-        // Store items and tera as shared application data
-        let initial_items = match items_result {
-            Ok(items) => items,
-            Err(_) => steam_market_parser::MostRecentItems {
-                listinginfo: std::collections::HashMap::new(),
-                purchaseinfo: Vec::new(),
-                assets: std::collections::HashMap::new(),
-                currency: Vec::new(),
-                app_data: std::collections::HashMap::new(),
-            },
-        };
-        let items_data = web::Data::new(initial_items);
-        let tera_data = web::Data::new(tera);
-        //----------------------------------
-        //----------------------------------
-
-
+        let _ = MostRecentItems::get_most_recent_items(country, language, currency, request_sender).await;
+        
+        
         //----------------------------------
         //----------------------------------
         //Server Actix
         HttpServer::new(move || {
             App::new()
-                .app_data(tera_data.clone())
-                .app_data(items_data.clone())
-                .service(
-                    web::scope("/")
-                        .route("/", web::get().to(index))
-                        .route("/api/items", web::get().to(api_items))
-                )
+                .app_data(state.clone())
+                .service(Files::new("/front", "./front"))
+                .route("/", web::get().to(tera_update_data))
+                .route("/ws", web::get().to(ws_handler)) 
         })
         .bind(("127.0.0.1", 8080))?
         .run()
@@ -114,24 +137,48 @@ async fn main()-> std::io::Result<()> {
         //----------------------------------
 }
 
-async fn api_items(items_data: web::Data<steam_market_parser::MostRecentItems>) -> Result<HttpResponse> {
-    // Convert to JSON
-    let json = serde_json::to_string(items_data.get_ref())
-        .map_err(|e| actix_web::error::ErrorInternalServerError(e))?;
-    
-    Ok(HttpResponse::Ok()
-        .content_type("application/json")
-        .body(json))
+async fn tokio_receiver_most_recent_items_request(
+    mut receiver: mpsc::Receiver<SteamMostRecentResponse>,
+    db: DataBase,
+    state: web::Data<AppState>,
+) {
+    while let Some(most_recent_items_response) = receiver.recv().await {
+        db.db_post_most_recent_items(most_recent_items_response);
+        
+        if let Ok(result) = db.db_get_most_recent_items() {
+            {
+                let mut items = state.items.lock().await;
+                *items = result.clone();
+            }
+            // println!("got dammit= {result:#?}");
+            let _ = state.broadcaster.send(result);
+        }
+    }
 }
 
-async fn tokio_receiver(mut rx: mpsc::Receiver<SteamMostRecentResponse>, db: DataBase, sender: Sender<Vec<MostRecent>>){
-    while let Some(most_recent_items_response) = rx.recv().await {
+async fn tera_update_data(state: web::Data<AppState>) -> impl Responder {
+    let items = state.items.lock().await.clone();
+    let filters = state.filter.lock().await.clone();
 
-        db.db_post_most_recent_items(most_recent_items_response);
-        let result = db.db_get_most_recent_items().unwrap();
-        sender.send(result);
+    let mut ctx = Context::new();
+    ctx.insert("most_recent_items", &items);
+    ctx.insert("filters", &filters);
 
-        
-        // println!("got dammit= {result:#?}");
-    }
+    state
+        .tera
+        .render("main.html", &ctx)
+        .map(|body| HttpResponse::Ok().content_type("text/html").body(body))
+        .map_err(|_| actix_web::error::ErrorInternalServerError("Template error"))
+}
+
+async fn ws_handler(
+    req: HttpRequest,
+    stream: web::Payload,
+    state: web::Data<AppState>,
+) -> Result<HttpResponse, Error> {
+    let ws = WsActor {
+        state: state.clone(),
+    };
+
+    ws::start(ws, &req, stream)
 }
