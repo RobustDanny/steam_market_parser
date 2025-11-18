@@ -9,10 +9,10 @@
  width: 80px;
  height: 90px;
  border-radius: 10px;
- background: #5f5e5e;
+ background: #212121;
  position: relative;
  padding: 1.8rem;
- border: 2px solid #c3c6ce;
+ border: 1px solid #323232;
  transition: 0.5s ease-out;
  /* overflow: hidden; */
  margin: 0.4rem;
@@ -42,18 +42,18 @@
 }
 .game_icon{
     position: absolute;
-    top: 5px;
-    right: 30px;
-    width: 20px;
-    height: 20px;
+    top: 7px;
+    right: 25px;
+    width: 16px;
+    height: 16px;
 }
 
 .more_icon{
     position: absolute;
-    top: 5px;
+    top: 7px;
     right: 5px;
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
 }
 
 .tooltip_icon{
@@ -61,24 +61,27 @@
     /* position: absolute;
     top: 5px;
     right: 5px; */
-    width: 20px;
-    height: 20px; 
+    width: 16px;
+    height: 16px; 
 }
 
 .locker_icon{
     position: absolute;
-    top: 15px;
-    left: 15px;
-    width: 20px;
-    height: 20px;
+    top: 5px;
+    left: 5px;
+    width: 16px;
+    height: 16px;
 }
 
 .text-price {
- color: rgb(134, 134, 134);
- font-size: 0.5em;
+ color: #9E9E9E;
+ /* font-size: 0.5em; */
+ font-size: 0.7em;
  position: absolute;
- top: 5px;
- left: 5px;
+ /* top: 5px;
+ left: 5px; */
+ bottom: 9px;
+ justify-self: center;
 }
 .text-title {
  padding-left: 5px;
@@ -88,6 +91,7 @@
  position: absolute;
  justify-self: center;
  bottom: 10px;
+ color: #F9F8F6;
 }
 .card_hover-container {
   /* position: relative; */
@@ -117,15 +121,16 @@
 .tooltip_actions{
   position: absolute;
   bottom: 80%;
-  left: 115%;
+  left: 112%;
   transform: translateX(-50%);
   background-color: #333;
   color: white;
-  padding: 5px 8px;
+  padding: 8px;
   border-radius: 3px;
   white-space: nowrap;
   opacity: 0;
   font-size: 8pt;
+  gap: 0.5em;
   visibility: hidden;
   display: flex;          
   flex-direction: column; 
@@ -145,7 +150,7 @@
 }
 
 .card:hover {
- border-color: #6697be;
+ border-color: #E69066;
  box-shadow: 0 4px 18px 0 rgba(0, 0, 0, 0.25);
 }
 .card:hover .card-button {
@@ -191,12 +196,11 @@
     top: 0;
     width: 3%;
     height: 100vh;
-    background: #1c2025;
+    background: #141414;
+    border: 1px solid #323232;
     color: white;
     /* padding: 20px; */
     box-shadow: 2px 0 10px rgba(0,0,0,0.2);
-    transform: translateX(0);
-    transition: transform 0.3s ease;
     z-index: 100;
 }
 
@@ -213,7 +217,7 @@
 
 </head>
 
-<body style="background-color: #28323e;
+<body style="background-color: #141414;
 overflow-x: hidden;">
 
 <script>
@@ -241,12 +245,13 @@ ws.onmessage = (event) => {
 
         if(filters.appid === item.game){
             container.insertAdjacentHTML("afterbegin", `
-    <div class="card">
-        <div class="card-details">
-            <div class="card_hover-container">
-                <img class="game_icon" src="${item.game_icon}">
-                <span class="hidden-text">${item.game}</span>
-            </div>
+    <div class="card_hover-container">
+        <div class="card">
+            <div class="card-details">
+                <div class="card_hover-container">
+                    <img class="game_icon" src="${item.game_icon}">
+                    <span class="hidden-text">${item.game}</span>
+                </div>
             <div>
 
             <div class="card_tooltip-container">
@@ -264,11 +269,9 @@ ws.onmessage = (event) => {
             <img src="https://steamcommunity.com/economy/image/${ item.icon }" alt="${ item.name }" class="item_icon">
             </div>
             </div>
-            <div class="card_hover-container">
-            <span class="text-title">${item.name}</span>
             <span class="hidden-text">${item.name}</span>
-            </div>
             <span class="text-price">$${item.price}</span>
+            </div>
         </div>
     </div>
 `);
@@ -325,6 +328,8 @@ ws.onmessage = (event) => {
 <div id="items-container" class="items-container">    
 {% for item in most_recent_items %}
         {% if filters.appid == item.game %}
+        <div class="card_hover-container">
+
         <div class="card">
             <div class="card-details">
                 <span class="text-price">${{ item.price }}</span>
@@ -361,14 +366,15 @@ ws.onmessage = (event) => {
                 box-sizing: content-box;">
                     <img src="https://steamcommunity.com/economy/image/{{ item.icon }}" alt="{{ item.name }}" class="item_icon">
                 </div>
-                <div class="card_hover-container">
-                <span class="text-title">{{ item.name }}</span>
+                <!-- <span class="text-title">{{ item.name }}</span> -->
                 <span class="hidden-text">{{item.name}}</span>
-                </div>
             </div>
+        </div>
+
         </div>
         {% endif %}
 {% endfor %}
+</div>
 </div>
 
 </body>

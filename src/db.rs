@@ -1,5 +1,4 @@
 use rusqlite::Connection;
-use serde::Serialize;
 
 use steam_market_parser::{SteamMostRecentResponse, MostRecent};
 

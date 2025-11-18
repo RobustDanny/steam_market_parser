@@ -1,5 +1,5 @@
-use std::{collections::HashMap, sync::{Arc, mpsc::Sender}, time::Duration, fmt::Display};
-use tokio::sync::{RwLock, mpsc};
+use std::{collections::HashMap, time::Duration};
+use tokio::sync::{mpsc};
 use serde::{Deserialize, Serialize};
 
 mod steam_request;
@@ -239,13 +239,6 @@ pub struct Description {
 }
 //----------------------------------
 //----------------------------------
-
-//Broadcast
-#[derive(serde::Serialize, Clone)]
-pub struct BroadcastPayload {
-    pub items: Vec<MostRecent>,
-    pub filters: MostRecentItemsFilter,
-}
 
 //DB
 #[derive(Clone, Debug, Serialize)]

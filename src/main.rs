@@ -1,68 +1,23 @@
-use std::{time::Duration};
 use steam_market_parser::{MostRecentItemsFilter, CustomItems, MostRecentItems, 
-    Sort, SortDirection, SteamMostRecentResponse, MostRecent, BroadcastPayload, FilterInput};
-use actix_web::{App, Error, HttpRequest, HttpResponse, HttpServer, Responder, Result, web};
+    Sort, SortDirection, SteamMostRecentResponse, MostRecent, FilterInput};
+use actix_web::{App, HttpResponse, HttpServer, Responder, web};
 use actix_files::Files;
 use tera::{Context, Tera};
 use tokio::sync::{mpsc, Mutex, broadcast};
-use serde_json;
-use actix::prelude::*;
-use actix_web_actors::ws;
-
 
 mod db;
 use db::DataBase;
 
+mod websocket;
+use websocket::{ws_handler, BroadcastPayload};
+
 // use crate::db::MostRecent;
 
-struct AppState {
+pub struct AppState {
     tera: Tera,
     items: Mutex<Vec<MostRecent>>,
     broadcaster: broadcast::Sender<BroadcastPayload>,
     filter: Mutex<MostRecentItemsFilter>,
-}
-
-
-struct WsActor {
-    state: web::Data<AppState>,
-}
-
-impl Actor for WsActor {
-    type Context = ws::WebsocketContext<Self>;
-
-    fn started(&mut self, ctx: &mut Self::Context) {
-        // Subscribe to broadcast channel and forward updates via actor messages
-        let mut rx = self.state.broadcaster.subscribe();
-        let addr = ctx.address();
-
-        tokio::spawn(async move {
-            while let Ok(payload) = rx.recv().await {
-                let _ = addr.do_send(BroadcastItems(payload));
-            }
-        });
-    }
-}
-
-impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsActor {
-    fn handle(&mut self, _msg: Result<ws::Message, ws::ProtocolError>, _ctx: &mut Self::Context) {
-        // No need to handle any incoming messages
-    }
-}
-
-struct BroadcastItems(BroadcastPayload);
-
-impl Message for BroadcastItems {
-    type Result = ();
-}
-
-impl Handler<BroadcastItems> for WsActor {
-    type Result = ();
-
-    fn handle(&mut self, msg: BroadcastItems, ctx: &mut Self::Context) {
-        if let Ok(json) = serde_json::to_string(&msg.0) {
-            ctx.text(json);
-        }
-    }
 }
 
 //Best time
@@ -72,6 +27,14 @@ impl Handler<BroadcastItems> for WsActor {
 async fn main()-> std::io::Result<()> {
 
     let db = DataBase::connect_to_db();
+
+    let country = Some("US".to_string());
+    let language = Some("english".to_string());
+    let currency = Some("3".to_string());
+
+    let (request_sender, response_receiver) = mpsc::channel(100);
+    let (broadcast_sender_most_recent_items, _broadcast_reciever_most_recent_items) = broadcast::channel(32);
+
     // let count = None;
     // let page = None;
     // let game = Some(730);
@@ -82,9 +45,7 @@ async fn main()-> std::io::Result<()> {
     // let sort_dir = Some(SortDirection::Asc);
     // let query = None; 
 
-    let country = Some("US".to_string());
-    let language = Some("english".to_string());
-    let currency = Some("3".to_string());
+    
 
     //-------------------
     // let items_result = match CustomItems::get_items_query(game, count, page, query, sort, sort_dir, search_descriptions, price_min, price_max).await {
@@ -97,9 +58,7 @@ async fn main()-> std::io::Result<()> {
     //         eprintln!("Error fetching initial items: {e}");
     //     }
     // };
-        let (request_sender, response_receiver) = mpsc::channel(100);
-        let (broadcast_sender_most_recent_items, _broadcast_reciever_most_recent_items) = 
-        broadcast::channel(32);
+    //-------------------
         
         let state = web::Data::new(AppState {
             tera: Tera::new("front/**/*").expect("Tera init failed"),
@@ -119,7 +78,6 @@ async fn main()-> std::io::Result<()> {
         });
 
         let _ = MostRecentItems::get_most_recent_items(country, language, currency, request_sender).await;
-        
         
         //----------------------------------
         //----------------------------------
@@ -190,16 +148,4 @@ async fn tera_update_data(state: web::Data<AppState>) -> impl Responder {
         .render("main.html", &ctx)
         .map(|body| HttpResponse::Ok().content_type("text/html").body(body))
         .map_err(|_| actix_web::error::ErrorInternalServerError("Template error"))
-}
-
-async fn ws_handler(
-    req: HttpRequest,
-    stream: web::Payload,
-    state: web::Data<AppState>,
-) -> Result<HttpResponse, Error> {
-    let ws = WsActor {
-        state: state.clone(),
-    };
-
-    ws::start(ws, &req, stream)
 }
