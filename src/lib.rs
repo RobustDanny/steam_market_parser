@@ -140,7 +140,7 @@ pub struct Assets{
     pub icon_url: Option<String>,
     icon_url_large: Option<String>,
     descriptions: Option<Vec<AssetDescription>>,
-    tradable: Option<usize>,
+    pub tradable: Option<usize>,
     owner_actions: Option<Vec<OwnerActions>>,
     name: Option<String>,
     name_color: Option<String>,

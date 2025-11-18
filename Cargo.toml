@@ -10,6 +10,7 @@ actix-web = "4.11.0"
 actix-web-actors = "4.3.1"
 actix-ws = "0.3.0"
 futures-util = "0.3.31"
+leptos = { version = "0.8.12", features = ["csr"] }
 reqwest = "0.12.24"
 rusqlite = { version = "0.37.0", features = ["bundled"] }
 serde = "1.0.228"

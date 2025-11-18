@@ -11,6 +11,7 @@ pub struct MostRecent{
     appid: String,
     game: String,
     market_hash_name: String,
+    tradable: String,
     icon: String,
     game_icon: String,
 }
@@ -41,12 +42,13 @@ impl DataBase{
             let price = format!("{:.2}", listing.price * 0.100);
             let game = data.app_data.get(&appid).unwrap().name.to_owned();
             let game_icon = data.app_data.get(&appid).unwrap().icon.to_owned();
+            let tradable = listing_asset.tradable.as_ref().expect("No tradable field").to_string();
             let name = listing_asset.market_name.as_ref().unwrap().trim().to_string();
             let market_hash_name = listing_asset.market_hash_name.as_ref().unwrap().trim().to_string();
 
-            self.connection.execute("INSERT INTO items (name, price, game, appid, icon_url, game_icon, market_hash_name) 
-            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-             [name, price, game, appid, icon, game_icon, market_hash_name]).expect("Can't insert listing data into DB");
+            self.connection.execute("INSERT INTO items (name, price, game, appid, icon_url, game_icon, market_hash_name, tradable) 
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+             [name, price, game, appid, icon, game_icon, market_hash_name, tradable]).expect("Can't insert listing data into DB");
         }
     }
 
@@ -62,8 +64,9 @@ impl DataBase{
                 game: row.get(3).expect("Cant get game from DB"),
                 appid: row.get(4).expect("Cant get appid from DB"),
                 market_hash_name: row.get(5).expect("Cant get market_hash_name from DB"),
-                icon: row.get(6).expect("Cant get icon from DB"),
-                game_icon: row.get(7).expect("Cant get game_icon from DB"),
+                tradable: row.get(6).expect("Cant get icon from DB"),
+                icon: row.get(7).expect("Cant get icon from DB"),
+                game_icon: row.get(8).expect("Cant get game_icon from DB"),
             })
         })?.collect();
 
@@ -79,6 +82,7 @@ impl DataBase{
                 game TEXT,
                 appid TEXT,
                 market_hash_name TEXT,
+                tradable TEXT,
                 icon_url TEXT,
                 game_icon TEXT
             );
