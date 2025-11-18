@@ -232,6 +232,32 @@ pub struct Description {
 //----------------------------------
 //----------------------------------
 
+//Broadcast
+#[derive(serde::Serialize, Clone)]
+pub struct BroadcastPayload {
+    pub items: Vec<MostRecent>,
+    pub filters: MostRecentItemsFilter,
+}
+
+//DB
+#[derive(Clone, Debug, Serialize)]
+pub struct MostRecent{
+    pub id: usize,
+    pub name: String,
+    pub price: String,
+    pub appid: String,
+    pub game: String,
+    pub market_hash_name: String,
+    pub tradable: String,
+    pub icon: String,
+    pub game_icon: String,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct DBFiltersMostRecentItems{
+    pub filters: String,
+}
+
 //----------------------------------
 //----------------------------------
 //Trait bounds

@@ -93,6 +93,8 @@
   /* position: relative; */
   display: inline-block;
   /* display: flex; */
+  cursor: default;
+
 }
 
 .hidden-text {
@@ -187,14 +189,16 @@
 
 </head>
 
-<body style="background-color: #28323e;">
+<body style="background-color: #28323e;
+overflow-x: hidden;">
 
 <script>
 const ws = new WebSocket("ws://127.0.0.1:8080/ws");
 
 ws.onmessage = (event) => {
-    const items = JSON.parse(event.data);
-    // const filters = JSON.parse(event.data);
+    const data = JSON.parse(event.data);
+    const filters = data.filters;
+    const items = data.items;
     console.log("Received update:", items);
 
     const container = document.getElementById("items-container");
@@ -211,7 +215,7 @@ ws.onmessage = (event) => {
             item.game_icon = "/front/svg/dota2_icon.svg";
         }
 
-        // if(filters){
+        if(filters.price_min < item.price & filters.price_max > item.price){
             container.insertAdjacentHTML("afterbegin", `
     <div class="card">
         <div class="card-details">
@@ -244,7 +248,7 @@ ws.onmessage = (event) => {
         </div>
     </div>
 `);
-        // }
+        }
         
 
     });

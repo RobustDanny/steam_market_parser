@@ -1,6 +1,6 @@
 use std::{time::Duration};
 use steam_market_parser::{MostRecentItemsFilter, CustomItems, MostRecentItems, 
-    Sort, SortDirection, SteamMostRecentResponse};
+    Sort, SortDirection, SteamMostRecentResponse, MostRecent, BroadcastPayload};
 use actix_web::{App, Error, HttpRequest, HttpResponse, HttpServer, Responder, Result, web};
 use actix_files::Files;
 use tera::{Context, Tera};
@@ -13,14 +13,15 @@ use actix_web_actors::ws;
 mod db;
 use db::DataBase;
 
-use crate::db::MostRecent;
+// use crate::db::MostRecent;
 
 struct AppState {
     tera: Tera,
     items: Mutex<Vec<MostRecent>>,
-    broadcaster: broadcast::Sender<Vec<MostRecent>>,
+    broadcaster: broadcast::Sender<BroadcastPayload>,
     filter: Mutex<MostRecentItemsFilter>,
 }
+
 
 struct WsActor {
     state: web::Data<AppState>,
@@ -35,8 +36,8 @@ impl Actor for WsActor {
         let addr = ctx.address();
 
         tokio::spawn(async move {
-            while let Ok(items) = rx.recv().await {
-                let _ = addr.do_send(BroadcastItems(items));
+            while let Ok(payload) = rx.recv().await {
+                let _ = addr.do_send(BroadcastItems(payload));
             }
         });
     }
@@ -48,7 +49,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsActor {
     }
 }
 
-struct BroadcastItems(Vec<MostRecent>);
+struct BroadcastItems(BroadcastPayload);
 
 impl Message for BroadcastItems {
     type Result = ();
@@ -144,14 +145,21 @@ async fn tokio_receiver_most_recent_items_request(
 ) {
     while let Some(most_recent_items_response) = receiver.recv().await {
         db.db_post_most_recent_items(most_recent_items_response);
+        let filters = state.filter.lock().await.clone();
         
+
         if let Ok(result) = db.db_get_most_recent_items() {
             {
                 let mut items = state.items.lock().await;
                 *items = result.clone();
+                
             }
+            let payload = BroadcastPayload {
+                items: result.clone(),
+                filters,
+            };
             // println!("got dammit= {result:#?}");
-            let _ = state.broadcaster.send(result);
+            let _ = state.broadcaster.send(payload);
         }
     }
 }

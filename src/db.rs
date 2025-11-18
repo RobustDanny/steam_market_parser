@@ -1,20 +1,8 @@
 use rusqlite::Connection;
 use serde::Serialize;
 
-use steam_market_parser::SteamMostRecentResponse;
+use steam_market_parser::{SteamMostRecentResponse, MostRecent};
 
-#[derive(Clone, Debug, Serialize)]
-pub struct MostRecent{
-    id: usize,
-    name: String,
-    price: String,
-    appid: String,
-    game: String,
-    market_hash_name: String,
-    tradable: String,
-    icon: String,
-    game_icon: String,
-}
 pub struct DataBase{
     connection: Connection,
 }
