@@ -152,6 +152,30 @@
  transform: translate(-50%, 50%);
  opacity: 1;
 }
+
+.side_panel_icons{
+  display: flex;          
+  flex-direction: column; 
+  align-items: center; 
+}
+
+.side_panel_icon{
+    margin-top: 20px;
+    width: 20px;
+    height: 20px;
+    z-index: 100;
+}
+
+.side_panel_icons:hover .filters{
+    opacity: 1;
+    visibility: visible;
+}
+
+.filters{
+    visibility: hidden;
+    margin: auto;
+}
+
 .item_icon{
     padding-left: 5px;
     padding-right: 5px;
@@ -173,7 +197,7 @@
     box-shadow: 2px 0 10px rgba(0,0,0,0.2);
     transform: translateX(0);
     transition: transform 0.3s ease;
-    /* z-index: 100; */
+    z-index: 100;
 }
 
 .items-container {
@@ -215,7 +239,7 @@ ws.onmessage = (event) => {
             item.game_icon = "/front/svg/dota2_icon.svg";
         }
 
-        if(filters.price_min < item.price & filters.price_max > item.price){
+        if(filters.appid === item.game){
             container.insertAdjacentHTML("afterbegin", `
     <div class="card">
         <div class="card-details">
@@ -255,12 +279,52 @@ ws.onmessage = (event) => {
 };
 </script>
 
+<script>
+    function updateFilters() {
+    
+        const appid = document.getElementById("f_appid").value;
+        const price_min = document.getElementById("f_min").value;
+        const price_max = document.getElementById("f_max").value;
+        const query = document.getElementById("f_query").value;
+    
+        const url = `/filters?appid=${appid}&price_min=${price_min}&price_max=${price_max}&query=${query}`;
+    
+        fetch(url)
+            .then(res => res.json())
+            .then(json => {
+                console.log("Filters updated:", json);
+            });
+    }
+    </script>
+    
 
 <!-- === INITIAL TERA RENDER === -->
 <div class="side_panel">
+    <div class="side_panel_icons">
+        <img class="side_panel_icon" src="/front/svg/filter_icon.svg">
+
+
+        <div class="filters">
+            <label>Game:</label>
+            <input id="f_appid" type="text">
+    
+            <label>Price Min:</label>
+            <input id="f_min" type="number" value="10">
+        
+            <label>Price Max:</label>
+            <input id="f_max" type="number" value="200">
+        
+            <label>Query:</label>
+            <input id="f_query" type="text">
+        
+            <button onclick="updateFilters()">Apply</button>
+        </div>
+    </div>
+    
 </div>
 <div id="items-container" class="items-container">    
 {% for item in most_recent_items %}
+        {% if filters.appid == item.game %}
         <div class="card">
             <div class="card-details">
                 <span class="text-price">${{ item.price }}</span>
@@ -303,6 +367,7 @@ ws.onmessage = (event) => {
                 </div>
             </div>
         </div>
+        {% endif %}
 {% endfor %}
 </div>
 

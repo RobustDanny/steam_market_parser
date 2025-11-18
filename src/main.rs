@@ -1,6 +1,6 @@
 use std::{time::Duration};
 use steam_market_parser::{MostRecentItemsFilter, CustomItems, MostRecentItems, 
-    Sort, SortDirection, SteamMostRecentResponse, MostRecent, BroadcastPayload};
+    Sort, SortDirection, SteamMostRecentResponse, MostRecent, BroadcastPayload, FilterInput};
 use actix_web::{App, Error, HttpRequest, HttpResponse, HttpServer, Responder, Result, web};
 use actix_files::Files;
 use tera::{Context, Tera};
@@ -130,12 +130,26 @@ async fn main()-> std::io::Result<()> {
                 .service(Files::new("/front", "./front"))
                 .route("/", web::get().to(tera_update_data))
                 .route("/ws", web::get().to(ws_handler)) 
+                .route("/filters", web::get().to(post_most_recent_item_filters))
         })
         .bind(("127.0.0.1", 8080))?
         .run()
         .await
         //----------------------------------
         //----------------------------------
+}
+
+async fn post_most_recent_item_filters(params: web::Query<FilterInput>,
+    state: web::Data<AppState>)-> impl Responder{
+        let mut filter = state.filter.lock().await;
+        *filter = MostRecentItemsFilter {
+            appid: params.appid.clone(),
+            price_min: params.price_min.clone(),
+            price_max: params.price_max.clone(),
+            query: params.query.clone(),
+        };
+    
+        HttpResponse::Ok().json(&*filter)
 }
 
 async fn tokio_receiver_most_recent_items_request(
@@ -146,7 +160,6 @@ async fn tokio_receiver_most_recent_items_request(
     while let Some(most_recent_items_response) = receiver.recv().await {
         db.db_post_most_recent_items(most_recent_items_response);
         let filters = state.filter.lock().await.clone();
-        
 
         if let Ok(result) = db.db_get_most_recent_items() {
             {

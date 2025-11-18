@@ -54,6 +54,14 @@ pub struct MostRecentItemsFilter{
     pub query: String,
 }
 
+#[derive(Serialize, Deserialize, Clone)]
+pub struct FilterInput {
+    pub appid: String,
+    pub price_min: String,
+    pub price_max: String,
+    pub query: String,
+}
+
 //----------------------------------
 //----------------------------------
 //Response
