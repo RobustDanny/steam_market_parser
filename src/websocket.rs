@@ -66,15 +66,12 @@ impl Handler<BroadcastItems> for WsActor {
             msg.0.items
                 .iter()
                 .filter(|item| {
-                    // println!("item: {}", item.game);
                     let item_price = item.price.parse::<f64>().unwrap_or(0.0);
                     let price_min = self.user_filters.price_min.parse::<f64>().unwrap_or(0.0);
                     let price_max = self.user_filters.price_max.parse::<f64>().unwrap_or(f64::MAX);
-                    
-                    (self.user_filters.appid.is_empty() || item.game == self.user_filters.appid)
-                    && item_price >= price_min
-                    && item_price <= price_max
-                    && item.name.contains(&self.user_filters.query)
+                    item_price >= price_min
+                        && item_price <= price_max
+                        && item.name.contains(&self.user_filters.query)
                 })
                 .cloned()
                 .collect();
