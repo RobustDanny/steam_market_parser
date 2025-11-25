@@ -69,9 +69,11 @@ impl Handler<BroadcastItems> for WsActor {
                     let item_price = item.price.parse::<f64>().unwrap_or(0.0);
                     let price_min = self.user_filters.price_min.parse::<f64>().unwrap_or(0.0);
                     let price_max = self.user_filters.price_max.parse::<f64>().unwrap_or(f64::MAX);
+                     
                     item_price >= price_min
                         && item_price <= price_max
                         && item.name.to_lowercase().contains(&self.user_filters.query.to_lowercase())
+                && (item.game.is_empty() || item.game == self.user_filters.game)
                 })
                 .cloned()
                 .collect();
