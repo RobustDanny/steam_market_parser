@@ -71,7 +71,7 @@ impl Handler<BroadcastItems> for WsActor {
                     let price_max = self.user_filters.price_max.parse::<f64>().unwrap_or(f64::MAX);
                     item_price >= price_min
                         && item_price <= price_max
-                        && item.name.contains(&self.user_filters.query)
+                        && item.name.to_lowercase().contains(&self.user_filters.query.to_lowercase())
                 })
                 .cloned()
                 .collect();
