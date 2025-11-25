@@ -224,26 +224,26 @@ overflow-x: hidden;">
 const ws = new WebSocket("ws://127.0.0.1:8080/ws");
 
 ws.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    const filters = data.filters;
-    const items = data.items;
+    const items = JSON.parse(event.data);
+    // const filters = data.filters;
+    // const items = data.items;
     console.log("Received update:", items);
 
     const container = document.getElementById("items-container");
 
     items.forEach(item => {
 
-        if (item.game === "Steam") {
-            item.game_icon = "/front/svg/steam_icon.svg";
-        }
-        else if(item.game === "Counter-Strike 2"){
-            item.game_icon = "/front/svg/cs2_icon.svg";
-        }
-        else if(item.game === "Dota 2"){
-            item.game_icon = "/front/svg/dota2_icon.svg";
-        }
+        // if (item.game === "Steam") {
+        //     item.game_icon = "/front/svg/steam_icon.svg";
+        // }
+        // else if(item.game === "Counter-Strike 2"){
+        //     item.game_icon = "/front/svg/cs2_icon.svg";
+        // }
+        // else if(item.game === "Dota 2"){
+        //     item.game_icon = "/front/svg/dota2_icon.svg";
+        // }
 
-        if(filters.appid === item.game){
+        // if(filters.appid === item.game){
             container.insertAdjacentHTML("afterbegin", `
     <div class="card_hover-container">
         <div class="card">
@@ -275,7 +275,7 @@ ws.onmessage = (event) => {
         </div>
     </div>
 `);
-        }
+        // }
         
 
     });
@@ -285,11 +285,15 @@ ws.onmessage = (event) => {
 <script>
     function updateFilters() {
     
-        const appid = document.getElementById("f_appid").value;
-        const price_min = document.getElementById("f_min").value;
-        const price_max = document.getElementById("f_max").value;
-        const query = document.getElementById("f_query").value;
-    
+        const msg = {
+            type: "filters",
+            appid: document.getElementById("f_appid").value,
+            price_min: document.getElementById("f_min").value,
+            price_max: document.getElementById("f_max").value,
+            query: document.getElementById("f_query").value,
+        }
+        ws.send(JSON.stringify(msg));
+        
         const url = `/filters?appid=${appid}&price_min=${price_min}&price_max=${price_max}&query=${query}`;
     
         fetch(url)
@@ -350,7 +354,7 @@ ws.onmessage = (event) => {
                 <img class="locker_icon" src="/front/svg/locker_icon.svg">
                 {% endif %}
                 
-                <div class="card_hover-container">
+                <!-- <div class="card_hover-container">
                     {% if item.game == "Steam" %}
                     <img class="game_icon" src="/front/svg/steam_icon.svg">
                     {% elif item.game == "Counter-Strike 2" %}
@@ -359,7 +363,7 @@ ws.onmessage = (event) => {
                         <img class="game_icon" src="/front/svg/dota2_icon.svg">
                     {% else %}
                         <img class="game_icon" src="{{ item.game_icon }}">
-                    {% endif %}
+                    {% endif %} -->
                 <span class="hidden-text">{{item.game}}</span>
                 </div>
                 <div style="display: flex;

@@ -54,7 +54,7 @@ pub struct MostRecentItemsFilter{
     pub query: String,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct FilterInput {
     pub appid: String,
     pub price_min: String,
@@ -330,7 +330,7 @@ impl MostRecentItems{
                 Ok(items) => {
                     // let mut shared = response.write().await;
                     // *shared = items;
-                    println!("Updated items: {items:#?} listings fetched");
+                    // println!("Updated items: {items:#?} listings fetched");
                     tx.send(items.clone()).await.expect("kekw")
                     // items
                 }
@@ -354,7 +354,7 @@ impl MostRecentItems{
 
             // println!("Updated items: {items_vec:#?} listings fetched");
             
-            tokio::time::sleep(Duration::from_secs(5)).await;
+            tokio::time::sleep(Duration::from_secs(2)).await;
         }
     }
 }

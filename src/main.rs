@@ -1,7 +1,8 @@
 use steam_market_parser::{MostRecentItemsFilter, CustomItems, MostRecentItems, 
     Sort, SortDirection, SteamMostRecentResponse, MostRecent, FilterInput};
-use actix_web::{App, HttpResponse, HttpServer, Responder, web};
+use actix_web::{App, HttpResponse, HttpServer, Responder, web, cookie::Key};
 use actix_files::Files;
+use actix_session::{Session, SessionMiddleware, storage::CookieSessionStore};
 use tera::{Context, Tera};
 use tokio::sync::{mpsc, Mutex, broadcast};
 
@@ -17,7 +18,7 @@ pub struct AppState {
     tera: Tera,
     items: Mutex<Vec<MostRecent>>,
     broadcaster: broadcast::Sender<BroadcastPayload>,
-    filter: Mutex<MostRecentItemsFilter>,
+    // filter: Mutex<MostRecentItemsFilter>,
 }
 
 //Best time
@@ -64,12 +65,12 @@ async fn main()-> std::io::Result<()> {
             tera: Tera::new("front/**/*").expect("Tera init failed"),
             items: Mutex::new(Vec::new()),
             broadcaster: broadcast_sender_most_recent_items,
-            filter: Mutex::new(MostRecentItemsFilter{
-                appid: "Steam".to_string(),
-                price_min: "100".to_string(),
-                price_max: "150".to_string(),
-                query: "".to_string(),
-            }),
+            // filter: Mutex::new(MostRecentItemsFilter{
+            //     appid: "Steam".to_string(),
+            //     price_min: "100".to_string(),
+            //     price_max: "150".to_string(),
+            //     query: "".to_string(),
+            // }),
         });
         let state_for_ws = state.clone();
 
@@ -83,7 +84,12 @@ async fn main()-> std::io::Result<()> {
         //----------------------------------
         //Server Actix
         HttpServer::new(move || {
+
+            let key = Key::generate();
+
+
             App::new()
+                .wrap(SessionMiddleware::new(CookieSessionStore::default(), key))
                 .app_data(state.clone())
                 .service(Files::new("/front", "./front"))
                 .route("/", web::get().to(tera_update_data))
@@ -97,17 +103,30 @@ async fn main()-> std::io::Result<()> {
         //----------------------------------
 }
 
+async fn check(session: Session)->Result<(), actix_web::Error> {
+    match session.get::<FilterInput>("filters") {
+        Ok(Some(filters)) => println!("User filters from session: {filters:#?}"),
+        Ok(None) => println!("User filters not found in session."),
+        Err(err) => println!("Failed to deserialize filters from session: {err}"),
+    }
+    Ok(())
+}
+
 async fn post_most_recent_item_filters(params: web::Query<FilterInput>,
-    state: web::Data<AppState>)-> impl Responder{
-        let mut filter = state.filter.lock().await;
-        *filter = MostRecentItemsFilter {
-            appid: params.appid.clone(),
-            price_min: params.price_min.clone(),
-            price_max: params.price_max.clone(),
-            query: params.query.clone(),
-        };
+    session: Session)-> impl Responder{
+
+        session.insert("filters", &*params).unwrap();
+
+        check(session).await.unwrap();
+        // let mut filter = state.filter.lock().await;
+        // *filter = MostRecentItemsFilter {
+        //     appid: params.appid.clone(),
+        //     price_min: params.price_min.clone(),
+        //     price_max: params.price_max.clone(),
+        //     query: params.query.clone(),
+        // };
     
-        HttpResponse::Ok().json(&*filter)
+        HttpResponse::Ok().json(&*params)
 }
 
 async fn tokio_receiver_most_recent_items_request(
@@ -117,7 +136,7 @@ async fn tokio_receiver_most_recent_items_request(
 ) {
     while let Some(most_recent_items_response) = receiver.recv().await {
         db.db_post_most_recent_items(most_recent_items_response);
-        let filters = state.filter.lock().await.clone();
+        // let filters = state.filter.lock().await.clone();
 
         if let Ok(result) = db.db_get_most_recent_items() {
             {
@@ -127,7 +146,6 @@ async fn tokio_receiver_most_recent_items_request(
             }
             let payload = BroadcastPayload {
                 items: result.clone(),
-                filters,
             };
             // println!("got dammit= {result:#?}");
             let _ = state.broadcaster.send(payload);
@@ -135,9 +153,19 @@ async fn tokio_receiver_most_recent_items_request(
     }
 }
 
-async fn tera_update_data(state: web::Data<AppState>) -> impl Responder {
+async fn tera_update_data(session: Session, state: web::Data<AppState>) -> impl Responder {
     let items = state.items.lock().await.clone();
-    let filters = state.filter.lock().await.clone();
+    let filters: FilterInput = session
+    .get("filters")
+    .unwrap()
+    .unwrap_or(FilterInput {
+        appid: "730".into(),
+        price_min: "0".into(),
+        price_max: "999999".into(),
+        query: "".into(),
+    });
+
+    println!("filters: {filters:#?}");
 
     let mut ctx = Context::new();
     ctx.insert("most_recent_items", &items);
