@@ -4,6 +4,179 @@
     <title>Realtime Cards</title>
 
 <style>
+/*Filters*/
+
+/* From Uiverse.io by R1SH4BH81 */ 
+/* Body */
+.container {
+  display: grid;
+  grid-template-columns: auto;
+  gap: 0px;
+}
+
+hr {
+  height: 1px;
+  background-color: #2e2e2e; /* Dark gray line */
+  border: none;
+}
+
+.filter_card {
+  width: 100%;
+  background: #1c1c1c; /* Dark background for a professional look */
+  box-shadow:
+    0px 187px 75px rgba(0, 0, 0, 0.01),
+    0px 105px 63px rgba(0, 0, 0, 0.05),
+    0px 47px 47px rgba(0, 0, 0, 0.09),
+    0px 12px 26px rgba(0, 0, 0, 0.1),
+    0px 0px 0px rgba(0, 0, 0, 0.1);
+}
+
+.title {
+  width: 100%;
+  height: 40px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding-left: 20px;
+  border-bottom: 1px solid #2e2e2e; /* Dark gray */
+  font-weight: 700;
+  font-size: 11px;
+  color: #ffffff; /* White text */
+}
+
+/* Cart */
+.cart {
+  border-radius: 19px 19px 0px 0px;
+}
+
+.cart .steps {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+}
+
+.cart .steps .step {
+  display: grid;
+  gap: 10px;
+}
+
+.cart .steps .step span {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff; /* White text */
+  margin-bottom: 8px;
+  display: block;
+}
+
+.cart .steps .step p {
+  font-size: 11px;
+  font-weight: 600;
+  color: #bbbbbb; /* Light gray text */
+}
+
+/* Promo */
+.promo form {
+  display: grid;
+  grid-template-columns: 1fr 80px;
+  gap: 10px;
+  padding: 0px;
+}
+
+.input_field {
+  width: auto;
+  height: 36px;
+  padding: 0 0 0 12px;
+  border-radius: 5px;
+  outline: none;
+  border: 1px solid #2e2e2e; /* Dark gray */
+  background-color: #333333; /* Dark input background */
+  color: #ffffff; /* White text */
+  /* transition: all 0.3s cubic-bezier(0.15, 0.83, 0.66, 1); */
+}
+
+.input_field:focus {
+  border: 1px solid transparent;
+  box-shadow: 0px 0px 0px 2px #555555; /* Light gray focus */
+  background-color: #333333;
+}
+
+.promo form button {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 18px;
+  gap: 10px;
+  width: 100%;
+  height: 36px;
+  background: #555555; /* Medium gray button */
+  box-shadow:
+    0px 0.5px 0.5px #555555,
+    0px 1px 0.5px rgba(239, 239, 239, 0.5);
+  border-radius: 5px;
+  border: 0;
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 15px;
+  color: #ffffff; /* White text */
+  transition: all 0.3s cubic-bezier(0.15, 0.83, 0.66, 1);
+}
+
+/* Checkout */
+.payments .details {
+  display: grid;
+  grid-template-columns: 10fr 1fr;
+  padding: 0px;
+  gap: 5px;
+}
+
+.payments .details span:nth-child(odd) {
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffffff; /* White text */
+}
+
+.payments .details span:nth-child(even) {
+  font-size: 13px;
+  font-weight: 600;
+  color: #bbbbbb; /* Light gray text */
+}
+
+.checkout .footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 10px 10px 20px;
+  background-color: #1c1c1c; /* Dark gray background */
+}
+
+.price {
+  font-size: 22px;
+  color: #ffffff; /* White text */
+  font-weight: 900;
+}
+
+.checkout .checkout-btn {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 150px;
+  height: 36px;
+  background: #555555; /* Medium gray button */
+  border-radius: 7px;
+  border: 1px solid #2e2e2e; /* Dark gray border */
+  color: #ffffff; /* White text */
+  font-size: 13px;
+  font-weight: 600;
+  /* transition: all 0.3s cubic-bezier(0.15, 0.83, 0.66, 1); */
+}
+
+.checkout .checkout-btn:hover {
+  background-color: #777777; /* Slightly lighter gray on hover */
+}
+
+
 /* ==== Your card CSS (unchanged) ==== */
 .card {
  width: 80px;
@@ -164,14 +337,28 @@
   align-items: center; 
 }
 
-.side_panel_icon{
+.side_panel_filter_icon{
     margin-top: 20px;
     width: 20px;
     height: 20px;
     z-index: 100;
 }
 
-.side_panel_icons:hover .filters{
+.side_panel_chart_icon{
+    margin-top: 20px;
+    width: 20px;
+    height: 20px;
+    z-index: 100;
+}
+
+.side_panel_budget_icon{
+    margin-top: 20px;
+    width: 20px;
+    height: 20px;
+    z-index: 100;
+}
+
+.side_panel_filter_icon:hover .filters{
     opacity: 1;
     visibility: visible;
 }
@@ -179,6 +366,7 @@
 .filters{
     visibility: hidden;
     margin: auto;
+    z-index: 1000;
 }
 
 .item_icon{
@@ -202,8 +390,11 @@
     /* padding: 20px; */
     box-shadow: 2px 0 10px rgba(0,0,0,0.2);
     z-index: 100;
+    transition: width 0.3s ease;
 }
-
+.side_panel:hover {
+    width: 15%;
+}
 .items-container {
         width: 95%;
         padding: 20px;
@@ -248,10 +439,7 @@ ws.onmessage = (event) => {
     <div class="card_hover-container">
         <div class="card">
             <div class="card-details">
-                <div class="card_hover-container">
-                    <img class="game_icon" src="${item.game_icon}">
-                    <span class="hidden-text">${item.game}</span>
-                </div>
+                <img class="game_icon" src="${item.game_icon}">
             <div>
 
             <div class="card_tooltip-container">
@@ -308,27 +496,77 @@ ws.onmessage = (event) => {
 <!-- === INITIAL TERA RENDER === -->
 <div class="side_panel">
     <div class="side_panel_icons">
-        <img class="side_panel_icon" src="/front/svg/filter_icon.svg">
-
+        <img class="side_panel_filter_icon" src="/front/svg/filter_icon.svg">
+        <img class="side_panel_chart_icon" src="/front/svg/chart_icon.svg">
+        <img class="side_panel_budget_icon" src="/front/svg/budget_icon.svg">
 
         <div class="filters">
-            <label>Game:</label>
-            <input id="f_appid" type="text">
-    
-            <label>Price Min:</label>
-            <input id="f_min" type="number" value="10">
-        
-            <label>Price Max:</label>
-            <input id="f_max" type="number" value="200">
-        
-            <label>Query:</label>
-            <input id="f_query" type="text">
-        
-            <button onclick="updateFilters()">Apply</button>
+            <div class="filter_card cart">
+                <div class="steps">
+                  <div class="step">
+                    <hr />
+                    <input
+                    id="f_appid"
+                    class="input_field"
+                    placeholder="Enter a game"
+                    type="text"
+                  />
+                  <hr />
+                  <input
+                    id="f_query"
+                    class="input_field"
+                    placeholder="Enter a query"
+                    type="text"
+                  />
+                    <hr />
+                  <label>min price</label>
+                    <input
+                    id="f_min"
+                    type="range"
+                    min="0"
+                    max="9999999"
+                    value="0"
+                  />
+                  <hr />
+                  <label>max price</label>
+                    <input
+                    id="f_max"
+                    min="0"
+                    max="9999999"
+                    value="9999999"
+                    type="range"
+                  />
+                  <!-- <hr /> -->
+                  </div>
+                </div>
+
+            </div>
+            <div class="filter_card checkout">
+                <div class="footer">
+                  <button class="checkout-btn" onclick="updateFilters()">Apply</button>
+                </div>
+            </div>
         </div>
     </div>
     
 </div>
+
+<script>
+    function steamapps() {
+        const url = `https://api.steampowered.com/ISteamApps/GetAppList/v2/`;
+    
+        fetch(url)
+            .then(res => res.json())
+            .then(json => {
+                console.log("Filters updated:", json);
+            });
+    }
+</script>
+<div>
+<button onclick="steamapps()"></button>
+</div>
+
+
 <div id="items-container" class="items-container">    
 {% for item in most_recent_items %}
         {% if filters.appid == item.game %}
@@ -355,8 +593,8 @@ ws.onmessage = (event) => {
                 {% endif %}
                 
                 <div>
-                        <img class="game_icon" src="{{ item.game_icon }}">
-                        <span class="hidden-text">{{item.game}}</span>
+                    <img class="game_icon" src="{{ item.game_icon }}">
+                    <!-- <span class="hidden-text">{{item.game}}</span> -->
                 </div>
                 <div style="display: flex;
                 box-sizing: content-box;">

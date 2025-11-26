@@ -73,7 +73,7 @@ impl Handler<BroadcastItems> for WsActor {
                     item_price >= price_min
                         && item_price <= price_max
                         && item.name.to_lowercase().contains(&self.user_filters.query.to_lowercase())
-                && (item.game.is_empty() || item.game == self.user_filters.appid)
+                && (item.game.is_empty() || item.game.to_lowercase() == self.user_filters.appid.to_lowercase())
                 })
                 .cloned()
                 .collect();
