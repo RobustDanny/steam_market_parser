@@ -159,7 +159,7 @@ async fn tera_update_data(session: Session, state: web::Data<AppState>) -> impl 
     .get("filters")
     .unwrap()
     .unwrap_or(FilterInput {
-        appid: "730".into(),
+        appid: "Steam".into(),
         price_min: "0".into(),
         price_max: "999999".into(),
         query: "".into(),

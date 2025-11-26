@@ -294,7 +294,7 @@ ws.onmessage = (event) => {
         }
         ws.send(JSON.stringify(msg));
         
-        const url = `/filters?appid=${appid}&price_min=${price_min}&price_max=${price_max}&query=${query}`;
+        const url = `/filters?appid=${msg.appid}&price_min=${msg.price_min}&price_max=${msg.price_max}&query=${msg.query}`;
     
         fetch(url)
             .then(res => res.json())
@@ -354,17 +354,9 @@ ws.onmessage = (event) => {
                 <img class="locker_icon" src="/front/svg/locker_icon.svg">
                 {% endif %}
                 
-                <!-- <div class="card_hover-container">
-                    {% if item.game == "Steam" %}
-                    <img class="game_icon" src="/front/svg/steam_icon.svg">
-                    {% elif item.game == "Counter-Strike 2" %}
-                        <img class="game_icon" src="/front/svg/cs2_icon.svg">
-                    {% elif item.game == "Dota 2" %}
-                        <img class="game_icon" src="/front/svg/dota2_icon.svg">
-                    {% else %}
+                <div>
                         <img class="game_icon" src="{{ item.game_icon }}">
-                    {% endif %} -->
-                <span class="hidden-text">{{item.game}}</span>
+                        <span class="hidden-text">{{item.game}}</span>
                 </div>
                 <div style="display: flex;
                 box-sizing: content-box;">

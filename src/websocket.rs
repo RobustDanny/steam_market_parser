@@ -38,7 +38,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsActor {
             if let Ok(v) = serde_json::from_str::<serde_json::Value>(&text) {
                 if v["type"] == "filters" {
                     self.user_filters = MostRecentItemsFilter {
-                        appid: v["appid"].as_str().unwrap_or("730").into(),
+                        appid: v["appid"].as_str().unwrap_or("Steam").into(),
                         price_min: v["price_min"].as_str().unwrap_or("0").into(),
                         price_max: v["price_max"].as_str().unwrap_or("999999").into(),
                         query: v["query"].as_str().unwrap_or("").into(),
@@ -73,7 +73,7 @@ impl Handler<BroadcastItems> for WsActor {
                     item_price >= price_min
                         && item_price <= price_max
                         && item.name.to_lowercase().contains(&self.user_filters.query.to_lowercase())
-                && (item.game.is_empty() || item.game == self.user_filters.game)
+                && (item.game.is_empty() || item.game == self.user_filters.appid)
                 })
                 .cloned()
                 .collect();
@@ -93,7 +93,7 @@ pub async fn ws_handler(
 ) -> Result<HttpResponse, Error> {
     let filters: Option<MostRecentItemsFilter> = session.get("filters")?;
     let filters = filters.unwrap_or_else(|| MostRecentItemsFilter {
-        appid: "730".into(),
+        appid: "Steam".into(),
         price_min: "0".into(),
         price_max: "99999".into(),
         query: "".into(),
