@@ -16,7 +16,6 @@ pub struct AppState {
     tera: Tera,
     items: Mutex<Vec<MostRecent>>,
     broadcaster: broadcast::Sender<BroadcastPayload>,
-    // filter: Mutex<MostRecentItemsFilter>,
 }
 
 //Best time
