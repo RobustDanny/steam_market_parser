@@ -12,8 +12,6 @@ use db::DataBase;
 mod websocket;
 use websocket::{ws_handler, BroadcastPayload};
 
-// use crate::db::MostRecent;
-
 pub struct AppState {
     tera: Tera,
     items: Mutex<Vec<MostRecent>>,
@@ -118,13 +116,6 @@ async fn post_most_recent_item_filters(params: web::Query<FilterInput>,
         session.insert("filters", &*params).unwrap();
 
         check(session).await.unwrap();
-        // let mut filter = state.filter.lock().await;
-        // *filter = MostRecentItemsFilter {
-        //     appid: params.appid.clone(),
-        //     price_min: params.price_min.clone(),
-        //     price_max: params.price_max.clone(),
-        //     query: params.query.clone(),
-        // };
     
         HttpResponse::Ok().json(&*params)
 }
