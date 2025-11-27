@@ -132,7 +132,6 @@ async fn tokio_receiver_most_recent_items_request(
             {
                 let mut items = state.items.lock().await;
                 *items = result.clone();
-                
             }
             let payload = BroadcastPayload {
                 items: result.clone(),
