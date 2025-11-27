@@ -244,6 +244,7 @@ pub struct Description {
 #[derive(Clone, Debug, Serialize)]
 pub struct MostRecent{
     pub id: usize,
+    pub listinginfo_id: String,
     pub name: String,
     pub price: String,
     pub appid: String,

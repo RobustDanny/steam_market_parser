@@ -21,6 +21,7 @@ impl DataBase{
     pub fn db_post_most_recent_items(&self, data: SteamMostRecentResponse){
         // println!("Length: {}", data.listinginfo.len());
         for listing in data.listinginfo.values(){
+            let listinginfo_id = listing.listingid.to_string();
             let appid = listing.asset.appid.to_string();
             let contextid = listing.asset.contextid.to_string();
             let assetid = listing.asset.id.to_string();
@@ -33,9 +34,9 @@ impl DataBase{
             let name = listing_asset.market_name.as_ref().unwrap().trim().to_string();
             let market_hash_name = listing_asset.market_hash_name.as_ref().unwrap().trim().to_string();
 
-            self.connection.execute("INSERT INTO items (name, price, game, appid, icon_url, game_icon, market_hash_name, tradable) 
-            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
-             [name, price, game, appid, icon, game_icon, market_hash_name, tradable]).expect("Can't insert listing data into DB");
+            self.connection.execute("INSERT OR IGNORE INTO items (listinginfo_id, name, price, game, appid, icon_url, game_icon, market_hash_name, tradable) 
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+             [listinginfo_id, name, price, game, appid, icon, game_icon, market_hash_name, tradable]).expect("Can't insert listing data into DB");
         }
     }
 
@@ -46,14 +47,15 @@ impl DataBase{
         let result = query.query_map([], |row| {
             Ok(MostRecent{
                 id: row.get(0).expect("Cant get id from DB"),
-                name: row.get(1).expect("Cant get name from DB"),
-                price: row.get(2).expect("Cant get price from DB"),
-                game: row.get(3).expect("Cant get game from DB"),
-                appid: row.get(4).expect("Cant get appid from DB"),
-                market_hash_name: row.get(5).expect("Cant get market_hash_name from DB"),
-                tradable: row.get(6).expect("Cant get icon from DB"),
-                icon: row.get(7).expect("Cant get icon from DB"),
-                game_icon: row.get(8).expect("Cant get game_icon from DB"),
+                listinginfo_id: row.get(1).expect("Cant get listinginfo_id from DB"),
+                name: row.get(2).expect("Cant get name from DB"),
+                price: row.get(3).expect("Cant get price from DB"),
+                game: row.get(4).expect("Cant get game from DB"),
+                appid: row.get(5).expect("Cant get appid from DB"),
+                market_hash_name: row.get(6).expect("Cant get market_hash_name from DB"),
+                tradable: row.get(7).expect("Cant get icon from DB"),
+                icon: row.get(8).expect("Cant get icon from DB"),
+                game_icon: row.get(9).expect("Cant get game_icon from DB"),
             })
         })?.collect();
 
@@ -64,6 +66,7 @@ impl DataBase{
         self.connection.execute_batch("
             CREATE TABLE IF NOT EXISTS items (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                listinginfo_id TEXT UNIQUE,
                 name TEXT,
                 price TEXT,
                 game TEXT,
