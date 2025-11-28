@@ -293,12 +293,12 @@ hr {
   font-size: 8pt;
   visibility: hidden;
   transition: opacity 0.3s ease, visibility 0.3s ease;
-  z-index: 10;
+  z-index: 1000;
 }
 
 .tooltip_actions{
   position: absolute;
-  bottom: 80%;
+  bottom: 60%;
   left: 112%;
   transform: translateX(-50%);
   background-color: #333;
@@ -315,6 +315,52 @@ hr {
   align-items: center; 
   transition: opacity 0.3s ease, visibility 0.3s ease;
   z-index: 10;
+}
+
+/*change z-index*/
+.arrow_up_cont{
+  width: 30px;
+  height: 30px;
+  display: flex;
+  border-radius: 100%;
+  border: 1px solid #323232;
+  background-color: #212121;
+  position: absolute;
+  justify-content: center;
+  align-items: center;
+  right: calc(2% + 5px);
+  top: calc(50% - 37px);
+  z-index: 1010;
+}
+
+.arrow_down_cont{
+  width: 30px;
+  height: 30px;
+  display: flex;
+  border-radius: 100%;
+  border: 1px solid #323232;
+  background-color: #212121;
+  position: absolute;
+  justify-content: center;
+  align-items: center;
+  right: calc(2% + 5px);
+  top: calc(50% + 47px);
+  z-index: 101;
+}
+
+.arrows_icons{
+  width: 15px;
+  height: 15px;
+}
+
+.arrow_down_cont:hover .hidden-text{
+  opacity: 1;
+  visibility: visible;
+}
+
+.arrow_up_cont:hover .hidden-text{
+  opacity: 1;
+  visibility: visible;
 }
 
 .card_tooltip-container:hover .tooltip_actions {
@@ -351,9 +397,68 @@ hr {
   height: 20px;
 }
 
+.media_icons_play_cont{
+  width: 40px;
+  height: 40px;
+  display: flex;
+  border-radius: 100%;
+  border: 1px solid #323232;
+  background-color: #212121;
+  position: absolute;
+  justify-content: center;
+  align-items: center;
+  right: 2%;
+  top: 50%;
+  z-index: 1000;
+  visibility: hidden;
+}
+
+.media_icons_pause_cont{
+  border-radius: 100%;
+  display: flex;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #323232;
+  background-color: #212121;
+  position: absolute;
+  align-items: center;
+  justify-content: center;
+  right: 2%;
+  top: 50%;
+  z-index: 1000;
+  visibility: visible;
+}
+
+.play_icon{
+  /* position: relative; */
+  width: 20px;
+  height: 20px;
+}
+
+.media_icons_pause_cont:hover .hidden-text{
+  opacity: 1;
+  visibility: visible;
+}
+
+.media_icons_play_cont:hover .hidden-text{
+  opacity: 1;
+  visibility: visible;
+}
+
+.pause_icon{
+  justify-self: center;
+  align-self: center;
+  width: 20px;
+  height: 20px;
+}
+
 .side_panel:hover .filters{
     opacity: 1;
     visibility: visible;
+}
+
+.side_panel:hover .media_icons_cont{
+  left: 13%;
 }
 
 .filters{
@@ -386,6 +491,26 @@ hr {
     z-index: 100;
     transition: width 0.3s ease;
 }
+
+.head_panel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3%;
+    background: #141414;
+    border: 1px solid #323232;
+    color: white;
+    /* padding: 20px; */
+    box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+    z-index: 99;
+    transition: width 0.3s ease;
+}
+
+.head_panel:hover{
+  height: 10%;
+}
+
 .side_panel:hover {
     width: 15%;
 }
@@ -549,7 +674,29 @@ ws.onmessage = (event) => {
         <img class="side_panel_icon" src="/front/svg/chart_icon.svg">
         <img class="side_panel_icon" src="/front/svg/budget_icon.svg">
     
-    
+</div>
+
+<div class="head_panel">
+</div>
+
+<div class="media_icons_pause_cont">
+  <img class="pause_icon" src="/front/svg/pause_icon.svg">
+  <span class="hidden-text">Pause feed</span>
+</div>
+
+<div class="media_icons_play_cont">
+  <img class="play_icon" src="/front/svg/play_icon.svg">
+  <span class="hidden-text">Resume feed</span>
+</div>
+
+<div class="arrow_up_cont">
+  <img class="arrows_icons" src="/front/svg/arrow_up.svg">
+  <span class="hidden-text">Next changed filter</span>
+</div>
+
+<div class="arrow_down_cont">
+    <img class="arrows_icons" src="/front/svg/arrow_down.svg">
+    <span class="hidden-text">Previous changed filter</span>
 </div>
 
 <div id="items-container" class="items-container">    

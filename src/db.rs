@@ -18,33 +18,64 @@ impl DataBase{
     
 
     ///Work on price. This is wrong one now
-    pub fn db_post_most_recent_items(&self, data: SteamMostRecentResponse){
-        // println!("Length: {}", data.listinginfo.len());
-        for listing in data.listinginfo.values(){
+    pub fn db_post_most_recent_items(&self, data: SteamMostRecentResponse) -> (i64, i64) {
+        // ID BEFORE inserts
+        let start_id = self.connection.last_insert_rowid();
+    
+        for listing in data.listinginfo.values() {
             let listinginfo_id = listing.listingid.to_string();
             let appid = listing.asset.appid.to_string();
             let contextid = listing.asset.contextid.to_string();
             let assetid = listing.asset.id.to_string();
-            let listing_asset = data.assets.get(&appid).unwrap().get(&contextid).unwrap().get(&assetid).unwrap();
+    
+            let listing_asset = data.assets
+                .get(&appid).unwrap()
+                .get(&contextid).unwrap()
+                .get(&assetid).unwrap();
+    
             let icon = listing_asset.icon_url.as_ref().expect("No icon_url").to_string();
             let price = format!("{:.2}", listing.price * 0.100);
             let game = data.app_data.get(&appid).unwrap().name.to_owned();
             let game_icon = data.app_data.get(&appid).unwrap().icon.to_owned();
-            let tradable = listing_asset.tradable.as_ref().expect("No tradable field").to_string();
+            let tradable = listing_asset.tradable.as_ref().expect("No tradable").to_string();
             let name = listing_asset.market_name.as_ref().unwrap().trim().to_string();
             let market_hash_name = listing_asset.market_hash_name.as_ref().unwrap().trim().to_string();
-
-            self.connection.execute("INSERT OR IGNORE INTO items (listinginfo_id, name, price, game, appid, icon_url, game_icon, market_hash_name, tradable) 
-            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
-             [listinginfo_id, name, price, game, appid, icon, game_icon, market_hash_name, tradable]).expect("Can't insert listing data into DB");
+    
+            self.connection.execute(
+                "INSERT OR IGNORE INTO items 
+                (listinginfo_id, name, price, game, appid, icon_url, game_icon, market_hash_name, tradable) 
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+                [
+                    listinginfo_id, name, price, game, appid, icon,
+                    game_icon, market_hash_name, tradable,
+                ],
+            ).expect("Can't insert listing data into DB");
         }
+    
+        // ID AFTER inserts
+        let end_id = self.connection.last_insert_rowid();
+    
+        (start_id, end_id)
     }
+    
 
-    pub fn db_get_most_recent_items(&self) -> Result<Vec<MostRecent>, rusqlite::Error>{
-        let mut query = self.connection.prepare("SELECT * FROM items ORDER BY id DESC LIMIT 10")
-        .expect("Cant make sql query SELECT");
+    pub fn db_get_most_recent_items(
+        &self,
+        start_id: i64,
+        end_id: i64
+    ) -> Result<Vec<MostRecent>, rusqlite::Error> {
 
-        let result = query.query_map([], |row| {
+        let mut query = self.connection.prepare(
+            "SELECT id, listinginfo_id, name, price, game, appid, 
+                    market_hash_name, tradable, icon_url, game_icon
+             FROM items
+             WHERE id > ?1 AND id <= ?2
+             ORDER BY id"
+        )?;
+
+        // println!("{:#?}", query);
+
+        let result = query.query_map([start_id, end_id], |row| {
             Ok(MostRecent{
                 id: row.get(0).expect("Cant get id from DB"),
                 listinginfo_id: row.get(1).expect("Cant get listinginfo_id from DB"),

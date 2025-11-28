@@ -62,12 +62,6 @@ async fn main()-> std::io::Result<()> {
             tera: Tera::new("front/**/*").expect("Tera init failed"),
             items: Mutex::new(Vec::new()),
             broadcaster: broadcast_sender_most_recent_items,
-            // filter: Mutex::new(MostRecentItemsFilter{
-            //     appid: "Steam".to_string(),
-            //     price_min: "100".to_string(),
-            //     price_max: "150".to_string(),
-            //     query: "".to_string(),
-            // }),
         });
         let state_for_ws = state.clone();
 
@@ -125,10 +119,9 @@ async fn tokio_receiver_most_recent_items_request(
     state: web::Data<AppState>,
 ) {
     while let Some(most_recent_items_response) = receiver.recv().await {
-        db.db_post_most_recent_items(most_recent_items_response);
-        // let filters = state.filter.lock().await.clone();
+        let (start_id, end_id) = db.db_post_most_recent_items(most_recent_items_response);
 
-        if let Ok(result) = db.db_get_most_recent_items() {
+        if let Ok(result) = db.db_get_most_recent_items(start_id, end_id) {
             {
                 let mut items = state.items.lock().await;
                 *items = result.clone();
@@ -136,7 +129,6 @@ async fn tokio_receiver_most_recent_items_request(
             let payload = BroadcastPayload {
                 items: result.clone(),
             };
-            // println!("got dammit= {result:#?}");
             let _ = state.broadcaster.send(payload);
         }
     }

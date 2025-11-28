@@ -326,36 +326,17 @@ impl MostRecentItems{
 
         loop {
             let response: Result<SteamMostRecentResponse> = MostRecentItemsRequest::process_request(url.clone()).await;
-            // println!("response: {response:#?}");
+
             match response {
                 Ok(items) => {
-                    // let mut shared = response.write().await;
-                    // *shared = items;
-                    // println!("Updated items: {items:#?} listings fetched");
-                    tx.send(items.clone()).await.expect("kekw")
-                    // items
+                    tx.send(items.clone()).await.expect("Cant send SteamMostResponse via channel")
                 }
                 Err(e) => {
                     eprintln!("Error fetching items: {e}")
-                    // SteamMostRecentResponse{
-                    //     success: false,
-                    //     more: false,
-                    //     results_html: false,
-                    //     listinginfo: HashMap::new(),
-                    //     purchaseinfo: Vec::new(),
-                    //     assets: HashMap::new(),
-                    //     currency: Vec::new(),
-                    //     app_data: HashMap::new(),
-                    //     hovers: Some(false),
-                    //     last_time: 0,
-                    //     last_listing: "0".to_string(),
-                    // }
                 }
             };
 
-            // println!("Updated items: {items_vec:#?} listings fetched");
-            
-            tokio::time::sleep(Duration::from_secs(2)).await;
+            tokio::time::sleep(Duration::from_secs(1)).await;
         }
     }
 }
@@ -424,8 +405,6 @@ impl MarketRequest{
             Some(price) => price * 100,
             None => 1e12 as u32,
         };
-
-
 
         let request = MarketRequest{
             game,
