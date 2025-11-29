@@ -1,4 +1,4 @@
-use std::{collections::HashMap, time::Duration};
+use std::{collections::{HashMap, VecDeque}, time::Duration};
 use tokio::sync::{mpsc};
 use serde::{Deserialize, Serialize};
 
@@ -19,6 +19,18 @@ pub enum Sort{
 pub enum SortDirection{
     Asc,
     Desc,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct UserProfileAds{
+    pub steamid: String,
+    pub name: String,
+    pub image: String,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct UserAdsQueue{
+    pub queue: VecDeque<UserProfileAds>,
 }
 
 //----------------------------------

@@ -538,13 +538,33 @@ overflow-x: hidden;">
 <script>
 const ws = new WebSocket("ws://127.0.0.1:8080/ws");
 
+ws.onopen = () => console.log("WS CONNECTED");
+ws.onclose = () => console.log("WS CLOSED");
+ws.onerror = (err) => console.log("WS ERROR", err);
+
 ws.onmessage = (event) => {
-    const items = JSON.parse(event.data);
+  const data = JSON.parse(event.data);
+  const items = data.items;
+  const userAds = data.user_ads;
+
+  console.log("ADS:", userAds);
     // const filters = data.filters;
     // const items = data.items;
     console.log("Received update:", items);
 
     const container = document.getElementById("items-container");
+
+    const adsContainer = document.getElementById("ads-container");
+adsContainer.innerHTML = "";
+
+userAds.forEach(ad => {
+    adsContainer.insertAdjacentHTML("beforeend", `
+        <div class="ad-box">
+            <img src="${ad.image}" style="width:40px;height:40px;border-radius:50%">
+            <span>${ad.name}</span>
+        </div>
+    `);
+});
 
     items.forEach(item => {
 
@@ -616,6 +636,7 @@ ws.onmessage = (event) => {
     }
     </script>
     
+    <div id="ads-container"></div>
 
 <!-- === INITIAL TERA RENDER === -->
 <div class="side_panel">

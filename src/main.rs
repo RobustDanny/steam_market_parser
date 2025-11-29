@@ -1,5 +1,8 @@
+use std::collections::VecDeque;
+use std::time::Duration;
 use steam_market_parser::{MostRecentItemsFilter, CustomItems, MostRecentItems, 
-    Sort, SortDirection, SteamMostRecentResponse, MostRecent, FilterInput};
+    Sort, SortDirection, SteamMostRecentResponse, MostRecent, FilterInput,
+    UserAdsQueue, UserProfileAds};
 use actix_web::{App, HttpResponse, HttpServer, Responder, web, cookie::Key};
 use actix_files::Files;
 use actix_session::{Session, SessionMiddleware, storage::CookieSessionStore};
@@ -16,6 +19,8 @@ pub struct AppState {
     tera: Tera,
     items: Mutex<Vec<MostRecent>>,
     broadcaster: broadcast::Sender<BroadcastPayload>,
+    user_ads: Mutex<UserAdsQueue>,
+    user_for_ads: UserProfileAds,
 }
 
 //Best time
@@ -62,11 +67,44 @@ async fn main()-> std::io::Result<()> {
             tera: Tera::new("front/**/*").expect("Tera init failed"),
             items: Mutex::new(Vec::new()),
             broadcaster: broadcast_sender_most_recent_items,
+            user_ads: Mutex::new(UserAdsQueue { 
+                queue: VecDeque::from([UserProfileAds{
+                    steamid: "1".to_string(),
+                    name: "Test 1".to_string(),
+                    image: "image 1".to_string(),
+                },
+                UserProfileAds{
+                    steamid: "2".to_string(),
+                    name: "Test 2".to_string(),
+                    image: "image 2".to_string(),
+                },
+                UserProfileAds{
+                    steamid: "3".to_string(),
+                    name: "Test 3".to_string(),
+                    image: "image 3".to_string(),
+                }]),  
+            }),
+            user_for_ads: UserProfileAds{
+                steamid: "1".to_string(),
+                name: "Test 1".to_string(),
+                image: "image 1".to_string(),
+            }
         });
         let state_for_ws = state.clone();
+        let state_for_ads = state.clone();
 
         tokio::spawn(async move {
             tokio_receiver_most_recent_items_request(response_receiver, db, state_for_ws).await;
+        });
+
+        tokio::spawn(async move {
+            loop{
+                if let Some(pop) = state_for_ads.user_ads.lock().await.queue.pop_front() {
+                    state_for_ads.user_ads.lock().await.queue.push_back(pop);
+                };
+
+                tokio::time::sleep(Duration::from_secs(1)).await;
+            }
         });
 
         let _ = MostRecentItems::get_most_recent_items(country, language, currency, request_sender).await;
@@ -126,8 +164,13 @@ async fn tokio_receiver_most_recent_items_request(
                 let mut items = state.items.lock().await;
                 *items = result.clone();
             }
+            let user_ads = {
+                let user_ads_queue = state.user_ads.lock().await;
+                VecDeque::from([user_ads_queue.clone()])
+            };
             let payload = BroadcastPayload {
                 items: result.clone(),
+                user_ads,
             };
             let _ = state.broadcaster.send(payload);
         }
