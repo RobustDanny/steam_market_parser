@@ -455,10 +455,7 @@ hr {
 .side_panel:hover .filters{
     opacity: 1;
     visibility: visible;
-}
-
-.side_panel:hover .media_icons_cont{
-  left: 13%;
+    transition: width 0.8s ease;
 }
 
 .filters{
@@ -466,6 +463,7 @@ hr {
     visibility: hidden;
     margin: auto;
     /* z-index: 1000; */
+    transition: width 0.3s ease;
 }
 
 .item_icon{
@@ -479,6 +477,7 @@ hr {
 }
 .side_panel {
     position: fixed;
+    padding-top: 20px;
     left: 0;
     top: 0;
     width: 3%;
@@ -515,10 +514,6 @@ hr {
     width: 15%;
 }
 
-.side_panel:hover .side_panel_icons{
-    align-items: center;
-    padding-left: 10%;
-}
 .items-container {
         width: 95%;
         padding: 20px;
@@ -641,7 +636,7 @@ userAds.forEach(ad => {
 <!-- === INITIAL TERA RENDER === -->
 <div class="side_panel">
         <div class="side_panel_filter_icon">
-          <img class="side_panel_icon" src="/front/svg/filter_icon.svg">
+          <!-- <img class="side_panel_icon" src="/front/svg/filter_icon.svg"> -->
 
           <div class="filters">
             <div class="filter_card cart">
@@ -692,8 +687,8 @@ userAds.forEach(ad => {
         </div>
         </div>
 
-        <img class="side_panel_icon" src="/front/svg/chart_icon.svg">
-        <img class="side_panel_icon" src="/front/svg/budget_icon.svg">
+        <!-- <img class="side_panel_icon" src="/front/svg/chart_icon.svg">
+        <img class="side_panel_icon" src="/front/svg/budget_icon.svg"> -->
     
 </div>
 

@@ -116,7 +116,6 @@ async fn main()-> std::io::Result<()> {
 
             let key = Key::generate();
 
-
             App::new()
                 .wrap(SessionMiddleware::new(CookieSessionStore::default(), key))
                 .app_data(state.clone())
