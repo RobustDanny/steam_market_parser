@@ -21,6 +21,14 @@ pub enum SortDirection{
     Desc,
 }
 
+#[derive(Deserialize, Serialize, Debug)]
+pub struct SteamUser{
+    pub steamid: String,
+    pub nickname: String,
+    pub avatar_url_small: String,
+    pub avatar_url_full: String,
+}
+
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct UserProfileAds{
     pub steamid: String,

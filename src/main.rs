@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 use std::time::Duration;
 use steam_market_parser::{MostRecentItemsFilter, CustomItems, MostRecentItems, 
     Sort, SortDirection, SteamMostRecentResponse, MostRecent, FilterInput,
-    UserAdsQueue, UserProfileAds};
+    UserAdsQueue, UserProfileAds, SteamUser};
 use actix_web::{App, HttpResponse, HttpServer, Responder, web, cookie::Key};
 use actix_files::Files;
 use actix_session::{Session, SessionMiddleware, storage::CookieSessionStore};
@@ -13,14 +13,17 @@ mod db;
 use db::DataBase;
 
 mod websocket;
-use websocket::{ws_handler, BroadcastPayload};
+use websocket::{ws_handler, ws_ad_handler, BroadcastPayload, AdsBroadcastPayload};
+
+mod steam_login;
+use steam_login::{steam_login, steam_return};
 
 pub struct AppState {
     tera: Tera,
     items: Mutex<Vec<MostRecent>>,
-    broadcaster: broadcast::Sender<BroadcastPayload>,
     user_ads: Mutex<UserAdsQueue>,
-    user_for_ads: UserProfileAds,
+    ads_broadcaster: broadcast::Sender<AdsBroadcastPayload>,
+    broadcaster: broadcast::Sender<BroadcastPayload>,
 }
 
 //Best time
@@ -28,6 +31,13 @@ pub struct AppState {
 
 #[actix_web::main]
 async fn main()-> std::io::Result<()> {
+    // Load environment variables from .env file
+    dotenv::dotenv().ok();
+
+    let secret_key = std::env::var("SESSION_SECRET_KEY")
+        .expect("SESSION_SECRET_KEY must be set in .env file");
+    
+    let key = Key::from(secret_key.as_bytes());
 
     let db = DataBase::connect_to_db();
 
@@ -37,6 +47,7 @@ async fn main()-> std::io::Result<()> {
 
     let (request_sender, response_receiver) = mpsc::channel(100);
     let (broadcast_sender_most_recent_items, _broadcast_reciever_most_recent_items) = broadcast::channel(32);
+    let (broadcast_sender_user_ad, _broadcast_reciever_user_ad) = broadcast::channel(10);
 
     // let count = None;
     // let page = None;
@@ -66,6 +77,7 @@ async fn main()-> std::io::Result<()> {
         let state = web::Data::new(AppState {
             tera: Tera::new("front/**/*").expect("Tera init failed"),
             items: Mutex::new(Vec::new()),
+            ads_broadcaster: broadcast_sender_user_ad,
             broadcaster: broadcast_sender_most_recent_items,
             user_ads: Mutex::new(UserAdsQueue { 
                 queue: VecDeque::from([UserProfileAds{
@@ -83,13 +95,9 @@ async fn main()-> std::io::Result<()> {
                     name: "Test 3".to_string(),
                     image: "image 3".to_string(),
                 }]),  
-            }),
-            user_for_ads: UserProfileAds{
-                steamid: "1".to_string(),
-                name: "Test 1".to_string(),
-                image: "image 1".to_string(),
-            }
+            })
         });
+
         let state_for_ws = state.clone();
         let state_for_ads = state.clone();
 
@@ -98,13 +106,7 @@ async fn main()-> std::io::Result<()> {
         });
 
         tokio::spawn(async move {
-            loop{
-                if let Some(pop) = state_for_ads.user_ads.lock().await.queue.pop_front() {
-                    state_for_ads.user_ads.lock().await.queue.push_back(pop);
-                };
-
-                tokio::time::sleep(Duration::from_secs(1)).await;
-            }
+            tokio_user_ad_loop(state_for_ads).await;
         });
 
         let _ = MostRecentItems::get_most_recent_items(country, language, currency, request_sender).await;
@@ -114,15 +116,16 @@ async fn main()-> std::io::Result<()> {
         //Server Actix
         HttpServer::new(move || {
 
-            let key = Key::generate();
-
             App::new()
-                .wrap(SessionMiddleware::new(CookieSessionStore::default(), key))
+                .wrap(SessionMiddleware::new(CookieSessionStore::default(), key.clone()))
                 .app_data(state.clone())
                 .service(Files::new("/front", "./front"))
                 .route("/", web::get().to(tera_update_data))
                 .route("/ws", web::get().to(ws_handler)) 
-                .route("/filters", web::get().to(post_most_recent_item_filters))
+                .route("/ws/ads", web::get().to(ws_ad_handler)) 
+                .route("/api/filters", web::get().to(post_most_recent_item_filters))
+                .route("/api/auth/steam", web::get().to(steam_login))
+                .route("/api/auth/steam/return", web::get().to(steam_return))
         })
         .bind(("127.0.0.1", 8080))?
         .run()
@@ -131,23 +134,31 @@ async fn main()-> std::io::Result<()> {
         //----------------------------------
 }
 
-async fn check(session: Session)->Result<(), actix_web::Error> {
-    match session.get::<FilterInput>("filters") {
-        Ok(Some(filters)) => println!("User filters from session: {filters:#?}"),
-        Ok(None) => println!("User filters not found in session."),
-        Err(err) => println!("Failed to deserialize filters from session: {err}"),
-    }
-    Ok(())
-}
-
 async fn post_most_recent_item_filters(params: web::Query<FilterInput>,
     session: Session)-> impl Responder{
 
         session.insert("filters", &*params).unwrap();
-
-        check(session).await.unwrap();
     
         HttpResponse::Ok().json(&*params)
+}
+
+async fn tokio_user_ad_loop(state: web::Data<AppState>){
+    loop {
+        let mut ads = state.user_ads.lock().await;
+
+        if let Some(pop) = ads.queue.pop_front() {
+            ads.queue.push_back(pop);
+        }
+        
+        let playload = AdsBroadcastPayload{
+            user_ads: ads.queue.clone(),
+        };
+
+        let _ = state.ads_broadcaster.send(playload);
+
+        drop(ads);
+        tokio::time::sleep(Duration::from_secs(10)).await;
+    }
 }
 
 async fn tokio_receiver_most_recent_items_request(
@@ -163,13 +174,8 @@ async fn tokio_receiver_most_recent_items_request(
                 let mut items = state.items.lock().await;
                 *items = result.clone();
             }
-            let user_ads = {
-                let user_ads_queue = state.user_ads.lock().await;
-                VecDeque::from([user_ads_queue.clone()])
-            };
             let payload = BroadcastPayload {
                 items: result.clone(),
-                user_ads,
             };
             let _ = state.broadcaster.send(payload);
         }
@@ -188,11 +194,16 @@ async fn tera_update_data(session: Session, state: web::Data<AppState>) -> impl 
         query: "".into(),
     });
 
+    let steam_user: Option<SteamUser> = session
+    .get("steam_user")
+    .unwrap_or(None);
+
     println!("filters: {filters:#?}");
 
     let mut ctx = Context::new();
     ctx.insert("most_recent_items", &items);
     ctx.insert("filters", &filters);
+    ctx.insert("steam_user", &steam_user);
 
     state
         .tera

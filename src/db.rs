@@ -1,6 +1,6 @@
 use rusqlite::Connection;
 
-use steam_market_parser::{SteamMostRecentResponse, MostRecent};
+use steam_market_parser::{SteamMostRecentResponse, MostRecent, SteamUser};
 
 pub struct DataBase{
     connection: Connection,
@@ -16,11 +16,14 @@ impl DataBase{
         db
     }
     
-
     ///Work on price. This is wrong one now
     pub fn db_post_most_recent_items(&self, data: SteamMostRecentResponse) -> (i64, i64) {
         // ID BEFORE inserts
-        let start_id = self.connection.last_insert_rowid();
+        let mut start_id = self.connection.last_insert_rowid();
+
+        if start_id == 0 {
+            start_id = self.connection.query_one("SELECT MAX(id) FROM item_feed", [], |row|{row.get(0)}).expect("Can't get max id from DB");
+        }
     
         for listing in data.listinginfo.values() {
             let listinginfo_id = listing.listingid.to_string();
@@ -42,7 +45,7 @@ impl DataBase{
             let market_hash_name = listing_asset.market_hash_name.as_ref().unwrap().trim().to_string();
     
             self.connection.execute(
-                "INSERT OR IGNORE INTO items 
+                "INSERT OR IGNORE INTO item_feed 
                 (listinginfo_id, name, price, game, appid, icon_url, game_icon, market_hash_name, tradable) 
                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
                 [
@@ -57,7 +60,6 @@ impl DataBase{
     
         (start_id, end_id)
     }
-    
 
     pub fn db_get_most_recent_items(
         &self,
@@ -68,7 +70,7 @@ impl DataBase{
         let mut query = self.connection.prepare(
             "SELECT id, listinginfo_id, name, price, game, appid, 
                     market_hash_name, tradable, icon_url, game_icon
-             FROM items
+             FROM item_feed
              WHERE id > ?1 AND id <= ?2
              ORDER BY id"
         )?;
@@ -93,9 +95,22 @@ impl DataBase{
         result
     }
 
+    pub fn db_add_steam_user(&self, steam_user: &SteamUser){
+
+        println!("{steam_user:#?}");
+
+        self.connection.execute(
+            "INSERT OR IGNORE INTO steam_user 
+            (steamid, nickname, avatar_url_small, avatar_url_full) 
+            VALUES (?1, ?2, ?3, ?4)",
+            [
+                &steam_user.steamid, &steam_user.nickname, &steam_user.avatar_url_small, &steam_user.avatar_url_full
+            ],
+        ).expect("Can't insert steam_user data into DB");
+    }
     fn create_tables(&self) {
         self.connection.execute_batch("
-            CREATE TABLE IF NOT EXISTS items (
+            CREATE TABLE IF NOT EXISTS item_feed (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 listinginfo_id TEXT UNIQUE,
                 name TEXT,
@@ -106,6 +121,13 @@ impl DataBase{
                 tradable TEXT,
                 icon_url TEXT,
                 game_icon TEXT
+            );
+            CREATE TABLE IF NOT EXISTS steam_user (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                steamid TEXT UNIQUE,
+                nickname TEXT,
+                avatar_url_small TEXT,
+                avatar_url_full TEXT
             );
         ").expect("Failed to create tables");
     }
