@@ -23,19 +23,23 @@ ws_ad.onmessage = (event) => {
     // Get only the FIRST ad
     const user_ad = data.user_ads?.[0];
     // if (!user_ad) return;
-
+    
     const container = document.getElementById("items-container");
 
     // console.log("USER AD:", user_ad);
     container.insertAdjacentHTML("afterbegin", `
         <div class="card_hover-container">
           <div class="ad_card">
-              <img src="https://avatars.steamstatic.com/92a22efca48acaa3d6185e17e478f3b7fda33a88_full.jpg" class="ad_card_image">
+            <div class="ad_image_container">
+              <img src=${user_ad.first_item_image} class="ad_card_image">
+              <img src=${user_ad.second_item_image} class="ad_card_image">
+              <img src=${user_ad.third_item_image} class="ad_card_image">
+              <img src=${user_ad.fourth_item_image} class="ad_card_image">
+            </div>
           </div>
         </div>
     `);
 };
-
 
 ws.onopen = () => console.log("WS CONNECTED");
 ws.onclose = () => console.log("WS CLOSED");
@@ -105,7 +109,7 @@ ws.onmessage = (event) => {
                 console.log("Filters updated:", json);
             });
     }
-    </script>
+</script>
 
 <!-- === INITIAL TERA RENDER === -->
 <div class="side_panel">
@@ -173,9 +177,25 @@ ws.onmessage = (event) => {
 <div class="head_panel">
   <div class="sign_in_container">
     {% if steam_user %}
-    <div class="hidded_button">
-        <img src="{{ steam_user.avatar_url_full }}" class="steam_user_avatar">
+    <div class="hidded_button" id="adMeBtn">
+      <img src="/front/svg/ad_me_icon.svg" class="steam_user_avatar ads">
     </div>
+    <div class="hidded_button_avatar">
+      <img src="{{ steam_user.avatar_url_full }}" class="steam_user_avatar">
+      <div class="hidden_user_tooltip">
+        <div id="open_setting_form">
+          <img src="/front/svg/user_settings.svg" class="user_settings_icons">
+          <span style="color: #9E9E9E;">settings</span>
+      </div>
+        <a href="/api/logout">
+        <div>
+          <img src="/front/svg/user_logout.svg" class="user_settings_icons">
+        <span style="color: #9E9E9E;">logout</span>
+        </div>
+        </a>
+      </div>
+    </div>
+    <img class="sign_in_icon" src="/front/svg/ad_me_icon.svg">
     <img class="sign_in_icon" src="{{ steam_user.avatar_url_full }}">
     {% else %}
     <div class="hidded_button">
@@ -258,6 +278,156 @@ ws.onmessage = (event) => {
 {% endfor %}
 </div>
 </div>
+
+
+<!-- Settings -->>
+<div class="modal_backdrop" id="settings_form">
+  <form id="SettingsFormModal" class="modal_form">
+    <span>inventory status</span>
+    
+    <button type="submit">Save</button>
+  </form>
+</div>
+
+<!-- Ad me form -->
+<div class="modal_backdrop" id="formModal">
+  <div class="main_modal_form">
+    <div style="display: flex; flex-direction: row; gap: 10px;">
+    <form class="load_inventory_modal_form" id="SettingsFormInventory">
+      <div style="display: flex; flex-direction: row; gap: 10px;">
+        <input style="display: none;" name="settings_steamid" value="{% if steam_user %}{{ steam_user.steamid }}{% endif %}">
+      <input value="730" name="settings_appid">
+      <button type="submit">load</button>
+      </div>
+    </form>
+  <form id="adFormModal" class="modal_form">
+    <input id="ad_steamid" type="text" name="steamid" style="display: none;" value="{% if steam_user %}{{ steam_user.steamid }}{% endif %}">
+    <input id="ad_nickname" type="text" name="nickname" style="display: none;" value="{% if steam_user %}{{ steam_user.nickname }}{% endif %}">
+    <input id="ad_avatar" type="text" name="avatar" style="display: none;" value="{% if steam_user %}{{ steam_user.avatar_url_full }}{% endif %}">
+
+    <label>Most wanted to sell</label>
+    <div style="display: flex; flex-direction: row; gap: 10px; flex-wrap: wrap; justify-content: center;">
+    <input id="ad_first_item" name="first_item_image" class="ad_input_field" value="https://steamcommunity.com/economy/image/i0CoZ81Ui0m-9KwlBY1L_18myuGuq1wfhWSaZgMttyVfPaERSR0Wqmu7LAocGJai0ki7VeTHjNisJynHtwY6-obi4xezQk30mJDj_CADuKSrbP04cvWXDDDCmL8gseA9HSzmkxl25T7UnI39bzvJObD-njL-">
+    <input id="ad_second_item" name="second_item_image" class="ad_input_field" value="https://steamcommunity.com/economy/image/IzMF03bk9WpSBq-S-ekoE33L-iLqGFHVaU25ZzQNQcXdA3g5gMEPvUZZEfSMJ6dESN8p_2SVTY7V2N8NxGVIwXpaL3_N03Bod-J-N97IxEPyrOOKGSmhaW_BfHeMTAprTbUMNmuL-DKstOmQSzvNF-spFw5SLKRW8jFOa8uIIVJjg5FZpHe8klZCFxspdcAbJwnikyRGMr5ykHNAdZ5WzXLydcfejApiaU5oW-zjA-_HO9Sil3wnXAQnQfcMIoaXeHULGnA">
+    <input id="ad_third_item" name="third_item_image" class="ad_input_field" value="https://steamcommunity.com/economy/image/i0CoZ81Ui0m-9KwlBY1L_18myuGuq1wfhWSaZgMttyVfPaERSR0Wqmu7LAocGJKz2lu_XsnXwtmkJjSU91dh8bjn_lDkShjjoYbh_ilk__O8Ybc_cKLAMWSfz_pzvuVsXTr9kRki5m_Uwtz7cXKWO1ApCcByRLEO50LtkoWyP7_k4Afdi99GniT4jzQJsHjtsZcvVQ">
+    <input id="ad_fourth_item" name="fourth_item_image" class="ad_input_field" value="https://steamcommunity.com/economy/image/i0CoZ81Ui0m-9KwlBY1L_18myuGuq1wfhWSaZgMttyVfPaERSR0Wqmu7LAocGIGz3UqlXOLrxM-vMGmW8VNxu5Dx60noTyLzl4zv8x1I_825abxSMuWRMWWZ2-F4j-xsSyCmmFMm4TnVy4ysJymQbQEgDsNyRbJetRaxlta2Zbjm5gTX3ohFyXio2nkf8G81tE4WoBip">
+    </div>
+    <button type="submit">Ad me!</button>
+  </form>
+  </div>
+  <div id="user_inventory" class="user_inventory">
+    <span>No items yet</span>
+</div>
+  </div>
+</div>
+
+<script>
+  document.getElementById("SettingsFormInventory").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const form = e.target;
+    const data = new URLSearchParams(new FormData(form));
+
+    const res = await fetch("/api/get_inventory_items", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: data
+    });
+
+    const json = await res.json();
+    console.log("Inventory loaded:", json);
+
+    renderUserInventory(json);
+  });
+
+  function renderUserInventory(inventory) {
+    const container = document.getElementById("user_inventory");
+
+    container.innerHTML = ""; // clear old inventory
+
+    const assets = inventory.assets || [];
+    const descriptions = inventory.descriptions || [];
+
+    // Quick lookup by classid+instanceid
+    const descMap = {};
+    descriptions.forEach(d => {
+        const key = `${d.classid}_${d.instanceid}`;
+        descMap[key] = d;
+    });
+
+    assets.forEach(asset => {
+        const key = `${asset.classid}_${asset.instanceid}`;
+        const desc = descMap[key];
+
+        if (!desc) return;
+
+        const icon = `https://steamcommunity.com/economy/image/${desc.icon_url}`;
+        const name = desc.name || "Unknown item";
+
+        const card = `
+            <div class="card_hover-container">
+                <div class="inventory_card">
+                    <div class="inventory_card_details">
+
+                        <div>
+                            <img class="inventory_item_icon" src="${icon}" alt="${name}">
+                        </div>
+
+                        <span class="hidden-text">${name}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        container.insertAdjacentHTML("beforeend", card);
+    });
+}
+
+</script>
+
+<script>
+  document.getElementById("open_setting_form")?.addEventListener("click", () => {
+    document.getElementById("settings_form").style.display = "flex";
+  });
+
+document.getElementById("settings_form").addEventListener("click", (e) => {
+    if (e.target === document.getElementById("settings_form")) {
+        document.getElementById("settings_form").style.display = "none"; 
+    }
+});
+
+  document.getElementById("adMeBtn")?.addEventListener("click", () => {
+    document.getElementById("formModal").style.display = "flex";
+  });
+  
+  document.getElementById("formModal").addEventListener("click", (e) => {
+    if (e.target.id === "formModal") {
+      e.target.style.display = "none";
+    }
+  });
+
+  document.getElementById("adFormModal").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const form = e.target;
+    const data = new URLSearchParams(new FormData(form));
+
+    const res = await fetch("/api/add_to_ad_queue", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: data
+    });
+
+    const json = await res.json();
+    console.log("Ad added:", json);
+
+    document.getElementById("formModal").style.display = "none";
+});
+</script>
 
 </body>
 </html>

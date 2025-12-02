@@ -84,6 +84,7 @@ pub async fn load_steam_profile(steamid: &str) -> Result<SteamUser, Box<dyn std:
         
     let db = DataBase::connect_to_db();
     db.db_add_steam_user(&steam_user_struct);
+    drop(db);
     Ok(steam_user_struct)
 }
 

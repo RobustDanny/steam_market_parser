@@ -20,7 +20,9 @@ pub enum SortDirection{
     Asc,
     Desc,
 }
-
+//----------------------------------
+//----------------------------------
+//Steam user
 #[derive(Deserialize, Serialize, Debug)]
 pub struct SteamUser{
     pub steamid: String,
@@ -28,12 +30,122 @@ pub struct SteamUser{
     pub avatar_url_small: String,
     pub avatar_url_full: String,
 }
+//----------------------------------
+//----------------------------------
+
+//----------------------------------
+//----------------------------------
+//User inventory
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct InventoryApp{
+    pub settings_steamid: String,
+    pub settings_appid: String,
+}
+
+//One Item
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[serde(default)]
+pub struct Inventory {
+    pub assets: Vec<Asset>,
+    pub descriptions: Vec<ItemDescription>,
+    pub asset_properties: Vec<AssetProperty>,
+    pub total_inventory_count: Option<u32>,
+    pub success: Option<u32>,
+    pub rwgrsn: Option<i32>,
+}
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[serde(default)]
+pub struct Asset {
+    pub appid: Option<u32>,
+    pub contextid: Option<String>,
+    pub assetid: Option<String>,
+    pub classid: Option<String>,
+    pub instanceid: Option<String>,
+    pub amount: Option<String>,
+}
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[serde(default)]
+pub struct ItemDescription {
+    pub appid: Option<u32>,
+    pub classid: Option<String>,
+    pub instanceid: Option<String>,
+    pub currency: Option<u32>,
+    pub background_color: Option<String>,
+    pub icon_url: Option<String>,
+    pub descriptions: Option<Vec<DescriptionText>>,
+    pub tradable: Option<u32>,
+    pub actions: Option<Vec<Action>>,
+    pub name: Option<String>,
+    pub name_color: Option<String>,
+
+    #[serde(rename = "type")]
+    pub item_type: Option<String>,
+
+    pub market_name: Option<String>,
+    pub market_hash_name: Option<String>,
+    pub commodity: Option<u32>,
+    pub market_tradable_restriction: Option<u32>,
+    pub marketable: Option<u32>,
+    pub tags: Option<Vec<Tag>>,
+    pub sealed: Option<u32>,
+}
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[serde(default)]
+pub struct DescriptionText {
+    #[serde(rename = "type")]
+    pub description_type: Option<String>,
+    pub value: Option<String>,
+    pub name: Option<String>,
+    pub color: Option<String>,
+}
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[serde(default)]
+pub struct Action {
+    pub link: Option<String>,
+    pub name: Option<String>,
+}
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[serde(default)]
+pub struct Tag {
+    pub category: Option<String>,
+    pub internal_name: Option<String>,
+    pub localized_category_name: Option<String>,
+    pub localized_tag_name: Option<String>,
+    pub color: Option<String>,
+}
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[serde(default)]
+pub struct AssetProperty {
+    pub appid: Option<u32>,
+    pub contextid: Option<String>,
+    pub assetid: Option<String>,
+    pub asset_properties: Option<Vec<Property>>,
+}
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[serde(default)]
+pub struct Property {
+    pub propertyid: Option<u32>,
+    pub float_value: Option<f32>,
+    pub int_value: Option<u32>,
+    pub string_value: Option<String>,
+    pub name: Option<String>,
+}
+
+
+//----------------------------------
+//----------------------------------
+//User ads
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct UserProfileAds{
     pub steamid: String,
-    pub name: String,
-    pub image: String,
+    pub nickname: String,
+    pub avatar: String,
+    pub first_item_image: String,
+    pub second_item_image: String,
+    pub third_item_image: String,
+    pub fourth_item_image: String,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]

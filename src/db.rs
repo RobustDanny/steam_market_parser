@@ -1,6 +1,6 @@
 use rusqlite::Connection;
-
-use steam_market_parser::{SteamMostRecentResponse, MostRecent, SteamUser};
+use std::collections::VecDeque;
+use steam_market_parser::{SteamMostRecentResponse, MostRecent, SteamUser, UserProfileAds};
 
 pub struct DataBase{
     connection: Connection,
@@ -12,8 +12,11 @@ impl DataBase{
         let db = DataBase{
             connection: Connection::open("steam_items.db").expect("Cant connect to database"),
         };
-        Self::create_tables(&db);
+        // Set the busy timeout to wait for 5 seconds before throwing the DatabaseBusy error
+        db.connection.execute_batch("PRAGMA busy_timeout = 5000;").expect("Failed to set busy timeout");
+        db.create_tables();
         db
+        
     }
     
     ///Work on price. This is wrong one now
@@ -108,6 +111,61 @@ impl DataBase{
             ],
         ).expect("Can't insert steam_user data into DB");
     }
+    
+    pub fn db_add_ad_steam_user(&self, steam_user: &UserProfileAds){
+        self.connection.execute(
+            "INSERT INTO ad_steam_user (
+                steamid, nickname, avatar_url_full,
+                first_item_image, second_item_image,
+                third_item_image, fourth_item_image
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+            ON CONFLICT(steamid) DO UPDATE SET
+                nickname = excluded.nickname,
+                avatar_url_full = excluded.avatar_url_full,
+                first_item_image = excluded.first_item_image,
+                second_item_image = excluded.second_item_image,
+                third_item_image = excluded.third_item_image,
+                fourth_item_image = excluded.fourth_item_image;",
+            [
+                &steam_user.steamid,
+                &steam_user.nickname,
+                &steam_user.avatar,
+                &steam_user.first_item_image,
+                &steam_user.second_item_image,
+                &steam_user.third_item_image,
+                &steam_user.fourth_item_image,
+            ],
+        ).expect("Can't upsert ad_steam_user data");
+        
+    }
+
+    pub fn db_get_ad_steam_user(&self)-> VecDeque<UserProfileAds>{
+        let mut row_users = self.connection.prepare("SELECT * FROM ad_steam_user")
+        .expect("Can't get data from ad_steam_user");
+
+        let vec_ad_users = row_users.query_map([], |row|{
+            Ok(UserProfileAds{
+                steamid: row.get(1).expect("Can't get steamid from ad_steam_user"),
+                nickname: row.get(2).expect("Can't get nickname from ad_steam_user"),
+                avatar: row.get(3).expect("Can't get avatar_url_full from ad_steam_user"),
+                first_item_image: row.get(4).expect("Can't get first_item_image from ad_steam_user"),
+                second_item_image: row.get(5).expect("Can't get second_item_image from ad_steam_user"),
+                third_item_image: row.get(6).expect("Can't get third_item_image from ad_steam_user"),
+                fourth_item_image: row.get(7).expect("Can't get fourth_item_image from ad_steam_user"),
+            })
+        }).expect("Query_map on row_users is NOT successful");
+
+        let mut queue = VecDeque::new();
+
+        for user in vec_ad_users {
+            if let Ok(u) = user {
+                queue.push_back(u);
+            }
+        }
+
+        queue
+    }
+
     fn create_tables(&self) {
         self.connection.execute_batch("
             CREATE TABLE IF NOT EXISTS item_feed (
@@ -129,6 +187,17 @@ impl DataBase{
                 avatar_url_small TEXT,
                 avatar_url_full TEXT
             );
+            CREATE TABLE IF NOT EXISTS ad_steam_user (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                steamid TEXT UNIQUE,
+                nickname TEXT,
+                avatar_url_full TEXT,
+                first_item_image TEXT,
+                second_item_image TEXT,
+                third_item_image TEXT,
+                fourth_item_image TEXT
+            );
+
         ").expect("Failed to create tables");
     }
 }

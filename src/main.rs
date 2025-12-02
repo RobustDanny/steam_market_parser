@@ -2,12 +2,13 @@ use std::collections::VecDeque;
 use std::time::Duration;
 use steam_market_parser::{MostRecentItemsFilter, CustomItems, MostRecentItems, 
     Sort, SortDirection, SteamMostRecentResponse, MostRecent, FilterInput,
-    UserAdsQueue, UserProfileAds, SteamUser};
+    UserAdsQueue, UserProfileAds, SteamUser, Inventory, InventoryApp};
 use actix_web::{App, HttpResponse, HttpServer, Responder, web, cookie::Key};
 use actix_files::Files;
 use actix_session::{Session, SessionMiddleware, storage::CookieSessionStore};
 use tera::{Context, Tera};
 use tokio::sync::{mpsc, Mutex, broadcast};
+use serde::{Deserialize, Serialize};
 
 mod db;
 use db::DataBase;
@@ -18,12 +19,17 @@ use websocket::{ws_handler, ws_ad_handler, BroadcastPayload, AdsBroadcastPayload
 mod steam_login;
 use steam_login::{steam_login, steam_return};
 
-pub struct AppState {
+struct AppState {
     tera: Tera,
     items: Mutex<Vec<MostRecent>>,
     user_ads: Mutex<UserAdsQueue>,
     ads_broadcaster: broadcast::Sender<AdsBroadcastPayload>,
     broadcaster: broadcast::Sender<BroadcastPayload>,
+}
+
+#[derive(Debug)]
+pub struct UserInventory{
+    inventory: Mutex<Inventory>,
 }
 
 //Best time
@@ -74,27 +80,24 @@ async fn main()-> std::io::Result<()> {
     // };
     //-------------------
         
+        let user_inventory = web::Data::new(UserInventory{
+            inventory: Mutex::new(Inventory{
+                assets: Vec::new(),
+                descriptions: Vec::new(),
+                asset_properties: Vec::new(),
+                total_inventory_count: Some(0),
+                success: Some(0),
+                rwgrsn: Some(0),
+            }),
+        });
+
         let state = web::Data::new(AppState {
             tera: Tera::new("front/**/*").expect("Tera init failed"),
             items: Mutex::new(Vec::new()),
             ads_broadcaster: broadcast_sender_user_ad,
             broadcaster: broadcast_sender_most_recent_items,
             user_ads: Mutex::new(UserAdsQueue { 
-                queue: VecDeque::from([UserProfileAds{
-                    steamid: "1".to_string(),
-                    name: "Test 1".to_string(),
-                    image: "image 1".to_string(),
-                },
-                UserProfileAds{
-                    steamid: "2".to_string(),
-                    name: "Test 2".to_string(),
-                    image: "image 2".to_string(),
-                },
-                UserProfileAds{
-                    steamid: "3".to_string(),
-                    name: "Test 3".to_string(),
-                    image: "image 3".to_string(),
-                }]),  
+                queue: db.db_get_ad_steam_user(),
             })
         });
 
@@ -106,7 +109,7 @@ async fn main()-> std::io::Result<()> {
         });
 
         tokio::spawn(async move {
-            tokio_user_ad_loop(state_for_ads).await;
+            tokio_user_ad_loop(state_for_ads).await; 
         });
 
         let _ = MostRecentItems::get_most_recent_items(country, language, currency, request_sender).await;
@@ -119,11 +122,15 @@ async fn main()-> std::io::Result<()> {
             App::new()
                 .wrap(SessionMiddleware::new(CookieSessionStore::default(), key.clone()))
                 .app_data(state.clone())
+                .app_data(user_inventory.clone())
                 .service(Files::new("/front", "./front"))
                 .route("/", web::get().to(tera_update_data))
                 .route("/ws", web::get().to(ws_handler)) 
                 .route("/ws/ads", web::get().to(ws_ad_handler)) 
+                .route("/api/logout", web::get().to(steam_logout)) 
+                .route("/api/get_inventory_items", web::post().to(settings_load_inventory)) 
                 .route("/api/filters", web::get().to(post_most_recent_item_filters))
+                .route("/api/add_to_ad_queue", web::post().to(add_ad_steam_user_to_db))
                 .route("/api/auth/steam", web::get().to(steam_login))
                 .route("/api/auth/steam/return", web::get().to(steam_return))
         })
@@ -132,6 +139,54 @@ async fn main()-> std::io::Result<()> {
         .await
         //----------------------------------
         //----------------------------------
+}
+
+pub async fn settings_load_inventory(user_inventory: web::Data<UserInventory>, params: web::Form<InventoryApp>)-> impl Responder{
+
+    let inventory = &*params;
+
+    let url = format!("https://steamcommunity.com/inventory/{}/{}/2", inventory.settings_steamid, inventory.settings_appid);   
+
+    println!("{url}");
+    let client = reqwest::Client::new();
+
+        let respond = client
+            .get(url)
+            .header("Accept", "application/json")
+            .send()
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+
+        let respond: Inventory = serde_json::from_str(&respond).unwrap();
+
+        // *user_inventory.inventory.lock().await = &respond;
+
+    HttpResponse::Ok().json(&respond)
+}
+
+pub async fn steam_logout(session: Session) -> impl Responder {
+
+    session.clear();
+
+    HttpResponse::Found()
+        .append_header(("Location", "/"))
+        .finish()
+}
+
+async fn add_ad_steam_user_to_db(form: web::Form<UserProfileAds>, state: web::Data<AppState>) -> impl Responder {
+    
+    let ad_user: UserProfileAds = form.into_inner();
+
+    let db = DataBase::connect_to_db();
+    db.db_add_ad_steam_user(&ad_user);
+
+    state.user_ads.lock().await.queue.push_back(ad_user.clone());
+
+    drop(db);
+    HttpResponse::Ok().json(&ad_user)
 }
 
 async fn post_most_recent_item_filters(params: web::Query<FilterInput>,
@@ -182,25 +237,28 @@ async fn tokio_receiver_most_recent_items_request(
     }
 }
 
-async fn tera_update_data(session: Session, state: web::Data<AppState>) -> impl Responder {
+async fn tera_update_data(session: Session, state: web::Data<AppState>, user_inventory: web::Data<UserInventory>) -> impl Responder {
     let items = state.items.lock().await.clone();
-    let filters: FilterInput = session
-    .get("filters")
-    .unwrap()
-    .unwrap_or(FilterInput {
-        appid: "Steam".into(),
-        price_min: "0".into(),
-        price_max: "999999".into(),
-        query: "".into(),
-    });
-
-    let steam_user: Option<SteamUser> = session
-    .get("steam_user")
-    .unwrap_or(None);
-
+    let filters: FilterInput = match session.get("filters") {
+        Ok(Some(f)) => f,
+        _ => FilterInput {
+            appid: "Steam".into(),
+            price_min: "0".into(),
+            price_max: "999999".into(),
+            query: "".into(),
+        },
+    };
+    
+    let steam_user: Option<SteamUser> = session.get("steam_user").unwrap_or(None);
+    
     println!("filters: {filters:#?}");
+    println!("steam_user: {steam_user:#?}");
 
+    let inventory = user_inventory.inventory.lock().await;
+    let inventory = (*inventory).clone();
+    
     let mut ctx = Context::new();
+    ctx.insert("user_inventory", &inventory);
     ctx.insert("most_recent_items", &items);
     ctx.insert("filters", &filters);
     ctx.insert("steam_user", &steam_user);
@@ -209,5 +267,8 @@ async fn tera_update_data(session: Session, state: web::Data<AppState>) -> impl 
         .tera
         .render("main.html", &ctx)
         .map(|body| HttpResponse::Ok().content_type("text/html").body(body))
-        .map_err(|_| actix_web::error::ErrorInternalServerError("Template error"))
+        .map_err(|e| {
+            println!("Tera render error: {:?}", e);
+            actix_web::error::ErrorInternalServerError("Template error")
+        })
 }
