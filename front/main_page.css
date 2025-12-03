@@ -91,10 +91,11 @@ hr {
     font-weight: 600;
     /* color: #bbbbbb; Light gray text */
   }
+
   .input_field {
     width: auto;
     height: 34px;
-    /* padding: 0 10px; */
+    padding: 0 10px;
     border-radius: 5px;
     border: 1px solid #2e2e2e;
     background: #2d2d2d;
@@ -103,19 +104,6 @@ hr {
     outline: none;
     transition: border 0.2s ease, box-shadow 0.2s ease;
     margin-bottom: 10px;
-}
-
-.ad_input_field {
-  width: 70px;
-  height: 80px;
-  /* padding: 0 10px; */
-  border-radius: 5px;
-  border: 1px solid #2e2e2e;
-  background: #2d2d2d;
-  color: white;
-  font-size: 12px;
-  transition: border 0.2s ease, box-shadow 0.2s ease;
-  margin-bottom: 10px;
 }
 
 .filter_card.checkout {
@@ -127,10 +115,10 @@ hr {
     padding-bottom: 8px;
 }
   
-  .input_field:focus {
+  /* .input_field:focus {
     border-color: #6a6a6a;
     box-shadow: 0 0 4px rgba(120, 120, 120, 0.4);
-}
+} */
 
 input[type="range"] {
     width: 100%;
@@ -181,6 +169,14 @@ input[type="range"] {
     margin: 0.4rem;
    }
 
+   /* #user_inventory .card_hover-container {
+    margin: 0 !important;
+  }
+
+  #user_inventory .inventory_card {
+      margin: 0 !important;
+  } */
+
    .inventory_card_details {
     /* color: black; */
     height: 100%;
@@ -203,7 +199,12 @@ input[type="range"] {
     display: flex; 
     flex-wrap: wrap; 
     height: 300px;
+    row-gap: 2px;
   }
+
+  #user_inventory > * {
+    margin: 2px; /* or 0 if you want no gaps */
+}
 
   .user_inventory span{
     justify-self: center;
@@ -679,13 +680,37 @@ input[type="range"] {
     justify-content: center;
     z-index: 9998;
   }
+
+  .ad_input_field {
+    width: auto;
+    height: 34px;
+    padding: 0 10px;
+    border-radius: 5px;
+    border: 1px solid #2e2e2e;
+    background: #2d2d2d;
+    color: white;
+    font-size: 12px;
+    outline: none;
+    transition: border 0.2s ease, box-shadow 0.2s ease;
+    /* margin-bottom: 10px; */
+    align-self: center;
+    display: flex;
+}
+
+  .modal_backdrop hr {
+    border: none;
+    height: 1px;
+    background: #2e2e2e;
+    /* margin: 10px 0; */
+}
   
   /* === Modal Form With Your Palette === */
   .modal_form {
     background: transparent;                 /* same as your cards */
     padding: 25px;
     border-radius: 12px;
-    width: 90%;
+    justify-self: end;
+    /* width: 90%; */
     max-width: 640px;
     border: 1px solid #323232;           /* consistent border */
     box-shadow: 0 8px 25px rgba(0,0,0,0.35);
@@ -717,9 +742,7 @@ input[type="range"] {
     font-size: 13px;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
-  
-  
-  
+
   /* Submit button */
   .modal_form button {
     padding: 12px;
@@ -735,6 +758,67 @@ input[type="range"] {
   }
   
   .modal_form button:hover {
+    background: #66dbe6;                 
+    transform: translateY(-2px);  
+  }
+
+  /*=== Modal Form Card View*/
+
+  .card_view_modal_form {
+    background: transparent;                 /* same as your cards */
+    padding: 25px;
+    border-radius: 12px;
+    justify-self: end;
+    /* width: 90%; */
+    max-width: 640px;
+    /* border: 1px solid #323232;           */
+    /* box-shadow: 0 8px 25px rgba(0,0,0,0.35); */
+    /* color: #fff; */
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    z-index: 9999;
+    animation: fadeIn 0.25s ease-out;
+  }
+  
+  /* Labels */
+  .card_view_modal_form label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #ffffff;
+    opacity: 0.85;
+  }
+  
+  /* Inputs, textareas */
+  .card_view_modal_form input{
+    /* width: 100%; */
+    /* padding: 10px 12px; */
+    background: #2d2d2d;                 /* matches .input_field */
+    color: #fff;
+    border: 1px solid #2e2e2e;
+    border-radius: 6px;
+    outline: none;
+    font-size: 13px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  
+  
+  /* Submit button */
+  .card_view_modal_form button {
+    padding: 12px;
+    margin-top: 4px;
+    border: 1px solid #323232;
+    border-radius: 6px;
+    background: #28a4c6;                 /* your blue highlight */
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.25s ease, transform 0.15s ease;
+  }
+  
+  .card_view_modal_form button:hover {
     background: #66dbe6;                 
     transform: translateY(-2px);  
   }
@@ -762,7 +846,7 @@ input[type="range"] {
     background: transparent;                 /* same as your cards */
     padding: 25px;
     /* border-radius: 12px; */
-    width: 30%;
+    width: 100%;
     max-width: 640px;
     /* border: 1px solid #323232;           consistent border */
     /* box-shadow: 0 8px 25px rgba(0,0,0,0.35); */

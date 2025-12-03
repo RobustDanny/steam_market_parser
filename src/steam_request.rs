@@ -20,7 +20,6 @@ pub trait ProcessSteamRequest{
         Ok(json_response)
     }
 
-
     fn custom_market_url(request: MarketRequest) -> String {
 
         let url = format!("https://steamcommunity.com/market/search/render/

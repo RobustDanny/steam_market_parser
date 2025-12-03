@@ -292,7 +292,7 @@ ws.onmessage = (event) => {
 <!-- Ad me form -->
 <div class="modal_backdrop" id="formModal">
   <div class="main_modal_form">
-    <div style="display: flex; flex-direction: row; gap: 10px;">
+    <div style="display: flex; flex-direction: row; gap: 10px; justify-content: space-between;">
     <form class="load_inventory_modal_form" id="SettingsFormInventory">
       <div style="display: flex; flex-direction: row; gap: 10px;">
         <input style="display: none;" name="settings_steamid" value="{% if steam_user %}{{ steam_user.steamid }}{% endif %}">
@@ -300,21 +300,47 @@ ws.onmessage = (event) => {
       <button type="submit">load</button>
       </div>
     </form>
-  <form id="adFormModal" class="modal_form">
+  <form id="adFormModal" class="card_view_modal_form">
     <input id="ad_steamid" type="text" name="steamid" style="display: none;" value="{% if steam_user %}{{ steam_user.steamid }}{% endif %}">
     <input id="ad_nickname" type="text" name="nickname" style="display: none;" value="{% if steam_user %}{{ steam_user.nickname }}{% endif %}">
     <input id="ad_avatar" type="text" name="avatar" style="display: none;" value="{% if steam_user %}{{ steam_user.avatar_url_full }}{% endif %}">
 
-    <label>Most wanted to sell</label>
-    <div style="display: flex; flex-direction: row; gap: 10px; flex-wrap: wrap; justify-content: center;">
-    <input id="ad_first_item" name="first_item_image" class="ad_input_field" value="https://steamcommunity.com/economy/image/i0CoZ81Ui0m-9KwlBY1L_18myuGuq1wfhWSaZgMttyVfPaERSR0Wqmu7LAocGJai0ki7VeTHjNisJynHtwY6-obi4xezQk30mJDj_CADuKSrbP04cvWXDDDCmL8gseA9HSzmkxl25T7UnI39bzvJObD-njL-">
-    <input id="ad_second_item" name="second_item_image" class="ad_input_field" value="https://steamcommunity.com/economy/image/IzMF03bk9WpSBq-S-ekoE33L-iLqGFHVaU25ZzQNQcXdA3g5gMEPvUZZEfSMJ6dESN8p_2SVTY7V2N8NxGVIwXpaL3_N03Bod-J-N97IxEPyrOOKGSmhaW_BfHeMTAprTbUMNmuL-DKstOmQSzvNF-spFw5SLKRW8jFOa8uIIVJjg5FZpHe8klZCFxspdcAbJwnikyRGMr5ykHNAdZ5WzXLydcfejApiaU5oW-zjA-_HO9Sil3wnXAQnQfcMIoaXeHULGnA">
-    <input id="ad_third_item" name="third_item_image" class="ad_input_field" value="https://steamcommunity.com/economy/image/i0CoZ81Ui0m-9KwlBY1L_18myuGuq1wfhWSaZgMttyVfPaERSR0Wqmu7LAocGJKz2lu_XsnXwtmkJjSU91dh8bjn_lDkShjjoYbh_ilk__O8Ybc_cKLAMWSfz_pzvuVsXTr9kRki5m_Uwtz7cXKWO1ApCcByRLEO50LtkoWyP7_k4Afdi99GniT4jzQJsHjtsZcvVQ">
-    <input id="ad_fourth_item" name="fourth_item_image" class="ad_input_field" value="https://steamcommunity.com/economy/image/i0CoZ81Ui0m-9KwlBY1L_18myuGuq1wfhWSaZgMttyVfPaERSR0Wqmu7LAocGIGz3UqlXOLrxM-vMGmW8VNxu5Dx60noTyLzl4zv8x1I_825abxSMuWRMWWZ2-F4j-xsSyCmmFMm4TnVy4ysJymQbQEgDsNyRbJetRaxlta2Zbjm5gTX3ohFyXio2nkf8G81tE4WoBip">
+    <label style="display: flex; justify-self: center;">Store face</label>
+    <div class="card_hover-container">
+      <div class="ad_card">
+        <div class="ad_image_container">
+          {% if user_ad %}
+          <img src="{{ user_ad.first_item_image }}" class="ad_card_image" data-slot="ad_first_item">
+          <img src="{{ user_ad.second_item_image }}" class="ad_card_image" data-slot="ad_second_item">
+          <img src="{{ user_ad.third_item_image }}" class="ad_card_image" data-slot="ad_third_item">
+          <img src="{{ user_ad.fourth_item_image }}" class="ad_card_image" data-slot="ad_fourth_item">
+          <input id="ad_first_item" type="hidden" name="first_item_image">
+          <input id="ad_second_item" type="hidden" name="second_item_image">
+          <input id="ad_third_item" type="hidden" name="third_item_image">
+          <input id="ad_fourth_item" type="hidden" name="fourth_item_image">
+      {% else %}
+        <img src="/front/svg/default_item_icon.svg" class="ad_card_image" data-slot="ad_first_item">
+        <img src="/front/svg/default_item_icon.svg" class="ad_card_image" data-slot="ad_second_item">
+        <img src="/front/svg/default_item_icon.svg" class="ad_card_image" data-slot="ad_third_item">
+        <img src="/front/svg/default_item_icon.svg" class="ad_card_image" data-slot="ad_fourth_item">
+        <input id="ad_first_item" type="hidden" name="first_item_image">
+        <input id="ad_second_item" type="hidden" name="second_item_image">
+        <input id="ad_third_item" type="hidden" name="third_item_image">
+        <input id="ad_fourth_item" type="hidden" name="fourth_item_image">
+      {% endif %}
+        </div>
+      </div>
     </div>
-    <button type="submit">Ad me!</button>
+
+    <button type="submit">Apply</button>
   </form>
   </div>
+  <hr/>
+  <div style="justify-content: center; display: flex;">
+    <input class="ad_input_field">
+  </div>
+  <hr/>
+
   <div id="user_inventory" class="user_inventory">
     <span>No items yet</span>
 </div>
@@ -367,7 +393,7 @@ ws.onmessage = (event) => {
         const name = desc.name || "Unknown item";
 
         const card = `
-            <div class="card_hover-container">
+            <div class="card_hover-container inventory-select" data-image="${icon}">
                 <div class="inventory_card">
                     <div class="inventory_card_details">
 
@@ -384,6 +410,32 @@ ws.onmessage = (event) => {
         container.insertAdjacentHTML("beforeend", card);
     });
 }
+
+document.addEventListener("click", (e) => {
+    const card = e.target.closest(".inventory-select");
+    if (!card) return;
+
+    const img = card.dataset.image;
+
+    // Find all ad slots
+    const slots = document.querySelectorAll(".ad_card_image");
+
+    // Find first empty slot (default icon)
+    let emptySlot = Array.from(slots).find(s => 
+        s.src.includes("default_item_icon") || s.src === ""
+    );
+
+    // If no empty slot → replace the first one
+    if (!emptySlot) emptySlot = slots[0];
+
+    emptySlot.src = img;
+
+    // Also push into hidden form fields if needed
+    const id = emptySlot.dataset.slot;
+    if (id) {
+        document.getElementById(id).value = img;
+    }
+});
 
 </script>
 
