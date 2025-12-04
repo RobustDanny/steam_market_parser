@@ -1,0 +1,166 @@
+.side_panel_icons{
+display: flex;          
+flex-direction: column; 
+/* align-items: center;  */
+transition: width 0.3s ease;
+}
+
+.side_panel_icon{
+justify-self: center;
+margin-left: 10%;
+margin-top: 20px;
+width: 20px;
+height: 20px;
+}
+
+.side_panel:hover .filters{
+opacity: 1;
+visibility: visible;
+transform: translateX(0);
+}
+
+.side_panel {
+position: fixed;
+display: flex;
+/* flex-direction: column; */
+justify-content: center;
+padding-top: 20px;
+left: 0;
+top: 0;
+width: 2%; 
+height: 100vh;
+background: #141414;
+border: 1px solid #323232;
+color: white;
+/* padding: 20px; */
+box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+z-index: 100;
+transition: width 0.3s ease;
+}
+
+.side_panel:hover {
+width: 240px; 
+}
+
+.side_panel:hover .filters {
+opacity: 1;
+pointer-events: auto;
+}
+
+.side_panel_filters {
+width: 100%;
+padding: 0 12px;
+}
+
+.side_panel_filters{
+/* justify-self: normal; */
+/* padding-left: 10%; */
+}
+
+.filters{
+width: 100%;
+justify-self: center;
+visibility: hidden;
+transform: translateX(-140px);  
+/* z-index: 1000; */
+transition: width 0.8s ease;
+padding: 0;
+}
+
+.filters label {
+font-size: 13px;
+font-weight: 700;
+color: #ffffff;
+}
+
+.filters {
+opacity: 0;
+transition: opacity 0.25s ease;
+pointer-events: none;       /* prevents ghost-hover */
+margin-top: 10px;
+}
+
+.filter_card {
+width: auto;
+}
+
+.filter_card.checkout {
+display: flex;
+justify-content: center;
+}
+
+.filter_card.cart {
+padding-bottom: 8px;
+}
+
+.cart .steps {
+display: flex;
+flex-direction: column;
+/* padding: 20px; */
+}
+
+.cart .steps .step {
+display: grid;
+gap: 5px;
+}
+
+.cart .steps .step span {
+font-size: 13px;
+font-weight: 600;
+color: #ffffff; /* White text */
+margin-bottom: 8px;
+display: block;
+}
+
+.cart .steps .step p {
+font-size: 11px;
+font-weight: 600;
+/* color: #bbbbbb; Light gray text */
+}
+
+.input_field {
+width: auto;
+height: 34px;
+padding: 0 10px;
+border-radius: 5px;
+border: 1px solid #2e2e2e;
+background: #2d2d2d;
+color: white;
+font-size: 12px;
+outline: none;
+transition: border 0.2s ease, box-shadow 0.2s ease;
+margin-bottom: 10px;
+}
+
+input[type="range"] {
+width: 100%;
+cursor: pointer;
+}
+
+.checkout .footer {
+display: flex;
+align-items: center;
+justify-content: center;
+}
+
+.cart {
+border-radius: 19px 19px 0px 0px;
+}
+
+.checkout-btn {
+min-width: 80px;
+width: 100%;
+height: 36px;
+background: #555;
+border-radius: 6px;
+border: 1px solid #2e2e2e;
+color: #fff;
+font-size: 13px;
+font-weight: 600;
+cursor: pointer;
+transition: background 0.2s ease;
+}
+
+.checkout-btn:hover {
+background: #777;
+}

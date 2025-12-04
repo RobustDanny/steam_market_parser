@@ -1,0 +1,43 @@
+<div id="items-container" class="items-container">    
+    {% for item in most_recent_items %}
+            {% if filters.appid == item.game %}
+            <div class="card_hover-container">
+    
+            <div class="card">
+                <div class="card-details">
+                    <span class="text-price">${{ item.price }}</span>
+    
+                    <div class="card_tooltip-container">
+                        <img class="more_icon" src="/front/svg/more_icon.svg">
+        
+                        <span class="tooltip_actions">
+                            <a href="https://steamcommunity.com/market/listings/{{item.appid}}/{{item.market_hash_name}}"
+                            target="_blank" rel="noopener noreferrer">
+                            <img class="tooltip_icon" src="/front/svg/grab_icon.svg">
+                            </a>
+                            <img class="tooltip_icon" src="/front/svg/info_icon.svg">
+                        </span>
+                    </div>
+    
+                    {% if item.tradable == "1" %}
+                    <img class="locker_icon" src="/front/svg/locker_icon.svg">
+                    {% endif %}
+                    
+                    <div>
+                        <img class="game_icon" src="{{ item.game_icon }}">
+                        <!-- <span class="hidden-text">{{item.game}}</span> -->
+                    </div>
+                    <div style="display: flex;
+                    box-sizing: content-box;">
+                        <img src="https://steamcommunity.com/economy/image/{{ item.icon }}" alt="{{ item.name }}" class="item_icon">
+                    </div>
+                    <!-- <span class="text-title">{{ item.name }}</span> -->
+                    <span class="hidden-text">{{item.name}}</span>
+                </div>
+            </div>
+    
+            </div>
+            {% endif %}
+    {% endfor %}
+    </div>
+</div>

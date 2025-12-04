@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="/front/main_page.css">
+    <link rel="stylesheet" href="/front/css/ad_form.css">
+    <link rel="stylesheet" href="/front/css/feed_items.css">
+    <link rel="stylesheet" href="/front/css/head_panel.css">
+    <link rel="stylesheet" href="/front/css/media_panel.css">
+    <link rel="stylesheet" href="/front/css/settings_form.css">
+    <link rel="stylesheet" href="/front/css/side_panel.css">
+</head>
+
+<body>
+
+  {% include "components/head_panel.html" %}
+  {% include "components/side_panel.html" %}
+  {% include "components/media_panel.html" %}
+  {% include "components/feed_items.html" %}
+  {% include "components/ad_form.html" %}
+  {% include "components/settings_form.html" %}
+
+  <script src="/front/js/add_ad.js"></script>
+  <script src="/front/js/load_inventory.js"></script>
+  <script src="/front/js/settings.js"></script>
+  <script src="/front/js/side_filters.js"></script>
+  <script src="/front/js/websocket_handler.js"></script>
+
+</body>
+</html>

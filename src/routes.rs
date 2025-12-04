@@ -91,7 +91,7 @@ pub async fn tera_update_data(session: Session, state: web::Data<AppState>, _use
 
     state
         .tera
-        .render("main.html", &ctx)
+        .render("main_page.html", &ctx)
         .map(|body| HttpResponse::Ok().content_type("text/html").body(body))
         .map_err(|e| {
             println!("Tera render error: {:?}", e);

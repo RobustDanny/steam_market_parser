@@ -3,930 +3,769 @@
 /* From Uiverse.io by R1SH4BH81 */ 
 /* Body */
 body{
-    background-color: #141414;
-    overflow-x: hidden;
-    display: grid;
-    grid-template-columns: 3% 95% 2%;
+  background-color: #141414;
+  overflow-x: hidden;
+  display: grid;
+  grid-template-columns: 3% 95% 2%;
 }
 
 .container {
-    display: grid;
-    grid-template-columns: auto;
-    gap: 0px;
-  }
-  
+  display: grid;
+  grid-template-columns: auto;
+  gap: 0px;
+}
+
 hr {
-    border: none;
-    height: 1px;
-    background: #2e2e2e;
-    margin: 10px 0;
-}
-  
-.filter_card {
-    width: auto;
+  border: none;
+  height: 1px;
+  background: #2e2e2e;
+  margin: 10px 0;
 }
 
-.side_panel:hover .filters {
-    opacity: 1;
-    pointer-events: auto;
+
+
+.title {
+  width: 100%;
+  height: 40px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding-left: 20px;
+  border-bottom: 1px solid #2e2e2e; /* Dark gray */
+  font-weight: 700;
+  font-size: 11px;
+  color: #ffffff; /* White text */
 }
 
-.side_panel_filters {
-    width: 100%;
-    padding: 0 12px;
-}
+/* ==== Your card CSS (unchanged) ==== */
 
-.filters label {
-    font-size: 13px;
-    font-weight: 700;
-    color: #ffffff;
-}
-
-.filters {
-    opacity: 0;
-    transition: opacity 0.25s ease;
-    pointer-events: none;       /* prevents ghost-hover */
-    margin-top: 10px;
-}
-  
-  .title {
-    width: 100%;
-    height: 40px;
-    position: relative;
-    display: flex;
-    align-items: center;
-    padding-left: 20px;
-    border-bottom: 1px solid #2e2e2e; /* Dark gray */
-    font-weight: 700;
-    font-size: 11px;
-    color: #ffffff; /* White text */
-  }
-  
-  /* Cart */
-  .cart {
-    border-radius: 19px 19px 0px 0px;
-  }
-  
-  .cart .steps {
-    display: flex;
-    flex-direction: column;
-    /* padding: 20px; */
-  }
-  
-  .cart .steps .step {
-    display: grid;
-    gap: 5px;
-  }
-  
-  .cart .steps .step span {
-    font-size: 13px;
-    font-weight: 600;
-    color: #ffffff; /* White text */
-    margin-bottom: 8px;
-    display: block;
-  }
-  
-  .cart .steps .step p {
-    font-size: 11px;
-    font-weight: 600;
-    /* color: #bbbbbb; Light gray text */
+/* === Inventory === */
+.inventory_card {
+  width: 50px;
+  height: 60px;
+  border-radius: 10px;
+  background: #212121;
+  position: relative;
+  padding: 1.1rem;
+  border: 1px solid #323232;
+  transition: 0.5s ease-out;
+  /* overflow: hidden; */
+  margin: 0.4rem;
   }
 
-  .input_field {
-    width: auto;
-    height: 34px;
-    padding: 0 10px;
-    border-radius: 5px;
-    border: 1px solid #2e2e2e;
-    background: #2d2d2d;
-    color: white;
-    font-size: 12px;
-    outline: none;
-    transition: border 0.2s ease, box-shadow 0.2s ease;
-    margin-bottom: 10px;
+  /* #user_inventory .card_hover-container {
+  margin: 0 !important;
 }
 
-.filter_card.checkout {
-    display: flex;
-    justify-content: center;
-}
-
-.filter_card.cart {
-    padding-bottom: 8px;
-}
-  
-  /* .input_field:focus {
-    border-color: #6a6a6a;
-    box-shadow: 0 0 4px rgba(120, 120, 120, 0.4);
+#user_inventory .inventory_card {
+    margin: 0 !important;
 } */
 
-input[type="range"] {
-    width: 100%;
+  .inventory_card_details {
+  /* color: black; */
+  height: 100%;
+  /* gap: .5em; */
+  display: grid;
+  place-content: center;
+  }
+
+  .inventory_item_icon{
+  padding-left: 5px;
+  padding-right: 5px;
+  width: auto;
+  height: 50px;
+  /* position: absolute; */
+  justify-self: center;
+  align-self: center;    
+}
+
+.user_inventory{
+  display: flex; 
+  flex-wrap: wrap; 
+  height: 300px;
+  row-gap: 2px;
+}
+
+#user_inventory > * {
+  margin: 2px; /* or 0 if you want no gaps */
+}
+
+.user_inventory span{
+  justify-self: center;
+  align-self: center;
+}
+  /* === === === === === === */
+
+.card {
+  width: 80px;
+  height: 90px;
+  border-radius: 10px;
+  background: #212121;
+  position: relative;
+  padding: 1.8rem;
+  border: 1px solid #323232;
+  transition: 0.5s ease-out;
+  /* overflow: hidden; */
+  margin: 0.4rem;
+}
+
+.ad_card {
+  width: 80px;
+  height: 90px;
+  border-radius: 10px;
+  background: #212121;
+  display: flex;
+  position: relative;
+  padding: 1.8rem;
+  align-content: center;
+  justify-content: center;
+  /* border: 1px solid #28a4c6; */
+  box-shadow: 0 0 2px 2px rgba(102, 219, 230, 0.25);
+  transition: 0.5s ease-out;
+  /* overflow: hidden; */
+  margin: 0.4rem;
+  animation: smoothPulse 5s infinite;
+  animation-delay: 1s;
+  }
+
+.card-details {
+  color: black;
+  height: 100%;
+  gap: .5em;
+  display: grid;
+  place-content: center;
+  
+}
+.game_icon{
+    position: absolute;
+    top: 7px;
+    right: 25px;
+    width: 16px;
+    height: 16px;
+}
+
+.more_icon{
+    position: absolute;
+    top: 7px;
+    right: 5px;
+    width: 16px;
+    height: 16px;
+}
+
+.tooltip_icon{
     cursor: pointer;
+    /* position: absolute;
+    top: 5px;
+    right: 5px; */
+    width: 16px;
+    height: 16px; 
 }
 
-  .checkout .footer {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .checkout-btn {
-    min-width: 80px;
-    width: 100%;
-    height: 36px;
-    background: #555;
-    border-radius: 6px;
-    border: 1px solid #2e2e2e;
-    color: #fff;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s ease;
+.locker_icon{
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    width: 16px;
+    height: 16px;
 }
-  
-.checkout-btn:hover {
-    background: #777;
+
+.text-price {
+  color: #9E9E9E;
+  font-size: 0.7em;
+  position: absolute;
+  bottom: 9px;
+  justify-self: center;
 }
-  
-  
-  /* ==== Your card CSS (unchanged) ==== */
-  .side_panel_filters{
-    /* justify-self: normal; */
-    /* padding-left: 10%; */
+.text-title {
+  padding-left: 5px;
+  padding-right: 5px;
+  font-size: 0.6em;
+  font-weight: bold;
+  position: absolute;
+  justify-self: center;
+  bottom: 10px;
+  color: #F9F8F6;
+}
+.card_hover-container {
+  display: inline-block;
+  cursor: default;
+}
+
+.hidden-text {
+  position: absolute;
+  top: 105%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333;
+  color: white;
+  padding: 5px 8px;
+  border-radius: 3px;
+  white-space: nowrap;
+  opacity: 0;
+  font-size: 8pt;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  z-index: 1000;
+}
+
+.tooltip_actions{
+  position: absolute;
+  bottom: 60%;
+  left: 112%;
+  transform: translateX(-50%);
+  background-color: #333;
+  color: white;
+  padding: 8px;
+  border-radius: 3px;
+  white-space: nowrap;
+  opacity: 0;
+  font-size: 8pt;
+  gap: 0.5em;
+  visibility: hidden;
+  display: flex;          
+  flex-direction: column; 
+  align-items: center; 
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  z-index: 10;
+}
+
+/*change z-index*/
+.arrow_up_cont{
+  width: 40px;
+  height: 40px;
+  display: flex;
+  border-radius: 100%;
+  border: 1px solid #323232;
+  background-color: #212121;
+  justify-content: center;
+  align-items: center;
+}
+
+.arrow_down_cont{
+  width: 40px;
+  height: 40px;
+  display: flex;
+  border-radius: 100%;
+  border: 1px solid #323232;
+  background-color: #212121;
+  justify-content: center;
+  align-items: center;
+}
+
+.arrows_icons{
+  width: 15px;
+  height: 15px;
+}
+
+.arrow_down_cont:hover .hidden-text{
+  opacity: 1;
+  visibility: visible;
+}
+
+.arrow_up_cont:hover .hidden-text{
+  opacity: 1;
+  visibility: visible;
+}
+
+.card_tooltip-container:hover .tooltip_actions {
+  opacity: 1;
+  visibility: visible;
+}
+
+.card_hover-container:hover .hidden-text {
+  opacity: 1;
+  visibility: visible;
+}
+
+.card:hover {
+  /*#E69066*/
+  border-color: rgba(102, 219, 230, 0.25);
+  box-shadow: 0 4px 18px 0 rgba(0, 0, 0, 0.25);
+}
+
+.ad_card:hover {
+  /* border-color: #66dbe6; */
+  box-shadow: 0 40px 30px 0 rgba(0, 0, 0, 0.25);
+  cursor: pointer;
   }
-/* === Inventory === */
-  .inventory_card {
-    width: 50px;
-    height: 60px;
-    border-radius: 10px;
-    background: #212121;
-    position: relative;
-    padding: 1.1rem;
-    border: 1px solid #323232;
-    transition: 0.5s ease-out;
-    /* overflow: hidden; */
-    margin: 0.4rem;
-   }
 
-   /* #user_inventory .card_hover-container {
-    margin: 0 !important;
-  }
+.card:hover .card-button {
+  transform: translate(-50%, 50%);
+  opacity: 1;
+}
 
-  #user_inventory .inventory_card {
-      margin: 0 !important;
-  } */
 
-   .inventory_card_details {
-    /* color: black; */
-    height: 100%;
-    /* gap: .5em; */
-    display: grid;
-    place-content: center;
-   }
 
-   .inventory_item_icon{
+.media_icons_play_cont{
+  width: 40px;
+  height: 40px;
+  display: flex;
+  border-radius: 100%;
+  border: 1px solid #323232;
+  background-color: #212121;
+  justify-content: center;
+  align-items: center;
+  visibility: hidden;
+}
+
+.media_icons_pause_cont{
+  border-radius: 100%;
+  display: flex;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #323232;
+  background-color: #212121;
+  align-items: center;
+  justify-content: center;
+  visibility: visible;
+}
+
+.play_icon{
+  /* position: relative; */
+  width: 20px;
+  height: 20px;
+}
+
+.media_icons_pause_cont:hover .hidden-text{
+  opacity: 1;
+  visibility: visible;
+}
+
+.media_icons_play_cont:hover .hidden-text{
+  opacity: 1;
+  visibility: visible;
+}
+
+.pause_icon{
+  justify-self: center;
+  align-self: center;
+  width: 20px;
+  height: 20px;
+}
+
+
+
+
+
+.item_icon{
     padding-left: 5px;
     padding-right: 5px;
     width: auto;
-    height: 50px;
+    height: 70px;
     /* position: absolute; */
     justify-self: center;
     align-self: center;    
 }
 
-  .user_inventory{
-    display: flex; 
-    flex-wrap: wrap; 
-    height: 300px;
-    row-gap: 2px;
-  }
 
-  #user_inventory > * {
-    margin: 2px; /* or 0 if you want no gaps */
+.head_panel {
+    position: fixed;
+    display: flex;
+    justify-content: end;
+    top: 0;
+    width: 100%;
+    height: 3%;
+    background: #141414;
+    border: 1px solid #323232;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+    z-index: 99;
+    transition: width 0.3s ease;
 }
 
-  .user_inventory span{
-    justify-self: center;
-    align-self: center;
-  }
-   /* === === === === === === */
-
-  .card {
-   width: 80px;
-   height: 90px;
-   border-radius: 10px;
-   background: #212121;
-   position: relative;
-   padding: 1.8rem;
-   border: 1px solid #323232;
-   transition: 0.5s ease-out;
-   /* overflow: hidden; */
-   margin: 0.4rem;
-  }
-
-  .ad_card {
-    width: 80px;
-    height: 90px;
-    border-radius: 10px;
-    background: #212121;
-    display: flex;
-    position: relative;
-    padding: 1.8rem;
-    align-content: center;
-    justify-content: center;
-    /* border: 1px solid #28a4c6; */
-    box-shadow: 0 0 2px 2px rgba(102, 219, 230, 0.25);
-    transition: 0.5s ease-out;
-    /* overflow: hidden; */
-    margin: 0.4rem;
-    animation: smoothPulse 5s infinite;
-    animation-delay: 1s;
-   }
-
-  .card-details {
-   color: black;
-   height: 100%;
-   gap: .5em;
-   display: grid;
-   place-content: center;
-   
-  }
-  .game_icon{
-      position: absolute;
-      top: 7px;
-      right: 25px;
-      width: 16px;
-      height: 16px;
-  }
-  
-  .more_icon{
-      position: absolute;
-      top: 7px;
-      right: 5px;
-      width: 16px;
-      height: 16px;
-  }
-  
-  .tooltip_icon{
-      cursor: pointer;
-      /* position: absolute;
-      top: 5px;
-      right: 5px; */
-      width: 16px;
-      height: 16px; 
-  }
-  
-  .locker_icon{
-      position: absolute;
-      top: 5px;
-      left: 5px;
-      width: 16px;
-      height: 16px;
-  }
-  
-  .text-price {
-   color: #9E9E9E;
-   font-size: 0.7em;
-   position: absolute;
-   bottom: 9px;
-   justify-self: center;
-  }
-  .text-title {
-   padding-left: 5px;
-   padding-right: 5px;
-   font-size: 0.6em;
-   font-weight: bold;
-   position: absolute;
-   justify-self: center;
-   bottom: 10px;
-   color: #F9F8F6;
-  }
-  .card_hover-container {
-    display: inline-block;
-    cursor: default;
-  }
-  
-  .hidden-text {
-    position: absolute;
-    top: 105%;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #333;
-    color: white;
-    padding: 5px 8px;
-    border-radius: 3px;
-    white-space: nowrap;
-    opacity: 0;
-    font-size: 8pt;
-    visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
-    z-index: 1000;
-  }
-  
-  .tooltip_actions{
-    position: absolute;
-    bottom: 60%;
-    left: 112%;
-    transform: translateX(-50%);
-    background-color: #333;
-    color: white;
-    padding: 8px;
-    border-radius: 3px;
-    white-space: nowrap;
-    opacity: 0;
-    font-size: 8pt;
-    gap: 0.5em;
-    visibility: hidden;
-    display: flex;          
-    flex-direction: column; 
-    align-items: center; 
-    transition: opacity 0.3s ease, visibility 0.3s ease;
-    z-index: 10;
-  }
-  
-  /*change z-index*/
-  .arrow_up_cont{
-    width: 40px;
-    height: 40px;
-    display: flex;
-    border-radius: 100%;
-    border: 1px solid #323232;
-    background-color: #212121;
-    justify-content: center;
-    align-items: center;
-  }
-  
-  .arrow_down_cont{
-    width: 40px;
-    height: 40px;
-    display: flex;
-    border-radius: 100%;
-    border: 1px solid #323232;
-    background-color: #212121;
-    justify-content: center;
-    align-items: center;
-  }
-  
-  .arrows_icons{
-    width: 15px;
-    height: 15px;
-  }
-  
-  .arrow_down_cont:hover .hidden-text{
-    opacity: 1;
-    visibility: visible;
-  }
-  
-  .arrow_up_cont:hover .hidden-text{
-    opacity: 1;
-    visibility: visible;
-  }
-  
-  .card_tooltip-container:hover .tooltip_actions {
-    opacity: 1;
-    visibility: visible;
-  }
-  
-  .card_hover-container:hover .hidden-text {
-    opacity: 1;
-    visibility: visible;
-  }
-  
-  .card:hover {
-    /*#E69066*/
-   border-color: rgba(102, 219, 230, 0.25);
-   box-shadow: 0 4px 18px 0 rgba(0, 0, 0, 0.25);
-  }
-
-  .ad_card:hover {
-    /* border-color: #66dbe6; */
-    box-shadow: 0 40px 30px 0 rgba(0, 0, 0, 0.25);
-    cursor: pointer;
-   }
-
-  .card:hover .card-button {
-   transform: translate(-50%, 50%);
-   opacity: 1;
-  }
-  
-  .side_panel_icons{
-    display: flex;          
-    flex-direction: column; 
-    /* align-items: center;  */
-    transition: width 0.3s ease;
-  }
-  
-  .side_panel_icon{
-    justify-self: center;
-    margin-left: 10%;
-    margin-top: 20px;
-    width: 20px;
-    height: 20px;
-  }
-  
-  .media_icons_play_cont{
-    width: 40px;
-    height: 40px;
-    display: flex;
-    border-radius: 100%;
-    border: 1px solid #323232;
-    background-color: #212121;
-    justify-content: center;
-    align-items: center;
-    visibility: hidden;
-  }
-  
-  .media_icons_pause_cont{
-    border-radius: 100%;
-    display: flex;
-    width: 40px;
-    height: 40px;
-    border: 1px solid #323232;
-    background-color: #212121;
-    align-items: center;
-    justify-content: center;
-    visibility: visible;
-  }
-  
-  .play_icon{
-    /* position: relative; */
-    width: 20px;
-    height: 20px;
-  }
-  
-  .media_icons_pause_cont:hover .hidden-text{
-    opacity: 1;
-    visibility: visible;
-  }
-  
-  .media_icons_play_cont:hover .hidden-text{
-    opacity: 1;
-    visibility: visible;
-  }
-  
-  .pause_icon{
-    justify-self: center;
-    align-self: center;
-    width: 20px;
-    height: 20px;
-  }
-  
-  .side_panel:hover .filters{
-      opacity: 1;
-      visibility: visible;
-      transform: translateX(0);
-  }
-  
-  .filters{
-    width: 100%;
-      justify-self: center;
-      visibility: hidden;
-      transform: translateX(-140px);  
-      /* z-index: 1000; */
-      transition: width 0.8s ease;
-      padding: 0;
-  }
-  
-  .item_icon{
-      padding-left: 5px;
-      padding-right: 5px;
-      width: auto;
-      height: 70px;
-      /* position: absolute; */
-      justify-self: center;
-      align-self: center;    
-  }
-  .side_panel {
-      position: fixed;
-      display: flex;
-      /* flex-direction: column; */
-      justify-content: center;
-      padding-top: 20px;
-      left: 0;
-      top: 0;
-      width: 2%; 
-      height: 100vh;
-      background: #141414;
-      border: 1px solid #323232;
-      color: white;
-      /* padding: 20px; */
-      box-shadow: 2px 0 10px rgba(0,0,0,0.2);
-      z-index: 100;
-      transition: width 0.3s ease;
-  }
-  
-  .head_panel {
-      position: fixed;
-      display: flex;
-      justify-content: end;
-      top: 0;
-      width: 100%;
-      height: 3%;
-      background: #141414;
-      border: 1px solid #323232;
-      box-shadow: 2px 0 10px rgba(0,0,0,0.2);
-      z-index: 99;
-      transition: width 0.3s ease;
-  }
-
-  .ad_image_container {
-    display: grid;
-    width: 100%;
-    height: 100%;
-    grid-template-columns: repeat(2, 1fr);
-    grid-template-rows: repeat(2, 1fr);
-    gap: 0.6em;
+.ad_image_container {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 0.6em;
 }
 
 .ad_card_image {
+width: 100%;
+height: 100%;
+object-fit: cover;
+border-radius: 4px;  
+}
+
+.head_panel:hover{
+  height: 100px;
+}
+
+
+
+.items-container {
+  grid-column: 2;
+        /* width: 95%; */
+        padding-left: 20px;
+        padding-top: 20px;
+        margin-left: auto;
+        display: flex;
+        justify-content: center;
+        /* justify-self: center; */
+        flex-wrap: wrap;
+}
+
+.media_container{
+  grid-column: 3;
+  position: fixed; 
+  top: 50%;
+  right: 15px;
+  display: flex;
+  transform: translateY(-50%);
+  justify-content: center;
+  flex-direction: column;
+  gap: 10px;  
+  z-index: 999;
+}
+
+.event_container{
+  grid-column: 1;
+}
+
+/* Sign in button*/
+.sign_in_container{
+  margin-right: 30px;
+  align-items: center; 
+  display: flex;
+  flex-direction: row;
+  padding: auto;
+  /* right: 10px; */
+  gap: 15px;
+}
+
+.head_panel:hover .hidded_button{
+  opacity: 1;
+  visibility: visible;
+}
+
+.head_panel:hover .hidded_button_avatar{
+  opacity: 1;
+  visibility: visible;
+}
+
+.head_panel:hover .sign_in_container{
+  align-items: center; 
+}
+
+.head_panel:hover .sign_in_icon{
+  display: none;
+}
+
+.hidded_button{
+  visibility: hidden;
+  cursor: pointer;
+}
+
+.hidded_button_avatar{
+  visibility: hidden;
+  cursor: pointer;
+  /* display: flex; */
+  align-content: center;
+}
+
+.hidded_button_avatar:hover .hidden_user_tooltip{
+  opacity: 1;
+  visibility: visible;
+}
+
+.hidden_user_tooltip{
+  background-color: #323232;
+  transform: translateX(-50%);
+  border-radius: 3px;
+  position: absolute;
+  justify-self: start;
+  visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.user_settings_icons{
+  width: 20px;
+  height: 20px;
+}
+
+.sign_in_icon{
+  /* margin-right: 20px; */
+  width: 20px;
+  height: 20px;
+  border-radius: 100%;
+}
+
+.steam_user_avatar{
+  /* margin-right: 20px; */
+  width: 50px;
+  height: 50px;
+  border-radius: 30%;
+}
+
+.steam_user_avatar .ads{
+  width: 30px;
+  height: 30px;
+}
+
+/*Ad me form*/
+/* Background dim + blur when form is shown */
+.modal_backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  border-radius: 4px;  
-}
-  
-  .head_panel:hover{
-    height: 100px;
-  }
-  
-  .side_panel:hover {
-    width: 240px; 
-  }
-  
-  .items-container {
-    grid-column: 2;
-          /* width: 95%; */
-          padding-left: 20px;
-          padding-top: 20px;
-          margin-left: auto;
-          display: flex;
-          justify-content: center;
-          /* justify-self: center; */
-          flex-wrap: wrap;
-  }
-
-  .media_container{
-    grid-column: 3;
-    position: fixed; 
-    top: 50%;
-    right: 15px;
-    display: flex;
-    transform: translateY(-50%);
-    justify-content: center;
-    flex-direction: column;
-    gap: 10px;  
-    z-index: 999;
-  }
-
-  .event_container{
-    grid-column: 1;
-  }
-
-  /* Sign in button*/
-  .sign_in_container{
-    margin-right: 30px;
-    align-items: center; 
-    display: flex;
-    flex-direction: row;
-    padding: auto;
-    /* right: 10px; */
-    gap: 15px;
-  }
-
-  .head_panel:hover .hidded_button{
-    opacity: 1;
-    visibility: visible;
-  }
-
-  .head_panel:hover .hidded_button_avatar{
-    opacity: 1;
-    visibility: visible;
-  }
-
-  .head_panel:hover .sign_in_container{
-    align-items: center; 
-  }
-
-  .head_panel:hover .sign_in_icon{
-    display: none;
-  }
-
-  .hidded_button{
-    visibility: hidden;
-    cursor: pointer;
-  }
-
-  .hidded_button_avatar{
-    visibility: hidden;
-    cursor: pointer;
-    /* display: flex; */
-    align-content: center;
-  }
-
-  .hidded_button_avatar:hover .hidden_user_tooltip{
-    opacity: 1;
-    visibility: visible;
-  }
-
-  .hidden_user_tooltip{
-    background-color: #323232;
-    transform: translateX(-50%);
-    border-radius: 3px;
-    position: absolute;
-    justify-self: start;
-    visibility: hidden;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .user_settings_icons{
-    width: 20px;
-    height: 20px;
-  }
-
-  .sign_in_icon{
-    /* margin-right: 20px; */
-    width: 20px;
-    height: 20px;
-    border-radius: 100%;
-  }
-
-  .steam_user_avatar{
-    /* margin-right: 20px; */
-    width: 50px;
-    height: 50px;
-    border-radius: 30%;
-  }
-
-  .steam_user_avatar .ads{
-    width: 30px;
-    height: 30px;
-  }
-
-  /*Ad me form*/
-  /* Background dim + blur when form is shown */
-  .modal_backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 9998;
-  }
-
-  .ad_input_field {
-    width: auto;
-    height: 34px;
-    padding: 0 10px;
-    border-radius: 5px;
-    border: 1px solid #2e2e2e;
-    background: #2d2d2d;
-    color: white;
-    font-size: 12px;
-    outline: none;
-    transition: border 0.2s ease, box-shadow 0.2s ease;
-    /* margin-bottom: 10px; */
-    align-self: center;
-    display: flex;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9998;
 }
 
-  .modal_backdrop hr {
-    border: none;
-    height: 1px;
-    background: #2e2e2e;
-    /* margin: 10px 0; */
+.ad_input_field {
+  width: auto;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 5px;
+  border: 1px solid #2e2e2e;
+  background: #2d2d2d;
+  color: white;
+  font-size: 12px;
+  outline: none;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+  /* margin-bottom: 10px; */
+  align-self: center;
+  display: flex;
 }
-  
-  /* === Modal Form With Your Palette === */
-  .modal_form {
-    background: transparent;                 /* same as your cards */
-    padding: 25px;
-    border-radius: 12px;
-    justify-self: end;
-    /* width: 90%; */
-    max-width: 640px;
-    border: 1px solid #323232;           /* consistent border */
-    box-shadow: 0 8px 25px rgba(0,0,0,0.35);
-    color: #fff;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    z-index: 9999;
-    animation: fadeIn 0.25s ease-out;
-  }
-  
-  /* Labels */
-  .modal_form label {
-    font-size: 13px;
-    font-weight: 600;
-    color: #ffffff;
-    opacity: 0.85;
-  }
-  
-  /* Inputs, textareas */
-  .modal_form input{
-    /* width: 100%; */
-    /* padding: 10px 12px; */
-    background: #2d2d2d;                 /* matches .input_field */
-    color: #fff;
-    border: 1px solid #2e2e2e;
-    border-radius: 6px;
-    outline: none;
-    font-size: 13px;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  }
 
-  /* Submit button */
-  .modal_form button {
-    padding: 12px;
-    margin-top: 4px;
-    border: 1px solid #323232;
-    border-radius: 6px;
-    background: #28a4c6;                 /* your blue highlight */
-    color: white;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.25s ease, transform 0.15s ease;
-  }
-  
-  .modal_form button:hover {
-    background: #66dbe6;                 
-    transform: translateY(-2px);  
-  }
+.modal_backdrop hr {
+  border: none;
+  height: 1px;
+  background: #2e2e2e;
+  /* margin: 10px 0; */
+}
 
-  /*=== Modal Form Card View*/
+/* === Modal Form With Your Palette === */
+.modal_form {
+  background: transparent;                 /* same as your cards */
+  padding: 25px;
+  border-radius: 12px;
+  justify-self: end;
+  /* width: 90%; */
+  max-width: 640px;
+  border: 1px solid #323232;           /* consistent border */
+  box-shadow: 0 8px 25px rgba(0,0,0,0.35);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  z-index: 9999;
+  animation: fadeIn 0.25s ease-out;
+}
 
-  .card_view_modal_form {
-    background: transparent;                 /* same as your cards */
-    padding: 25px;
-    border-radius: 12px;
-    justify-self: end;
-    /* width: 90%; */
-    max-width: 640px;
-    /* border: 1px solid #323232;           */
-    /* box-shadow: 0 8px 25px rgba(0,0,0,0.35); */
-    /* color: #fff; */
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    z-index: 9999;
-    animation: fadeIn 0.25s ease-out;
-  }
-  
-  /* Labels */
-  .card_view_modal_form label {
-    font-size: 13px;
-    font-weight: 600;
-    color: #ffffff;
-    opacity: 0.85;
-  }
-  
-  /* Inputs, textareas */
-  .card_view_modal_form input{
-    /* width: 100%; */
-    /* padding: 10px 12px; */
-    background: #2d2d2d;                 /* matches .input_field */
-    color: #fff;
-    border: 1px solid #2e2e2e;
-    border-radius: 6px;
-    outline: none;
-    font-size: 13px;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  }
-  
-  
-  
-  /* Submit button */
-  .card_view_modal_form button {
-    padding: 12px;
-    margin-top: 4px;
-    border: 1px solid #323232;
-    border-radius: 6px;
-    background: #28a4c6;                 /* your blue highlight */
-    color: white;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.25s ease, transform 0.15s ease;
-  }
-  
-  .card_view_modal_form button:hover {
-    background: #66dbe6;                 
-    transform: translateY(-2px);  
-  }
+/* Labels */
+.modal_form label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  opacity: 0.85;
+}
 
-  /* === Modal Form To Load inventory === */
+/* Inputs, textareas */
+.modal_form input{
+  /* width: 100%; */
+  /* padding: 10px 12px; */
+  background: #2d2d2d;                 /* matches .input_field */
+  color: #fff;
+  border: 1px solid #2e2e2e;
+  border-radius: 6px;
+  outline: none;
+  font-size: 13px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
 
-  .main_modal_form {
-    background: #212121;                 /* same as your cards */
-    padding: 25px;
-    border-radius: 12px;
-    width: 90%;
-    max-width: 640px;
-    border: 1px solid #323232;           /* consistent border */
-    box-shadow: 0 8px 25px rgba(0,0,0,0.35);
-    color: #fff;
-    display: flex;
-    flex-direction: column;
-    flex-wrap: wrap;
-    gap: 14px;
-    z-index: 9999;
-    animation: fadeIn 0.25s ease-out;
-  }
+/* Submit button */
+.modal_form button {
+  padding: 12px;
+  margin-top: 4px;
+  border: 1px solid #323232;
+  border-radius: 6px;
+  background: #28a4c6;                 /* your blue highlight */
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.25s ease, transform 0.15s ease;
+}
 
-  .load_inventory_modal_form {
-    background: transparent;                 /* same as your cards */
-    padding: 25px;
-    /* border-radius: 12px; */
-    width: 100%;
-    max-width: 640px;
-    /* border: 1px solid #323232;           consistent border */
-    /* box-shadow: 0 8px 25px rgba(0,0,0,0.35); */
-    color: #fff;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    z-index: 9999;
-    animation: fadeIn 0.25s ease-out;
-  }
-  
-  /* Labels */
-  .load_inventory_modal_form label {
-    font-size: 13px;
-    font-weight: 600;
-    color: #ffffff;
-    opacity: 0.85;
-  }
-  
-  /* Inputs, textareas */
-  .load_inventory_modal_form input{
-    width: 30%;
-    padding: 10px 12px;
-    background: #2d2d2d;                 /* matches .input_field */
-    color: #fff;
-    border: 1px solid #2e2e2e;
-    border-radius: 6px;
-    outline: none;
-    font-size: 13px;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  }
-  
-  
-  
-  /* Submit button */
-  .load_inventory_modal_form button {
-    padding: 10px 12px;
-    /* margin-top: 4px; */
-    border: 1px solid #323232;
-    border-radius: 6px;
-    background: #28a4c6;                 /* your blue highlight */
-    color: white;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.25s ease, transform 0.15s ease;
-  }
-  
-  .load_inventory_modal_form button:hover {
-    background: #66dbe6;                 
-    transform: translateY(-2px);  
-  }
+.modal_form button:hover {
+  background: #66dbe6;                 
+  transform: translateY(-2px);  
+}
+
+/*=== Modal Form Card View*/
+
+.card_view_modal_form {
+  background: transparent;                 /* same as your cards */
+  padding: 25px;
+  border-radius: 12px;
+  justify-self: end;
+  /* width: 90%; */
+  max-width: 640px;
+  /* border: 1px solid #323232;           */
+  /* box-shadow: 0 8px 25px rgba(0,0,0,0.35); */
+  /* color: #fff; */
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  z-index: 9999;
+  animation: fadeIn 0.25s ease-out;
+}
+
+/* Labels */
+.card_view_modal_form label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  opacity: 0.85;
+}
+
+/* Inputs, textareas */
+.card_view_modal_form input{
+  /* width: 100%; */
+  /* padding: 10px 12px; */
+  background: #2d2d2d;                 /* matches .input_field */
+  color: #fff;
+  border: 1px solid #2e2e2e;
+  border-radius: 6px;
+  outline: none;
+  font-size: 13px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
 
 
-  /*Key frames*/
-  @keyframes smoothPulse {
-    0% {
-      transform: scale(1);
-      box-shadow: 0 0 2px 2px rgba(102, 219, 230, 0.4);
-    }
-    
-    20% {
-      transform: scale(1.03);
-      box-shadow: 0 0 12px 6px rgba(102, 219, 230, 0.25);
-    }
+
+/* Submit button */
+.card_view_modal_form button {
+  padding: 12px;
+  margin-top: 4px;
+  border: 1px solid #323232;
+  border-radius: 6px;
+  background: #28a4c6;                 /* your blue highlight */
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.25s ease, transform 0.15s ease;
+}
+
+.card_view_modal_form button:hover {
+  background: #66dbe6;                 
+  transform: translateY(-2px);  
+}
+
+/* === Modal Form To Load inventory === */
+
+.main_modal_form {
+  background: #212121;                 /* same as your cards */
+  padding: 25px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 640px;
+  border: 1px solid #323232;           /* consistent border */
+  box-shadow: 0 8px 25px rgba(0,0,0,0.35);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  gap: 14px;
+  z-index: 9999;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.load_inventory_modal_form {
+  background: transparent;                 /* same as your cards */
+  padding: 25px;
+  /* border-radius: 12px; */
+  width: 100%;
+  max-width: 640px;
+  /* border: 1px solid #323232;           consistent border */
+  /* box-shadow: 0 8px 25px rgba(0,0,0,0.35); */
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  z-index: 9999;
+  animation: fadeIn 0.25s ease-out;
+}
+
+/* Labels */
+.load_inventory_modal_form label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  opacity: 0.85;
+}
+
+/* Inputs, textareas */
+.load_inventory_modal_form input{
+  width: 30%;
+  padding: 10px 12px;
+  background: #2d2d2d;                 /* matches .input_field */
+  color: #fff;
+  border: 1px solid #2e2e2e;
+  border-radius: 6px;
+  outline: none;
+  font-size: 13px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+
+
+/* Submit button */
+.load_inventory_modal_form button {
+  padding: 10px 12px;
+  /* margin-top: 4px; */
+  border: 1px solid #323232;
+  border-radius: 6px;
+  background: #28a4c6;                 /* your blue highlight */
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.25s ease, transform 0.15s ease;
+}
+
+.load_inventory_modal_form button:hover {
+  background: #66dbe6;                 
+  transform: translateY(-2px);  
+}
+
+
+/*Key frames*/
+@keyframes smoothPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 2px 2px rgba(102, 219, 230, 0.4);
+  }
   
-    40% {
-      transform: scale(1);
-      box-shadow: 0 0 2px 2px rgba(102, 219, 230, 0.4);
-    }
-  
-    /* 40%–100% is the timeout (no animation happening) */
-    100% {
-      transform: scale(1);
-      box-shadow: 0 0 2px 2px rgba(102, 219, 230, 0.4);
-    }
+  20% {
+    transform: scale(1.03);
+    box-shadow: 0 0 12px 6px rgba(102, 219, 230, 0.25);
   }
 
-  @keyframes fadeIn {
-    from { opacity: 0; transform: scale(0.95); }
-    to   { opacity: 1; transform: scale(1); }
+  40% {
+    transform: scale(1);
+    box-shadow: 0 0 2px 2px rgba(102, 219, 230, 0.4);
   }
-  
+
+  /* 40%–100% is the timeout (no animation happening) */
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 2px 2px rgba(102, 219, 230, 0.4);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}

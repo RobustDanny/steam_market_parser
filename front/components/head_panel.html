@@ -1,0 +1,33 @@
+<div class="head_panel">
+    <div class="sign_in_container">
+        {% if steam_user %}
+        <div class="hidded_button" id="adMeBtn">
+        <img src="/front/svg/ad_me_icon.svg" class="steam_user_avatar ads">
+        </div>
+        <div class="hidded_button_avatar">
+        <img src="{{ steam_user.avatar_url_full }}" class="steam_user_avatar">
+        <div class="hidden_user_tooltip">
+            <div id="open_setting_form">
+            <img src="/front/svg/user_settings.svg" class="user_settings_icons">
+            <span style="color: #9E9E9E;">settings</span>
+        </div>
+            <a href="/api/logout">
+            <div>
+            <img src="/front/svg/user_logout.svg" class="user_settings_icons">
+            <span style="color: #9E9E9E;">logout</span>
+            </div>
+            </a>
+        </div>
+        </div>
+        <img class="sign_in_icon" src="/front/svg/ad_me_icon.svg">
+        <img class="sign_in_icon" src="{{ steam_user.avatar_url_full }}">
+        {% else %}
+        <div class="hidded_button">
+        <a href="http://localhost:8080/api/auth/steam">
+            <img src="https://community.akamai.steamstatic.com/public/images/signinthroughsteam/sits_01.png">
+        </a>
+        </div>
+        <img class="sign_in_icon" src="/front/svg/steam_icon.svg">
+        {% endif %}
+    </div>
+</div>

@@ -1,0 +1,61 @@
+<div class="side_panel">
+    <div class="side_panel_filters">
+      <!-- <img class="side_panel_icon" src="/front/svg/filter_icon.svg"> -->
+
+      <div class="filters">
+        <label>Filters</label>
+        <hr />
+        <div class="filter_card cart">
+            <div class="steps">
+              <div class="step">
+                <!-- <hr /> -->
+                <input
+                id="f_appid"
+                class="input_field"
+                placeholder="Enter a game"
+                type="text"
+              />
+              <!-- <hr /> -->
+              <input
+                id="f_query"
+                class="input_field"
+                placeholder="Enter a query"
+                type="text"
+              />
+                <!-- <hr /> -->
+              <label>min price</label>
+                <input
+                id="f_min"
+                type="range"
+                min="0"
+                max="9999999"
+                value="0"
+              />
+              <!-- <hr /> -->
+              <label>max price</label>
+                <input
+                id="f_max"
+                min="0"
+                max="9999999"
+                value="9999999"
+                type="range"
+              />
+              <!-- <hr /> -->
+              </div>
+            </div>
+  
+        </div>
+        <div class="filter_card checkout">
+            <div class="footer">
+              <button class="checkout-btn" onclick="updateFilters()">Apply</button>
+            </div>
+        </div>
+
+        <hr />
+    </div>
+    </div>
+
+    <!-- <img class="side_panel_icon" src="/front/svg/chart_icon.svg">
+    <img class="side_panel_icon" src="/front/svg/budget_icon.svg"> -->
+
+</div>

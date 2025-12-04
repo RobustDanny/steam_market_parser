@@ -1,0 +1,56 @@
+<div class="modal_backdrop" id="formModal">
+    <div class="main_modal_form">
+      <div style="display: flex; flex-direction: row; gap: 10px; justify-content: space-between;">
+      <form class="load_inventory_modal_form" id="SettingsFormInventory">
+        <div style="display: flex; flex-direction: row; gap: 10px;">
+          <input style="display: none;" name="settings_steamid" value="{% if steam_user %}{{ steam_user.steamid }}{% endif %}">
+        <input value="730" name="settings_appid">
+        <button type="submit">load</button>
+        </div>
+      </form>
+    <form id="adFormModal" class="card_view_modal_form">
+      <input id="ad_steamid" type="text" name="steamid" style="display: none;" value="{% if steam_user %}{{ steam_user.steamid }}{% endif %}">
+      <input id="ad_nickname" type="text" name="nickname" style="display: none;" value="{% if steam_user %}{{ steam_user.nickname }}{% endif %}">
+      <input id="ad_avatar" type="text" name="avatar" style="display: none;" value="{% if steam_user %}{{ steam_user.avatar_url_full }}{% endif %}">
+  
+      <label style="display: flex; justify-self: center;">Store face</label>
+      <div class="card_hover-container">
+        <div class="ad_card">
+          <div class="ad_image_container">
+            {% if user_ad %}
+            <img src="{{ user_ad.first_item_image }}" class="ad_card_image" data-slot="ad_first_item">
+            <img src="{{ user_ad.second_item_image }}" class="ad_card_image" data-slot="ad_second_item">
+            <img src="{{ user_ad.third_item_image }}" class="ad_card_image" data-slot="ad_third_item">
+            <img src="{{ user_ad.fourth_item_image }}" class="ad_card_image" data-slot="ad_fourth_item">
+            <input id="ad_first_item" type="hidden" name="first_item_image">
+            <input id="ad_second_item" type="hidden" name="second_item_image">
+            <input id="ad_third_item" type="hidden" name="third_item_image">
+            <input id="ad_fourth_item" type="hidden" name="fourth_item_image">
+        {% else %}
+          <img src="/front/svg/default_item_icon.svg" class="ad_card_image" data-slot="ad_first_item">
+          <img src="/front/svg/default_item_icon.svg" class="ad_card_image" data-slot="ad_second_item">
+          <img src="/front/svg/default_item_icon.svg" class="ad_card_image" data-slot="ad_third_item">
+          <img src="/front/svg/default_item_icon.svg" class="ad_card_image" data-slot="ad_fourth_item">
+          <input id="ad_first_item" type="hidden" name="first_item_image">
+          <input id="ad_second_item" type="hidden" name="second_item_image">
+          <input id="ad_third_item" type="hidden" name="third_item_image">
+          <input id="ad_fourth_item" type="hidden" name="fourth_item_image">
+        {% endif %}
+          </div>
+        </div>
+      </div>
+  
+      <button type="submit">Apply</button>
+    </form>
+    </div>
+    <hr/>
+    <div style="justify-content: center; display: flex;">
+      <input class="ad_input_field">
+    </div>
+    <hr/>
+  
+    <div id="user_inventory" class="user_inventory">
+      <span>No items yet</span>
+    </div>
+    </div>
+</div>
