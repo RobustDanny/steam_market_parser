@@ -107,9 +107,6 @@ async fn main()-> std::io::Result<()> {
 
     let _ = MostRecentItems::get_most_recent_items(country, language, currency, request_sender).await;
     
-    //----------------------------------
-    //----------------------------------
-    //Server Actix
     HttpServer::new(move || {
 
         App::new()
@@ -130,6 +127,4 @@ async fn main()-> std::io::Result<()> {
     .bind(("127.0.0.1", 8080))?
     .run()
     .await
-    //----------------------------------
-    //----------------------------------
 }

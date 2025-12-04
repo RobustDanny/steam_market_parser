@@ -1,0 +1,159 @@
+.items-container {
+grid-column: 2;
+/* width: 95%; */
+padding-left: 20px;
+padding-top: 20px;
+margin-left: auto;
+display: flex;
+justify-content: center;
+/* justify-self: center; */
+flex-wrap: wrap;
+}
+
+.card_hover-container {
+display: inline-block;
+cursor: default;
+}
+
+.card_hover-container:hover .hidden-text {
+opacity: 1;
+visibility: visible;
+}
+
+.card:hover .card-button {
+transform: translate(-50%, 50%);
+opacity: 1;
+}
+
+.card {
+width: 80px;
+height: 90px;
+border-radius: 10px;
+background: #212121;
+position: relative;
+padding: 1.8rem;
+border: 1px solid #323232;
+transition: 0.5s ease-out;
+/* overflow: hidden; */
+margin: 0.4rem;
+}
+
+.card:hover {
+/*#E69066*/
+border-color: rgba(102, 219, 230, 0.25);
+box-shadow: 0 4px 18px 0 rgba(0, 0, 0, 0.25);
+}
+
+.card-details {
+color: black;
+height: 100%;
+gap: .5em;
+display: grid;
+place-content: center;
+
+}
+
+.text-price {
+color: #9E9E9E;
+font-size: 0.7em;
+position: absolute;
+bottom: 9px;
+justify-self: center;
+}
+
+.card_tooltip-container:hover .tooltip_actions {
+opacity: 1;
+visibility: visible;
+}
+
+.more_icon{
+position: absolute;
+top: 7px;
+right: 5px;
+width: 16px;
+height: 16px;
+}
+
+.tooltip_actions{
+position: absolute;
+bottom: 60%;
+left: 112%;
+transform: translateX(-50%);
+background-color: #333;
+color: white;
+padding: 8px;
+border-radius: 3px;
+white-space: nowrap;
+opacity: 0;
+font-size: 8pt;
+gap: 0.5em;
+visibility: hidden;
+display: flex;          
+flex-direction: column; 
+align-items: center; 
+transition: opacity 0.3s ease, visibility 0.3s ease;
+z-index: 10;
+}
+
+.tooltip_icon{
+cursor: pointer;
+/* position: absolute;
+top: 5px;
+right: 5px; */
+width: 16px;
+height: 16px; 
+}
+
+.locker_icon{
+position: absolute;
+top: 5px;
+left: 5px;
+width: 16px;
+height: 16px;
+}
+
+.game_icon{
+position: absolute;
+top: 7px;
+right: 25px;
+width: 16px;
+height: 16px;
+}
+
+.item_icon{
+padding-left: 5px;
+padding-right: 5px;
+width: auto;
+height: 70px;
+/* position: absolute; */
+justify-self: center;
+align-self: center;    
+}
+
+.hidden-text {
+position: absolute;
+top: 105%;
+left: 50%;
+transform: translateX(-50%);
+background-color: #333;
+color: white;
+padding: 5px 8px;
+border-radius: 3px;
+white-space: nowrap;
+opacity: 0;
+font-size: 8pt;
+visibility: hidden;
+transition: opacity 0.3s ease, visibility 0.3s ease;
+z-index: 1000;
+}
+
+.text-title {
+padding-left: 5px;
+padding-right: 5px;
+font-size: 0.6em;
+font-weight: bold;
+position: absolute;
+justify-self: center;
+bottom: 10px;
+color: #F9F8F6;
+}
