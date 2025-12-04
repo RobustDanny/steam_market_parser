@@ -231,6 +231,37 @@ justify-self: center;
 align-self: center;
 }
 
+.inventory_card {
+width: 50px;
+height: 60px;
+border-radius: 10px;
+background: #212121;
+position: relative;
+padding: 1.1rem;
+border: 1px solid #323232;
+transition: 0.5s ease-out;
+/* overflow: hidden; */
+margin: 0.4rem;
+}
+
+.inventory_card_details {
+    /* color: black; */
+    height: 100%;
+    /* gap: .5em; */
+    display: grid;
+    place-content: center;
+    }
+
+.inventory_item_icon{
+padding-left: 5px;
+padding-right: 5px;
+width: auto;
+height: 50px;
+/* position: absolute; */
+justify-self: center;
+align-self: center;    
+}
+
 /*Key frames*/
 @keyframes smoothPulse {
 0% {
