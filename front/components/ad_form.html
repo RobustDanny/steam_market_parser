@@ -4,7 +4,7 @@
       <form class="load_inventory_modal_form" id="SettingsFormInventory">
         <div style="display: flex; flex-direction: row; gap: 10px;">
           <input style="display: none;" name="settings_steamid" value="{% if steam_user %}{{ steam_user.steamid }}{% endif %}">
-        <input value="730" name="settings_appid">
+        <input value="570" name="settings_appid">
         <button type="submit">load</button>
         </div>
       </form>
@@ -18,24 +18,24 @@
         <div class="ad_card">
           <div class="ad_image_container">
             {% if user_ad %}
-            <img src="{{ user_ad.first_item_image }}" class="ad_card_image" data-slot="ad_first_item">
-            <img src="{{ user_ad.second_item_image }}" class="ad_card_image" data-slot="ad_second_item">
-            <img src="{{ user_ad.third_item_image }}" class="ad_card_image" data-slot="ad_third_item">
-            <img src="{{ user_ad.fourth_item_image }}" class="ad_card_image" data-slot="ad_fourth_item">
-            <input id="ad_first_item" type="hidden" name="first_item_image">
-            <input id="ad_second_item" type="hidden" name="second_item_image">
-            <input id="ad_third_item" type="hidden" name="third_item_image">
-            <input id="ad_fourth_item" type="hidden" name="fourth_item_image">
-        {% else %}
-          <img src="/front/svg/default_item_icon.svg" class="ad_card_image" data-slot="ad_first_item">
-          <img src="/front/svg/default_item_icon.svg" class="ad_card_image" data-slot="ad_second_item">
-          <img src="/front/svg/default_item_icon.svg" class="ad_card_image" data-slot="ad_third_item">
-          <img src="/front/svg/default_item_icon.svg" class="ad_card_image" data-slot="ad_fourth_item">
-          <input id="ad_first_item" type="hidden" name="first_item_image">
-          <input id="ad_second_item" type="hidden" name="second_item_image">
-          <input id="ad_third_item" type="hidden" name="third_item_image">
-          <input id="ad_fourth_item" type="hidden" name="fourth_item_image">
-        {% endif %}
+              <img src="{{ user_ad.first_item_image }}" class="ad_card_image" data-slot="ad_first_item">
+              <img src="{{ user_ad.second_item_image }}" class="ad_card_image" data-slot="ad_second_item">
+              <img src="{{ user_ad.third_item_image }}" class="ad_card_image" data-slot="ad_third_item">
+              <img src="{{ user_ad.fourth_item_image }}" class="ad_card_image" data-slot="ad_fourth_item">
+              <input id="ad_first_item" type="hidden" name="first_item_image">
+              <input id="ad_second_item" type="hidden" name="second_item_image">
+              <input id="ad_third_item" type="hidden" name="third_item_image">
+              <input id="ad_fourth_item" type="hidden" name="fourth_item_image">
+            {% else %}
+              <img src="/front/svg/default_item_icon.svg" class="ad_card_image" data-slot="ad_first_item">
+              <img src="/front/svg/default_item_icon.svg" class="ad_card_image" data-slot="ad_second_item">
+              <img src="/front/svg/default_item_icon.svg" class="ad_card_image" data-slot="ad_third_item">
+              <img src="/front/svg/default_item_icon.svg" class="ad_card_image" data-slot="ad_fourth_item">
+              <input id="ad_first_item" type="hidden" name="first_item_image">
+              <input id="ad_second_item" type="hidden" name="second_item_image">
+              <input id="ad_third_item" type="hidden" name="third_item_image">
+              <input id="ad_fourth_item" type="hidden" name="fourth_item_image">
+            {% endif %}
           </div>
         </div>
       </div>
@@ -45,7 +45,7 @@
     </div>
     <hr/>
     <div style="justify-content: center; display: flex;">
-      <input class="ad_input_field">
+      <input class="ad_input_field" id="inventoryFilter" placeholder="Search items...">
     </div>
     <hr/>
   

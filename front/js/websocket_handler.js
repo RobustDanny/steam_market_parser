@@ -14,14 +14,19 @@ ws_ad.onmessage = (event) => {
     
     const container = document.getElementById("items-container");
 
+    const img1 = user_ad.first_item_image  || "/front/svg/default_item_icon.svg";
+    const img2 = user_ad.second_item_image || "/front/svg/default_item_icon.svg";
+    const img3 = user_ad.third_item_image  || "/front/svg/default_item_icon.svg";
+    const img4 = user_ad.fourth_item_image || "/front/svg/default_item_icon.svg";
+
     container.insertAdjacentHTML("afterbegin", `
         <div class="card_hover-container">
           <div class="ad_card">
             <div class="ad_image_container">
-              <img src=${user_ad.first_item_image} class="ad_card_image">
-              <img src=${user_ad.second_item_image} class="ad_card_image">
-              <img src=${user_ad.third_item_image} class="ad_card_image">
-              <img src=${user_ad.fourth_item_image} class="ad_card_image">
+              <img src="${img1}" class="ad_card_image">
+              <img src="${img2}" class="ad_card_image">
+              <img src="${img3}" class="ad_card_image">
+              <img src="${img4}" class="ad_card_image">
             </div>
           </div>
         </div>
@@ -64,7 +69,7 @@ ws.onmessage = (event) => {
               </div>
               </div>
               <span class="hidden-text">${item.name}</span>
-              <span class="text-price">$${item.price}</span>
+              <span class="text-price">$${item.converted_price}</span>
               </div>
           </div>
         </div>

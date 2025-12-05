@@ -5,7 +5,7 @@
     
             <div class="card">
                 <div class="card-details">
-                    <span class="text-price">${{ item.price }}</span>
+                    <span class="text-price">${{ item.converted_price }}</span>
     
                     <div class="card_tooltip-container">
                         <img class="more_icon" src="/front/svg/more_icon.svg">
@@ -13,9 +13,12 @@
                         <span class="tooltip_actions">
                             <a href="https://steamcommunity.com/market/listings/{{item.appid}}/{{item.market_hash_name}}"
                             target="_blank" rel="noopener noreferrer">
-                            <img class="tooltip_icon" src="/front/svg/grab_icon.svg">
+                            <img class="tooltip_icon_pick_up" src="/front/svg/grab_icon.svg">
                             </a>
-                            <img class="tooltip_icon" src="/front/svg/info_icon.svg">
+                            <img class="tooltip_icon_info" src="/front/svg/info_icon.svg">
+                            <div class="hidden_card_info">
+                                {% include "components/card_info.html" %}
+                            </div>
                         </span>
                     </div>
     

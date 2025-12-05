@@ -40,7 +40,10 @@ impl DataBase{
                 .get(&assetid).unwrap();
     
             let icon = listing_asset.icon_url.as_ref().expect("No icon_url").to_string();
-            let price = format!("{:.2}", listing.price * 0.100);
+            let converted_price = match listing.converted_price {
+                Some(conv_price) => conv_price.to_string(),
+                None => format!("{:.2}", listing.price * 0.100),
+            };
             let game = data.app_data.get(&appid).unwrap().name.to_owned();
             let game_icon = data.app_data.get(&appid).unwrap().icon.to_owned();
             let tradable = listing_asset.tradable.as_ref().expect("No tradable").to_string();
@@ -49,10 +52,10 @@ impl DataBase{
     
             self.connection.execute(
                 "INSERT OR IGNORE INTO item_feed 
-                (listinginfo_id, name, price, game, appid, icon_url, game_icon, market_hash_name, tradable) 
+                (listinginfo_id, name, converted_price, game, appid, icon_url, game_icon, market_hash_name, tradable) 
                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
                 [
-                    listinginfo_id, name, price, game, appid, icon,
+                    listinginfo_id, name, converted_price, game, appid, icon,
                     game_icon, market_hash_name, tradable,
                 ],
             ).expect("Can't insert listing data into DB");
@@ -71,7 +74,7 @@ impl DataBase{
     ) -> Result<Vec<MostRecent>, rusqlite::Error> {
 
         let mut query = self.connection.prepare(
-            "SELECT id, listinginfo_id, name, price, game, appid, 
+            "SELECT id, listinginfo_id, name, converted_price, game, appid, 
                     market_hash_name, tradable, icon_url, game_icon
              FROM item_feed
              WHERE id > ?1 AND id <= ?2
@@ -85,7 +88,7 @@ impl DataBase{
                 id: row.get(0).expect("Cant get id from DB"),
                 listinginfo_id: row.get(1).expect("Cant get listinginfo_id from DB"),
                 name: row.get(2).expect("Cant get name from DB"),
-                price: row.get(3).expect("Cant get price from DB"),
+                converted_price: row.get(3).expect("Cant get converted_price from DB"),
                 game: row.get(4).expect("Cant get game from DB"),
                 appid: row.get(5).expect("Cant get appid from DB"),
                 market_hash_name: row.get(6).expect("Cant get market_hash_name from DB"),
@@ -172,7 +175,7 @@ impl DataBase{
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 listinginfo_id TEXT UNIQUE,
                 name TEXT,
-                price TEXT,
+                converted_price TEXT,
                 game TEXT,
                 appid TEXT,
                 market_hash_name TEXT,

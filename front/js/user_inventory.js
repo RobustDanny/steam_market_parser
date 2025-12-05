@@ -86,3 +86,20 @@ if (id) {
     document.getElementById(id).value = img;
 }
 });
+
+//filter inventory
+document.getElementById("inventoryFilter").addEventListener("input", function () {
+    const query = this.value.trim().toLowerCase();
+    const items = document.querySelectorAll("#user_inventory .card_hover-container");
+
+    items.forEach(item => {
+        const nameEl = item.querySelector(".hidden-text");
+        const name = nameEl ? nameEl.textContent.toLowerCase() : "";
+
+        if (name.includes(query)) {
+            item.style.display = "";
+        } else {
+            item.style.display = "none";
+        }
+    });
+});
