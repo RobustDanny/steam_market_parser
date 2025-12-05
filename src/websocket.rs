@@ -6,7 +6,7 @@ use actix::prelude::*;
 use actix_session::Session;
 use steam_market_parser::UserProfileAds;
 
-use crate::{AppState, MostRecent, MostRecentItemsFilter};
+use crate::{AppState, UserAdState, FeedItemsState, MostRecent, MostRecentItemsFilter};
 
 #[derive(serde::Serialize, Clone)]
 pub struct BroadcastPayload {
@@ -19,12 +19,12 @@ pub struct AdsBroadcastPayload {
 }
 
 struct WsActor {
-    state: web::Data<AppState>,
+    state: web::Data<FeedItemsState>,
     user_filters: MostRecentItemsFilter,
 }
 
 struct AdWSActor {
-    state: web::Data<AppState>,
+    state: web::Data<UserAdState>,
 }
 
 impl Actor for AdWSActor {
@@ -157,7 +157,7 @@ pub async fn ws_handler(
     req: HttpRequest,
     stream: web::Payload,
     session: Session,
-    state: web::Data<AppState>,
+    state: web::Data<FeedItemsState>,
 ) -> Result<HttpResponse, Error> {
     let filters: Option<MostRecentItemsFilter> = session.get("filters")?;
     let filters = filters.unwrap_or_else(|| MostRecentItemsFilter {
@@ -178,7 +178,7 @@ pub async fn ws_handler(
 pub async fn ws_ad_handler(
     req: HttpRequest,
     stream: web::Payload,
-    state: web::Data<AppState>,
+    state: web::Data<UserAdState>,
 ) -> Result<HttpResponse, Error> {
 
     let ws_ad = AdWSActor {

@@ -3,7 +3,8 @@ use std::time::Duration;
 use tokio::sync::{mpsc};
 
 use crate::{
-    AppState,
+    UserAdState,
+    FeedItemsState,
     SteamMostRecentResponse
 };
 
@@ -14,7 +15,7 @@ use crate::websocket::{
     BroadcastPayload
 };
 
-pub async fn tokio_user_ad_loop(state: web::Data<AppState>){
+pub async fn tokio_user_ad_loop(state: web::Data<UserAdState>){
     loop {
         let mut ads = state.user_ads.lock().await;
 
@@ -36,7 +37,7 @@ pub async fn tokio_user_ad_loop(state: web::Data<AppState>){
 pub async fn tokio_receiver_most_recent_items_request(
     mut receiver: mpsc::Receiver<SteamMostRecentResponse>,
     db: DataBase,
-    state: web::Data<AppState>,
+    state: web::Data<FeedItemsState>,
 ) {
     while let Some(most_recent_items_response) = receiver.recv().await {
         let (start_id, end_id) = db.db_post_most_recent_items(most_recent_items_response);

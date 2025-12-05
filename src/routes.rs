@@ -2,7 +2,7 @@ use actix_session::{Session};
 use actix_web::{HttpResponse, Responder, web};
 use tera::{Context};
 
-use crate::{AppState, UserInventoryState};
+use crate::{AppState, UserAdState, FeedItemsState, UserInventoryState};
 use steam_market_parser::{InventoryApp, UserProfileAds, Inventory, FilterInput, SteamUser};
 
 use crate::db::DataBase;
@@ -42,7 +42,7 @@ pub async fn steam_logout(session: Session) -> impl Responder {
         .finish()
 }
 
-pub async fn add_ad_steam_user_to_db(form: web::Form<UserProfileAds>, state: web::Data<AppState>) -> impl Responder {
+pub async fn add_ad_steam_user_to_db(form: web::Form<UserProfileAds>, state: web::Data<UserAdState>) -> impl Responder {
     
     let ad_user: UserProfileAds = form.into_inner();
 
@@ -63,8 +63,8 @@ pub async fn post_most_recent_item_filters(params: web::Query<FilterInput>,
         HttpResponse::Ok().json(&*params)
 }
 
-pub async fn tera_update_data(session: Session, state: web::Data<AppState>, _user_inventory: web::Data<UserInventoryState>) -> impl Responder {
-    let items = state.items.lock().await.clone();
+pub async fn tera_update_data(session: Session, state: web::Data<AppState>, feed_state: web::Data<FeedItemsState>, _user_inventory: web::Data<UserInventoryState>) -> impl Responder {
+    let items = feed_state.items.lock().await.clone();
     let filters: FilterInput = match session.get("filters") {
         Ok(Some(f)) => f,
         _ => FilterInput {

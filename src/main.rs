@@ -44,10 +44,16 @@ use background_tasks::{
 
 struct AppState {
     tera: Tera,
+}
+
+struct FeedItemsState{
     items: Mutex<Vec<MostRecent>>,
+    broadcaster: broadcast::Sender<BroadcastPayload>,
+}
+
+struct UserAdState{
     user_ads: Mutex<UserAdsQueue>,
     ads_broadcaster: broadcast::Sender<AdsBroadcastPayload>,
-    broadcaster: broadcast::Sender<BroadcastPayload>,
 }
 struct UserInventoryState{
     inventory: Mutex<Inventory>,
@@ -86,23 +92,29 @@ async fn main()-> std::io::Result<()> {
 
     let state = web::Data::new(AppState {
         tera: Tera::new("front/**/*").expect("Tera init failed"),
+    });
+
+    let feed_state = web::Data::new(FeedItemsState{
         items: Mutex::new(Vec::new()),
-        ads_broadcaster: broadcast_sender_user_ad,
         broadcaster: broadcast_sender_most_recent_items,
+    });
+
+    let user_ad_state = web::Data::new(UserAdState{
+        ads_broadcaster: broadcast_sender_user_ad,
         user_ads: Mutex::new(UserAdsQueue { 
             queue: db.db_get_ad_steam_user(),
         })
     });
 
-    let state_for_ws = state.clone();
-    let state_for_ads = state.clone();
+    let user_ad_state_for_ads = user_ad_state.clone();
+    let feed_state_for_ws = feed_state.clone();
 
     tokio::spawn(async move {
-        tokio_receiver_most_recent_items_request(response_receiver, db, state_for_ws).await;
+        tokio_receiver_most_recent_items_request(response_receiver, db, feed_state_for_ws).await;
     });
 
     tokio::spawn(async move {
-        tokio_user_ad_loop(state_for_ads).await; 
+        tokio_user_ad_loop(user_ad_state_for_ads).await; 
     });
 
     let _ = MostRecentItems::get_most_recent_items(country, language, currency, request_sender).await;
@@ -113,6 +125,8 @@ async fn main()-> std::io::Result<()> {
             .wrap(SessionMiddleware::new(CookieSessionStore::default(), key.clone()))
             .app_data(state.clone())
             .app_data(user_inventory.clone())
+            .app_data(user_ad_state.clone())
+            .app_data(feed_state.clone())
             .service(Files::new("/front", "./front"))
             .route("/", web::get().to(tera_update_data))
             .route("/ws", web::get().to(ws_handler)) 
