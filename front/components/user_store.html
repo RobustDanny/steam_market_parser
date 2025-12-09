@@ -1,0 +1,52 @@
+<div id="user_storeBackdrop">
+    <div id="user_store" class="user_store">
+
+        <div class="store_grid">
+
+            <!-- ROW 1 – COL 1 -->
+            <div class="store_filters">
+                <form class="store_filters_form" id="store_filters_form">
+                    <div style="display: flex; flex-direction: row; gap: 10px;">
+                        <input id="store_steamid" style="display: none;" name="settings_steamid">
+                        <input class="store_input" value="570" name="settings_appid">
+                        <button class="store_button" type="submit">load</button>
+                    </div>
+                </form>
+                <input class="store_input" type="text" id="store_inventoryFilter" placeholder="Search items...">
+            </div>
+
+            <!-- ROW 1 – COL 2 -->
+            <div class="store_steps">
+                <ol>
+                    <li>Select store items</li>
+                    <li>Confirm your offer</li>
+                    <li>Wait for partner approval</li>
+                    <li>Finish the trade</li>
+                </ol>
+            </div>
+
+            <!-- CHAT (full height – spans row1 & row2, column 3) -->
+            <div class="store_chat">
+                <div class="chat_messages" id="chat_messages"></div>
+
+                <div class="chat_input_group">
+                    <input id="chat_input" type="text" placeholder="Type...">
+                    <button class="store_button" id="chat_send">Send</button>
+                </div>
+            </div>
+
+            <!-- NEW ROW: spans columns 1 & 2 -->
+            <div class="store_selected_items">
+            </div>
+
+            <!-- ROW 2 — COL 1 & 2 merged -->
+            <div class="store_inventory_area">
+                <div id="store_inventory" class="store_inventory_list">
+                    <span>No items yet</span>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+</div>

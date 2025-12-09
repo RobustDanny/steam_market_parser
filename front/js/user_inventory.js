@@ -1,3 +1,5 @@
+const DEFAULT_ICON = "/front/svg/default_item_icon.svg";
+
 document.getElementById("SettingsFormInventory").addEventListener("submit", async (e) => {
 e.preventDefault();
 
@@ -22,7 +24,7 @@ function renderUserInventory(inventory) {
 const container = document.getElementById("user_inventory");
 
 container.innerHTML = ""; // clear old inventory
-
+console.log("kekw");
 const assets = inventory.assets || [];
 const descriptions = inventory.descriptions || [];
 
@@ -103,3 +105,87 @@ document.getElementById("inventoryFilter").addEventListener("input", function ()
         }
     });
 });
+
+//refresh ad card
+document.getElementById("refresh_items").addEventListener("click", function () {
+    const DEFAULT_ICON = "/front/svg/default_item_icon.svg";
+
+    // Reset all displayed images
+    ["ad_first_item", "ad_second_item", "ad_third_item", "ad_fourth_item"].forEach(slot => {
+        const img = document.querySelector(`[data-slot="${slot}"]`);
+        if (img) img.src = DEFAULT_ICON;
+    });
+
+    // Clear corresponding hidden inputs
+    document.querySelectorAll("input[id^='ad_']").forEach(input => {
+        input.value = "";
+    });
+});
+
+//check history ad cards
+const historyBtn = document.getElementById("history_cards");
+const historyBackdrop = document.getElementById("historyBackdrop");
+const historyForm = document.getElementById("history_form");
+const mainModal = document.getElementById("formModal");
+
+// OPEN HISTORY
+historyBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    mainModal.style.display = "none";          // hide main form
+    historyBackdrop.style.display = "flex";    // show modal centered
+});
+
+// CLOSE WHEN CLICKING OUTSIDE
+historyBackdrop.addEventListener("click", (e) => {
+    if (!historyForm.contains(e.target)) {
+        historyBackdrop.style.display = "none";
+        mainModal.style.display = "flex";      // return main modal
+    }
+});
+
+//get history of ad_cards
+document.getElementById("history_cards").addEventListener("click", async (e) => {
+    e.preventDefault();
+
+    const steamid = document.getElementById("ad_steamid").value;
+    const data = new URLSearchParams({ steamid });
+
+    const res = await fetch("/api/get_ad_cards_history", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: data
+    });
+    
+    const json = await res.json();
+    console.log("History_cards:", json);
+
+    renderAdUserHistory(json.ad_card_vec);
+});
+
+function renderAdUserHistory(vec) {
+
+    const container = document.getElementById("history_form");
+    container.innerHTML = "";
+
+    vec.forEach(item => {
+        
+        const first  = item.first_item_image  || DEFAULT_ICON;
+        const second = item.second_item_image || DEFAULT_ICON;
+        const third  = item.third_item_image  || DEFAULT_ICON;
+        const fourth = item.fourth_item_image || DEFAULT_ICON;
+
+        const card = `
+        <div class="ad_card">
+            <div class="ad_image_container">
+                <img src="${first}" class="ad_card_image" data-slot="ad_first_item">
+                <img src="${second}" class="ad_card_image" data-slot="ad_second_item">
+                <img src="${third}" class="ad_card_image" data-slot="ad_third_item">
+                <img src="${fourth}" class="ad_card_image" data-slot="ad_fourth_item">
+            </div>
+        </div>`;
+    
+        container.insertAdjacentHTML("beforeend", card);
+    });
+}

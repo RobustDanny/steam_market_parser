@@ -6,7 +6,12 @@ use actix::prelude::*;
 use actix_session::Session;
 use steam_market_parser::UserProfileAds;
 
-use crate::{AppState, UserAdState, FeedItemsState, MostRecent, MostRecentItemsFilter};
+use crate::{
+    UserAdState, 
+    FeedItemsState, 
+    MostRecent, 
+    MostRecentItemsFilter
+};
 
 #[derive(serde::Serialize, Clone)]
 pub struct BroadcastPayload {

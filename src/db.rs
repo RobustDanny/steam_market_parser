@@ -1,6 +1,12 @@
 use rusqlite::Connection;
 use std::collections::VecDeque;
-use steam_market_parser::{SteamMostRecentResponse, MostRecent, SteamUser, UserProfileAds};
+use steam_market_parser::{
+    SteamMostRecentResponse, 
+    MostRecent, 
+    SteamUser, 
+    UserProfileAds,
+    AdCardHistoryVec,
+};
 
 pub struct DataBase{
     connection: Connection,
@@ -169,6 +175,33 @@ impl DataBase{
         queue
     }
 
+    pub fn db_get_ad_cards_history(&self, steamid: String)-> Result<AdCardHistoryVec, rusqlite::Error>{
+        let mut query = self.connection.prepare("SELECT * FROM ad_steam_user WHERE steamid=?1")?;
+
+        let rows = query.query_map([steamid], |row| {
+            Ok(UserProfileAds{
+                steamid: row.get(1).expect("Cant get steamid from DB"),
+                nickname: row.get(2).expect("Cant get nickname from DB"),
+                avatar: row.get(3).expect("Cant get avatar from DB"),
+                first_item_image: row.get(4).expect("Cant get first_item_image from DB"),
+                second_item_image: row.get(5).expect("Cant get second_item_image from DB"),
+                third_item_image: row.get(6).expect("Cant get third_item_image from DB"),
+                fourth_item_image: row.get(7).expect("Cant get fourth_item_image from DB"),
+            })
+        })?;
+
+        let mut result = Vec::new();
+
+        for row in rows{
+            result.push(row?);
+        }
+
+        Ok(AdCardHistoryVec{
+            ad_card_vec: result
+        })
+
+    }
+
     fn create_tables(&self) {
         self.connection.execute_batch("
             CREATE TABLE IF NOT EXISTS item_feed (
@@ -199,6 +232,15 @@ impl DataBase{
                 second_item_image TEXT,
                 third_item_image TEXT,
                 fourth_item_image TEXT
+            );
+            CREATE TABLE IF NOT EXISTS chat_messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                chat_id TEXT,
+                buyer_steamid TEXT,
+                trader_steamid TEXT,
+                message_type TEXT,
+                message TEXT,
+                data TEXT
             );
 
         ").expect("Failed to create tables");

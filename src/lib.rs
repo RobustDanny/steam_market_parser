@@ -1,5 +1,5 @@
 use std::{collections::{HashMap, VecDeque}, time::Duration};
-use tokio::sync::{mpsc, Mutex};
+use tokio::sync::{mpsc};
 
 use serde::{Deserialize, Serialize};
 
@@ -31,6 +31,35 @@ pub struct SteamUser{
     pub avatar_url_small: String,
     pub avatar_url_full: String,
 }
+//----------------------------------
+//----------------------------------
+
+//----------------------------------
+//----------------------------------
+//History of ad_cards
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct HistoryForm{
+    pub steamid: String,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct AdCardHistoryVec{
+    pub ad_card_vec: Vec<UserProfileAds>,
+}
+
+//----------------------------------
+//----------------------------------
+
+//----------------------------------
+//----------------------------------
+//Chat websockets
+#[derive(Deserialize)]
+pub struct ChatQuery {
+    pub buyer: String,
+    pub trader: String,
+}
+
 //----------------------------------
 //----------------------------------
 

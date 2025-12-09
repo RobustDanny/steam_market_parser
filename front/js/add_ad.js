@@ -27,3 +27,11 @@ document.getElementById("adMeBtn")?.addEventListener("click", () => {
 
     document.getElementById("formModal").style.display = "none";
 });
+
+document.addEventListener("click", (e) => {
+  if (e.target.closest("#ad_card_from_feed")) {
+ 
+    const steamid = document.getElementById("ad_card_from_feed_input").value;
+    
+  }
+});

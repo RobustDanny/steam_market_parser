@@ -25,21 +25,33 @@ use websocket::{
 };
 
 mod steam_login;
-use steam_login::{steam_login, steam_return};
+use steam_login::{
+    steam_login, 
+    steam_return
+};
 
 mod routes;
 use routes::{
     tera_update_data, 
     steam_logout, 
-    settings_load_inventory, 
+    load_inventory, 
     post_most_recent_item_filters, 
-    add_ad_steam_user_to_db
+    add_ad_steam_user_to_db,
+    get_ad_cards_history
 };
 
 mod background_tasks;
 use background_tasks::{
     tokio_user_ad_loop,
-    tokio_receiver_most_recent_items_request
+    tokio_receiver_most_recent_items_request,
+    tokio_notification_receiver
+};
+
+mod store_chat_websocket;
+use store_chat_websocket::{
+    ws_chat_handler,
+    ws_notification_handler,
+    NotificationPlayload,
 };
 
 struct AppState {
@@ -57,6 +69,11 @@ struct UserAdState{
 }
 struct UserInventoryState{
     inventory: Mutex<Inventory>,
+}
+
+struct NotificationState{
+    steamid_to_get_notification: String,
+    notification_broadcaster: broadcast::Sender<NotificationPlayload>,
 }
 
 #[actix_web::main]
@@ -78,6 +95,7 @@ async fn main()-> std::io::Result<()> {
     let (request_sender, response_receiver) = mpsc::channel(100);
     let (broadcast_sender_most_recent_items, _broadcast_reciever_most_recent_items) = broadcast::channel(32);
     let (broadcast_sender_user_ad, _broadcast_reciever_user_ad) = broadcast::channel(10);
+    let (broadcast_sender_notification, broadcast_reciever_notification) = broadcast::channel(10);
 
     let user_inventory = web::Data::new(UserInventoryState{
         inventory: Mutex::new(Inventory{
@@ -106,8 +124,18 @@ async fn main()-> std::io::Result<()> {
         })
     });
 
+    let notification_state = web::Data::new(NotificationState{
+        steamid_to_get_notification: String::new(),
+        notification_broadcaster: broadcast_sender_notification,
+    });
+
     let user_ad_state_for_ads = user_ad_state.clone();
     let feed_state_for_ws = feed_state.clone();
+    let notification_state_for_notification = notification_state.clone();
+
+    tokio::spawn(async move {
+        tokio_notification_receiver(notification_state_for_notification, broadcast_reciever_notification).await;
+    });
 
     tokio::spawn(async move {
         tokio_receiver_most_recent_items_request(response_receiver, db, feed_state_for_ws).await;
@@ -118,6 +146,8 @@ async fn main()-> std::io::Result<()> {
     });
 
     let _ = MostRecentItems::get_most_recent_items(country, language, currency, request_sender).await;
+
+    println!("http://127.0.0.1:8080");
     
     HttpServer::new(move || {
 
@@ -125,14 +155,18 @@ async fn main()-> std::io::Result<()> {
             .wrap(SessionMiddleware::new(CookieSessionStore::default(), key.clone()))
             .app_data(state.clone())
             .app_data(user_inventory.clone())
+            .app_data(notification_state.clone())
             .app_data(user_ad_state.clone())
             .app_data(feed_state.clone())
             .service(Files::new("/front", "./front"))
             .route("/", web::get().to(tera_update_data))
             .route("/ws", web::get().to(ws_handler)) 
             .route("/ws/ads", web::get().to(ws_ad_handler)) 
+            .route("/ws/chat", web::get().to(ws_chat_handler)) 
+            .route("/ws/notification", web::get().to(ws_notification_handler)) 
             .route("/api/logout", web::get().to(steam_logout)) 
-            .route("/api/get_inventory_items", web::post().to(settings_load_inventory)) 
+            .route("/api/get_inventory_items", web::post().to(load_inventory)) 
+            .route("/api/get_ad_cards_history", web::post().to(get_ad_cards_history)) 
             .route("/api/filters", web::get().to(post_most_recent_item_filters))
             .route("/api/add_to_ad_queue", web::post().to(add_ad_steam_user_to_db))
             .route("/api/auth/steam", web::get().to(steam_login))

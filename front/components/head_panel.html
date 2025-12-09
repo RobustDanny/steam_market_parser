@@ -1,6 +1,10 @@
 <div class="head_panel">
     <div class="sign_in_container">
         {% if steam_user %}
+        <input id="main_steam_id" type="hidden" value="{{steam_user.steamid}}" style="display: none;">
+        <div class="hidded_button">
+            <img src="/front/svg/notification_icon.svg" class="steam_user_avatar">
+        </div>
         <div class="hidded_button" id="adMeBtn">
         <img src="/front/svg/ad_me_icon.svg" class="steam_user_avatar">
         </div>
@@ -19,6 +23,7 @@
             </a>
         </div>
         </div>
+        <img class="sign_in_icon" src="/front/svg/notification_icon.svg">
         <img class="sign_in_icon" src="/front/svg/ad_me_icon.svg">
         <img class="sign_in_icon" src="{{ steam_user.avatar_url_full }}">
         {% else %}

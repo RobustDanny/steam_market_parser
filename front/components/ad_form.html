@@ -13,7 +13,11 @@
       <input id="ad_nickname" type="text" name="nickname" style="display: none;" value="{% if steam_user %}{{ steam_user.nickname }}{% endif %}">
       <input id="ad_avatar" type="text" name="avatar" style="display: none;" value="{% if steam_user %}{{ steam_user.avatar_url_full }}{% endif %}">
   
+      <div style="display: flex; gap: 10px; justify-content: center;">
       <label style="display: flex; justify-self: center;">Store face</label>
+      <img id="refresh_items" class="refresh_items" src="/front/svg/refresh_icon.svg">
+        <img id="history_cards" class="history_cards" src="/front/svg/history_icon.svg">
+      </div>
       <div class="card_hover-container">
         <div class="ad_card">
           <div class="ad_image_container">
@@ -53,4 +57,9 @@
       <span>No items yet</span>
     </div>
     </div>
+</div>
+
+<div id="historyBackdrop" class="modal_backdrop" style="display:none;">
+  <div id="history_form" class="history_form">
+  </div>
 </div>

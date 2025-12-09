@@ -8,6 +8,11 @@ ws_ad.onerror = (err) => console.log("WS_AD ERROR", err);
 ws_ad.onmessage = (event) => {
     const data = JSON.parse(event.data);
 
+    if (!data.user_ads || !data.user_ads[0]) {
+      console.error("No ads received or ads data is invalid");
+      return;
+  }
+
     // Get only the FIRST ad
     const user_ad = data.user_ads?.[0];
     // if (!user_ad) return;
@@ -20,6 +25,8 @@ ws_ad.onmessage = (event) => {
     const img4 = user_ad.fourth_item_image || "/front/svg/default_item_icon.svg";
 
     container.insertAdjacentHTML("afterbegin", `
+      <div class="ad_card_from_feed">
+        <input name="user_store_steam_id" id="user_store_steam_id" style="display: none;" type="hidden" value="${user_ad.steamid}">
         <div class="card_hover-container">
           <div class="ad_card">
             <div class="ad_image_container">
@@ -30,6 +37,7 @@ ws_ad.onmessage = (event) => {
             </div>
           </div>
         </div>
+      </div>
     `);
 };
 

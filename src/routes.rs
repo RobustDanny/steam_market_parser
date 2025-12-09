@@ -2,12 +2,25 @@ use actix_session::{Session};
 use actix_web::{HttpResponse, Responder, web};
 use tera::{Context};
 
-use crate::{AppState, UserAdState, FeedItemsState, UserInventoryState};
-use steam_market_parser::{InventoryApp, UserProfileAds, Inventory, FilterInput, SteamUser};
+use crate::{
+    AppState, 
+    UserAdState, 
+    FeedItemsState, 
+    UserInventoryState,
+};
+use steam_market_parser::{
+    InventoryApp, 
+    UserProfileAds, 
+    Inventory, 
+    FilterInput, 
+    SteamUser,
+    HistoryForm,
+    AdCardHistoryVec
+};
 
 use crate::db::DataBase;
 
-pub async fn settings_load_inventory(_user_inventory: web::Data<UserInventoryState>, params: web::Form<InventoryApp>)-> impl Responder{
+pub async fn load_inventory(_user_inventory: web::Data<UserInventoryState>, params: web::Form<InventoryApp>)-> impl Responder{
 
     let inventory = &*params;
 
@@ -63,6 +76,20 @@ pub async fn post_most_recent_item_filters(params: web::Query<FilterInput>,
         HttpResponse::Ok().json(&*params)
 }
 
+pub async fn get_ad_cards_history(form: web::Form<HistoryForm>) -> impl Responder {
+    let db = DataBase::connect_to_db();
+
+    let deref_form = &*form;
+
+    match db.db_get_ad_cards_history(deref_form.steamid.clone()) {
+        Ok(result) => HttpResponse::Ok().json(&result),
+        Err(e) => {
+            println!("Database error: {:?}", e);
+            HttpResponse::InternalServerError().json(serde_json::json!({"error": "Database error"}))
+        }
+    }
+}
+
 pub async fn tera_update_data(session: Session, state: web::Data<AppState>, feed_state: web::Data<FeedItemsState>, _user_inventory: web::Data<UserInventoryState>) -> impl Responder {
     let items = feed_state.items.lock().await.clone();
     let filters: FilterInput = match session.get("filters") {
@@ -76,6 +103,10 @@ pub async fn tera_update_data(session: Session, state: web::Data<AppState>, feed
     };
     
     let steam_user: Option<SteamUser> = session.get("steam_user").unwrap_or(None);
+
+    let vec_ad_cards_history = AdCardHistoryVec{
+        ad_card_vec: Vec::new(),
+    };
     
     println!("filters: {filters:#?}");
     println!("steam_user: {steam_user:#?}");
@@ -88,6 +119,7 @@ pub async fn tera_update_data(session: Session, state: web::Data<AppState>, feed
     ctx.insert("most_recent_items", &items);
     ctx.insert("filters", &filters);
     ctx.insert("steam_user", &steam_user);
+    ctx.insert("vec_ad_cards_history", &vec_ad_cards_history);
 
     state
         .tera
