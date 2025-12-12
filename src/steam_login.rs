@@ -59,6 +59,7 @@ pub async fn steam_return(
     }
 }
 
+///check status for change!!!
 pub async fn load_steam_profile(steamid: &str) -> Result<SteamUser, Box<dyn std::error::Error>> {
     let api_key = env::var("STEAM_API_KEY")?;
     let url = format!(
@@ -80,6 +81,7 @@ pub async fn load_steam_profile(steamid: &str) -> Result<SteamUser, Box<dyn std:
             .ok_or("Missing avatar field")?.to_string(),
         avatar_url_full: player["avatarfull"].as_str()
             .ok_or("Missing avatarfull field")?.to_string(),
+        status: "online".to_string(),
     };
         
     let db = DataBase::connect_to_db();

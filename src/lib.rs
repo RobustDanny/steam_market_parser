@@ -30,6 +30,7 @@ pub struct SteamUser{
     pub nickname: String,
     pub avatar_url_small: String,
     pub avatar_url_full: String,
+    pub status: String,
 }
 //----------------------------------
 //----------------------------------

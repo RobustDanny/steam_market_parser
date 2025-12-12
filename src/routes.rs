@@ -46,10 +46,17 @@ pub async fn load_inventory(_user_inventory: web::Data<UserInventoryState>, para
     HttpResponse::Ok().json(&respond)
 }
 
+///add error handle
 pub async fn steam_logout(session: Session) -> impl Responder {
 
+    let steam_user: Option<SteamUser> = session.get("steam_user").unwrap_or(None);
+    if let Some(steamid) = steam_user {
+        let db = DataBase::connect_to_db();
+        db.db_change_user_status(steamid);
+        drop(db);
+    }
     session.clear();
-
+    
     HttpResponse::Found()
         .append_header(("Location", "/"))
         .finish()

@@ -107,16 +107,25 @@ impl DataBase{
         result
     }
 
+    ///Check whats an excluded meaning
     pub fn db_add_steam_user(&self, steam_user: &SteamUser){
 
         println!("{steam_user:#?}");
 
         self.connection.execute(
             "INSERT OR IGNORE INTO steam_user 
-            (steamid, nickname, avatar_url_small, avatar_url_full) 
-            VALUES (?1, ?2, ?3, ?4)",
+            (steamid, nickname, avatar_url_small, avatar_url_full, status) 
+            VALUES (?1, ?2, ?3, ?4, ?5)
+            ON CONFLICT(steamid) DO UPDATE SET
+                steamid = excluded.steamid,
+                nickname = excluded.nickname,
+                avatar_url_small = excluded.avatar_url_small,
+                avatar_url_full = excluded.avatar_url_full,
+                status = excluded.status;
+                ",
             [
-                &steam_user.steamid, &steam_user.nickname, &steam_user.avatar_url_small, &steam_user.avatar_url_full
+                &steam_user.steamid, &steam_user.nickname, &steam_user.avatar_url_small, &steam_user.avatar_url_full,
+                &steam_user.status
             ],
         ).expect("Can't insert steam_user data into DB");
     }
@@ -135,6 +144,7 @@ impl DataBase{
                 second_item_image = excluded.second_item_image,
                 third_item_image = excluded.third_item_image,
                 fourth_item_image = excluded.fourth_item_image;",
+
             [
                 &steam_user.steamid,
                 &steam_user.nickname,
@@ -202,6 +212,19 @@ impl DataBase{
 
     }
 
+    pub fn db_change_user_status(&self, session: SteamUser){
+
+        let steamid = session.steamid;
+
+        self.connection.execute(
+            "UPDATE steam_user 
+             SET status = ?1
+             WHERE steamid = ?2",
+            ("offline".to_string(), steamid),
+        ).expect("Cant update steam_user status");
+
+    }
+
     fn create_tables(&self) {
         self.connection.execute_batch("
             CREATE TABLE IF NOT EXISTS item_feed (
@@ -221,7 +244,8 @@ impl DataBase{
                 steamid TEXT UNIQUE,
                 nickname TEXT,
                 avatar_url_small TEXT,
-                avatar_url_full TEXT
+                avatar_url_full TEXT,
+                status TEXT
             );
             CREATE TABLE IF NOT EXISTS ad_steam_user (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
