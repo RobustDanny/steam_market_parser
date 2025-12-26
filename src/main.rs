@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use actix_web::{App, HttpServer, web, cookie::Key};
 use actix_files::Files;
 use actix_session::{SessionMiddleware, storage::CookieSessionStore};
@@ -10,7 +12,8 @@ use steam_market_parser::{
     SteamMostRecentResponse, 
     MostRecent,
     UserAdsQueue, 
-    Inventory
+    Inventory,
+    StoreQueueHashmap
 };
 
 mod db;
@@ -37,7 +40,8 @@ use routes::{
     load_inventory, 
     post_most_recent_item_filters, 
     add_ad_steam_user_to_db,
-    get_ad_cards_history
+    get_ad_cards_history,
+    add_to_store_queue
 };
 
 mod background_tasks;
@@ -76,6 +80,10 @@ struct NotificationState{
     notification_broadcaster: broadcast::Sender<NotificationPlayload>,
 }
 
+struct StoreHashMapState{
+    store_hashmap_state: StoreQueueHashmap,
+}
+
 #[actix_web::main]
 async fn main()-> std::io::Result<()> {
 
@@ -96,6 +104,15 @@ async fn main()-> std::io::Result<()> {
     let (broadcast_sender_most_recent_items, _broadcast_reciever_most_recent_items) = broadcast::channel(32);
     let (broadcast_sender_user_ad, _broadcast_reciever_user_ad) = broadcast::channel(10);
     let (broadcast_sender_notification, broadcast_reciever_notification) = broadcast::channel(10);
+
+    let empty_store_hashmap: StoreQueueHashmap = StoreQueueHashmap::new();
+    let filled_store_hashmap = db.db_fill_store_hashmap(empty_store_hashmap).unwrap();
+
+    println!("{filled_store_hashmap:#?}");
+
+    let store_hashmap = web::Data::new(StoreHashMapState{
+        store_hashmap_state: filled_store_hashmap,
+    });
 
     let user_inventory = web::Data::new(UserInventoryState{
         inventory: Mutex::new(Inventory{
@@ -158,6 +175,7 @@ async fn main()-> std::io::Result<()> {
             .app_data(notification_state.clone())
             .app_data(user_ad_state.clone())
             .app_data(feed_state.clone())
+            .app_data(store_hashmap.clone())
             .service(Files::new("/front", "./front"))
             .route("/", web::get().to(tera_update_data))
             .route("/ws", web::get().to(ws_handler)) 
@@ -169,6 +187,8 @@ async fn main()-> std::io::Result<()> {
             .route("/api/get_ad_cards_history", web::post().to(get_ad_cards_history)) 
             .route("/api/filters", web::get().to(post_most_recent_item_filters))
             .route("/api/add_to_ad_queue", web::post().to(add_ad_steam_user_to_db))
+            .route("/api/add_to_store_queue", web::post().to(add_to_store_queue))
+            // .route("/api/remove_from_store_queue", web::post().to(remove_from_store_queue))
             .route("/api/auth/steam", web::get().to(steam_login))
             .route("/api/auth/steam/return", web::get().to(steam_return))
     })

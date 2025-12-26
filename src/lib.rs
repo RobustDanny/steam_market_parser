@@ -1,5 +1,5 @@
 use std::{collections::{HashMap, VecDeque}, time::Duration};
-use tokio::sync::{mpsc};
+use tokio::sync::{mpsc, Mutex};
 
 use serde::{Deserialize, Serialize};
 
@@ -59,6 +59,23 @@ pub struct AdCardHistoryVec{
 pub struct ChatQuery {
     pub buyer: String,
     pub trader: String,
+}
+
+//----------------------------------
+//----------------------------------
+
+//----------------------------------
+//----------------------------------
+//Store Queue
+#[derive(Debug)]
+pub struct StoreQueueHashmap{
+    pub hashmap: HashMap<String, Mutex<VecDeque<String>>>,
+}
+
+#[derive(Deserialize)]
+pub struct BuyerAndStoreIDS{
+    pub buyer_id: String,
+    pub store_id: String,
 }
 
 //----------------------------------
@@ -436,6 +453,14 @@ impl ProcessSteamRequest for MarketRequest{}
 impl ProcessSteamRequest for MostRecentItemsRequest{}
 //----------------------------------
 //----------------------------------
+
+impl StoreQueueHashmap{
+    pub fn new()->Self {
+        StoreQueueHashmap { 
+            hashmap: HashMap::new(),
+        }
+    }
+}
 
 impl CustomItems{
 

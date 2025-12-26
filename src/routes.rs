@@ -1,12 +1,14 @@
 use actix_session::{Session};
 use actix_web::{HttpResponse, Responder, web};
 use tera::{Context};
+use serde_json::json;
 
 use crate::{
     AppState, 
     UserAdState, 
     FeedItemsState, 
     UserInventoryState,
+    StoreHashMapState,
 };
 use steam_market_parser::{
     InventoryApp, 
@@ -15,7 +17,8 @@ use steam_market_parser::{
     FilterInput, 
     SteamUser,
     HistoryForm,
-    AdCardHistoryVec
+    AdCardHistoryVec,
+    BuyerAndStoreIDS,
 };
 
 use crate::db::DataBase;
@@ -95,6 +98,30 @@ pub async fn get_ad_cards_history(form: web::Form<HistoryForm>) -> impl Responde
             HttpResponse::InternalServerError().json(serde_json::json!({"error": "Database error"}))
         }
     }
+}
+
+pub async fn add_to_store_queue(state: web::Data<StoreHashMapState>, buyer_and_store_steamid: web::Json<BuyerAndStoreIDS>)->impl Responder{
+
+    let store = &*buyer_and_store_steamid.store_id;
+    let buyer = &*buyer_and_store_steamid.buyer_id;
+
+    println!("hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh");
+    println!("{buyer}");
+    let buyer = buyer.to_string();
+
+    let mut hashmap = state.store_hashmap_state.hashmap.get(store).unwrap().lock().await;
+
+    hashmap.push_back(buyer);
+
+    let check = &state.store_hashmap_state;
+    
+
+    drop(hashmap);
+    println!("{check:?}");
+    HttpResponse::Ok().json(json!({
+        "status": "ok",
+        "message": "Buyer added to queue"
+    }))
 }
 
 pub async fn tera_update_data(session: Session, state: web::Data<AppState>, feed_state: web::Data<FeedItemsState>, _user_inventory: web::Data<UserInventoryState>) -> impl Responder {

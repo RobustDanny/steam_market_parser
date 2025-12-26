@@ -1,11 +1,13 @@
 use rusqlite::Connection;
+use tokio::sync::Mutex;
 use std::collections::VecDeque;
 use steam_market_parser::{
-    SteamMostRecentResponse, 
+    AdCardHistoryVec, 
     MostRecent, 
+    SteamMostRecentResponse, 
     SteamUser, 
-    UserProfileAds,
-    AdCardHistoryVec,
+    StoreQueueHashmap, 
+    UserProfileAds
 };
 
 pub struct DataBase{
@@ -223,6 +225,25 @@ impl DataBase{
             ("offline".to_string(), steamid),
         ).expect("Cant update steam_user status");
 
+    }
+
+    pub fn db_fill_store_hashmap(&self, mut store_hashmap: StoreQueueHashmap)->Result<StoreQueueHashmap, rusqlite::Error>{
+        let mut query = self.connection.prepare("
+            SELECT * FROM steam_user
+        ").expect("Cant get all steam_userS");
+
+        let rows = query.query_map([], |row|{
+            let steamid: String = row.get(1).expect("Can't get steamid from steam_user");
+            store_hashmap.hashmap.entry(steamid).or_insert_with(|| Mutex::new(VecDeque::new()));
+            Ok(())
+        })?;
+
+        // Consume the iterator to execute the query
+        for row in rows {
+            row?;
+        }
+
+        Ok(store_hashmap)
     }
 
     fn create_tables(&self) {
