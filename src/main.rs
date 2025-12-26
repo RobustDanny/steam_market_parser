@@ -41,7 +41,8 @@ use routes::{
     post_most_recent_item_filters, 
     add_ad_steam_user_to_db,
     get_ad_cards_history,
-    add_to_store_queue
+    add_to_store_queue,
+    remove_from_store_queue
 };
 
 mod background_tasks;
@@ -188,7 +189,7 @@ async fn main()-> std::io::Result<()> {
             .route("/api/filters", web::get().to(post_most_recent_item_filters))
             .route("/api/add_to_ad_queue", web::post().to(add_ad_steam_user_to_db))
             .route("/api/add_to_store_queue", web::post().to(add_to_store_queue))
-            // .route("/api/remove_from_store_queue", web::post().to(remove_from_store_queue))
+            .route("/api/remove_from_store_queue", web::post().to(remove_from_store_queue))
             .route("/api/auth/steam", web::get().to(steam_login))
             .route("/api/auth/steam/return", web::get().to(steam_return))
     })

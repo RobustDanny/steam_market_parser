@@ -19,6 +19,7 @@ use steam_market_parser::{
     HistoryForm,
     AdCardHistoryVec,
     BuyerAndStoreIDS,
+    StoreID
 };
 
 use crate::db::DataBase;
@@ -105,22 +106,46 @@ pub async fn add_to_store_queue(state: web::Data<StoreHashMapState>, buyer_and_s
     let store = &*buyer_and_store_steamid.store_id;
     let buyer = &*buyer_and_store_steamid.buyer_id;
 
-    println!("hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh");
-    println!("{buyer}");
     let buyer = buyer.to_string();
 
     let mut hashmap = state.store_hashmap_state.hashmap.get(store).unwrap().lock().await;
 
-    hashmap.push_back(buyer);
+    if hashmap.contains(&buyer){
+        println!("Buyer {} is already in this store queue!", buyer);
+    } else {
+        hashmap.push_back(buyer);
+    }
 
     let check = &state.store_hashmap_state;
     
-
     drop(hashmap);
+
     println!("{check:?}");
+
     HttpResponse::Ok().json(json!({
         "status": "ok",
         "message": "Buyer added to queue"
+    }))
+}
+
+pub async fn remove_from_store_queue(state: web::Data<StoreHashMapState>, store_steamid: web::Json<StoreID>)->impl Responder{
+
+    let store = &*store_steamid.store_id;
+
+    let mut hashmap = state.store_hashmap_state.hashmap.get(store).unwrap().lock().await;
+
+    let buyer_id = hashmap.pop_back().expect("Store queue is empty");
+
+    let check = &state.store_hashmap_state;
+    
+    drop(hashmap);
+
+    println!("Buyer id from queue: {buyer_id}");
+    println!("{check:?}");
+    
+    HttpResponse::Ok().json(json!({
+        "status": "ok",
+        "message": "Buyer removed from queue"
     }))
 }
 

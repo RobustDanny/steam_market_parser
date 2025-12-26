@@ -78,6 +78,11 @@ pub struct BuyerAndStoreIDS{
     pub store_id: String,
 }
 
+#[derive(Deserialize)]
+pub struct StoreID{
+    pub store_id: String,
+}
+
 //----------------------------------
 //----------------------------------
 

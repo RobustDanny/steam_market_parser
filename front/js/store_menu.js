@@ -10,6 +10,12 @@ document.getElementById("enter_store").addEventListener("click", async (e) => {
 
     const store_steamid = document.getElementById("user_store_steam_id").value;
     const buyer_steamid = document.getElementById("main_steam_id").value;
+
+    if (store_steamid == buyer_steamid){
+        
+        console.log("Equal");
+        return;
+    }
     console.log("steamid!:", store_steamid);
     console.log("MY steamid!:", buyer_steamid);
 
