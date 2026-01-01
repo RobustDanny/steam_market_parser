@@ -134,23 +134,31 @@ pub async fn add_to_store_queue(state: web::Data<StoreHashMapState>, buyer_and_s
 
 pub async fn remove_from_store_queue(state: web::Data<StoreHashMapState>, store_steamid: web::Json<StoreID>)->impl Responder{
 
-    let store = &*store_steamid.store_id;
+    let store_id = &*store_steamid.store_id;
 
-    let mut hashmap = state.store_hashmap_state.hashmap.get(store).unwrap().lock().await;
+    let mut hashmap = state.store_hashmap_state.hashmap.get(store_id).unwrap().lock().await;
 
-    let buyer_id = hashmap.pop_back().expect("Store queue is empty");
+    let buyer_id = hashmap.pop_front().expect("Store queue is empty");
+
+    websocket_between_store_and_buyer(buyer_id, store_id.to_string()).await;
 
     let check = &state.store_hashmap_state;
     
     drop(hashmap);
 
-    println!("Buyer id from queue: {buyer_id}");
-    println!("{check:?}");
+    // println!("Buyer id from queue: {buyer_id}");
+    // println!("{check:?}");
     
     HttpResponse::Ok().json(json!({
         "status": "ok",
         "message": "Buyer removed from queue"
     }))
+}
+
+async fn websocket_between_store_and_buyer(buyer_id: String, store_id: String){
+
+    println!("WebSocket between store and buyer: {buyer_id} and {store_id}");
+    
 }
 
 pub async fn tera_update_data(session: Session, state: web::Data<AppState>, feed_state: web::Data<FeedItemsState>, _user_inventory: web::Data<UserInventoryState>) -> impl Responder {
