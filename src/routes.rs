@@ -106,6 +106,10 @@ pub async fn add_to_store_queue(state: web::Data<StoreHashMapState>, buyer_and_s
     let store = &*buyer_and_store_steamid.store_id;
     let buyer = &*buyer_and_store_steamid.buyer_id;
 
+    if store == buyer {
+        println!("You can't add yourself to the queue!");
+    }
+
     let buyer = buyer.to_string();
 
     let mut hashmap = state.store_hashmap_state.hashmap.get(store).unwrap().lock().await;
