@@ -9,6 +9,7 @@ use crate::{
     FeedItemsState, 
     UserInventoryState,
     StoreHashMapState,
+    StoreWebsocketListState
 };
 use steam_market_parser::{
     InventoryApp, 
@@ -19,7 +20,8 @@ use steam_market_parser::{
     HistoryForm,
     AdCardHistoryVec,
     BuyerAndStoreIDS,
-    StoreID
+    StoreID,
+    ChatSessionPlayload
 };
 
 use crate::db::DataBase;
@@ -132,7 +134,7 @@ pub async fn add_to_store_queue(state: web::Data<StoreHashMapState>, buyer_and_s
     }))
 }
 
-pub async fn remove_from_store_queue(state: web::Data<StoreHashMapState>, store_steamid: web::Json<StoreID>)->impl Responder{
+pub async fn remove_from_store_queue(state: web::Data<StoreHashMapState>, store_steamid: web::Json<StoreID>, websocket_list_state: web::Data<StoreWebsocketListState>)->impl Responder{
 
     let store_id = &*store_steamid.store_id;
 
@@ -140,7 +142,7 @@ pub async fn remove_from_store_queue(state: web::Data<StoreHashMapState>, store_
 
     let buyer_id = hashmap.pop_front().expect("Store queue is empty");
 
-    websocket_between_store_and_buyer(buyer_id, store_id.to_string()).await;
+    websocket_between_store_and_buyer(buyer_id, store_id.to_string(), websocket_list_state).await;
 
     let check = &state.store_hashmap_state;
     
@@ -155,10 +157,19 @@ pub async fn remove_from_store_queue(state: web::Data<StoreHashMapState>, store_
     }))
 }
 
-async fn websocket_between_store_and_buyer(buyer_id: String, store_id: String){
+async fn websocket_between_store_and_buyer(buyer_id: String, store_id: String, websocket_list_state: web::Data<StoreWebsocketListState>){
 
     println!("WebSocket between store and buyer: {buyer_id} and {store_id}");
-    
+
+    let mut websocket_list = websocket_list_state.websocket_list.lock().await;
+
+    websocket_list.insert(buyer_id.clone(), ChatSessionPlayload {
+        buyer: buyer_id,
+        trader: store_id,
+    });
+
+    // drop(websocket_list);
+    println!("{websocket_list:#?}");
 }
 
 pub async fn tera_update_data(session: Session, state: web::Data<AppState>, feed_state: web::Data<FeedItemsState>, _user_inventory: web::Data<UserInventoryState>) -> impl Responder {

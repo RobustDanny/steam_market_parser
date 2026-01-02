@@ -13,7 +13,8 @@ use steam_market_parser::{
     MostRecent,
     UserAdsQueue, 
     Inventory,
-    StoreQueueHashmap
+    StoreQueueHashmap,
+    ChatSessionPlayload
 };
 
 mod db;
@@ -85,6 +86,10 @@ struct StoreHashMapState{
     store_hashmap_state: StoreQueueHashmap,
 }
 
+struct StoreWebsocketListState{
+    websocket_list: Mutex<HashMap<String, ChatSessionPlayload>>,
+}
+
 #[actix_web::main]
 async fn main()-> std::io::Result<()> {
 
@@ -147,6 +152,10 @@ async fn main()-> std::io::Result<()> {
         notification_broadcaster: broadcast_sender_notification,
     });
 
+    let websocket_list_state = web::Data::new(StoreWebsocketListState{
+        websocket_list: Mutex::new(HashMap::new()),
+    });
+
     let user_ad_state_for_ads = user_ad_state.clone();
     let feed_state_for_ws = feed_state.clone();
     let notification_state_for_notification = notification_state.clone();
@@ -177,6 +186,7 @@ async fn main()-> std::io::Result<()> {
             .app_data(user_ad_state.clone())
             .app_data(feed_state.clone())
             .app_data(store_hashmap.clone())
+            .app_data(websocket_list_state.clone())
             .service(Files::new("/front", "./front"))
             .route("/", web::get().to(tera_update_data))
             .route("/ws", web::get().to(ws_handler)) 

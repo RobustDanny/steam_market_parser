@@ -140,4 +140,3 @@ pub async fn ws_notification_handler(
 
     ws::start(ws_notification, &req, stream)
 }
-

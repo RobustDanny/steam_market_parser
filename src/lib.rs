@@ -61,6 +61,12 @@ pub struct ChatQuery {
     pub trader: String,
 }
 
+#[derive(Deserialize, Debug)]
+pub struct ChatSessionPlayload {
+    pub buyer: String,
+    pub trader: String,
+}
+
 //----------------------------------
 //----------------------------------
 
