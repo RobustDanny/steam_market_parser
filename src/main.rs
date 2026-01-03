@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use actix::Actor;
 use actix_web::{App, HttpServer, web, cookie::Key};
 use actix_files::Files;
 use actix_session::{SessionMiddleware, storage::CookieSessionStore};
@@ -50,14 +51,12 @@ mod background_tasks;
 use background_tasks::{
     tokio_user_ad_loop,
     tokio_receiver_most_recent_items_request,
-    tokio_notification_receiver
 };
 
 mod store_chat_websocket;
 use store_chat_websocket::{
     ws_chat_handler,
-    ws_notification_handler,
-    NotificationPlayload,
+    ChatHub
 };
 
 struct AppState {
@@ -75,11 +74,6 @@ struct UserAdState{
 }
 struct UserInventoryState{
     inventory: Mutex<Inventory>,
-}
-
-struct NotificationState{
-    steamid_to_get_notification: String,
-    notification_broadcaster: broadcast::Sender<NotificationPlayload>,
 }
 
 struct StoreHashMapState{
@@ -109,10 +103,12 @@ async fn main()-> std::io::Result<()> {
     let (request_sender, response_receiver) = mpsc::channel(100);
     let (broadcast_sender_most_recent_items, _broadcast_reciever_most_recent_items) = broadcast::channel(32);
     let (broadcast_sender_user_ad, _broadcast_reciever_user_ad) = broadcast::channel(10);
-    let (broadcast_sender_notification, broadcast_reciever_notification) = broadcast::channel(10);
 
     let empty_store_hashmap: StoreQueueHashmap = StoreQueueHashmap::new();
     let filled_store_hashmap = db.db_fill_store_hashmap(empty_store_hashmap).unwrap();
+
+    let chat_hub = ChatHub::new().start();
+    let chat_hub = web::Data::new(chat_hub);
 
     println!("{filled_store_hashmap:#?}");
 
@@ -147,22 +143,12 @@ async fn main()-> std::io::Result<()> {
         })
     });
 
-    let notification_state = web::Data::new(NotificationState{
-        steamid_to_get_notification: String::new(),
-        notification_broadcaster: broadcast_sender_notification,
-    });
-
     let websocket_list_state = web::Data::new(StoreWebsocketListState{
         websocket_list: Mutex::new(HashMap::new()),
     });
 
     let user_ad_state_for_ads = user_ad_state.clone();
     let feed_state_for_ws = feed_state.clone();
-    let notification_state_for_notification = notification_state.clone();
-
-    tokio::spawn(async move {
-        tokio_notification_receiver(notification_state_for_notification, broadcast_reciever_notification).await;
-    });
 
     tokio::spawn(async move {
         tokio_receiver_most_recent_items_request(response_receiver, db, feed_state_for_ws).await;
@@ -182,10 +168,10 @@ async fn main()-> std::io::Result<()> {
             .wrap(SessionMiddleware::new(CookieSessionStore::default(), key.clone()))
             .app_data(state.clone())
             .app_data(user_inventory.clone())
-            .app_data(notification_state.clone())
             .app_data(user_ad_state.clone())
             .app_data(feed_state.clone())
             .app_data(store_hashmap.clone())
+            .app_data(chat_hub.clone())
             .app_data(websocket_list_state.clone())
             .service(Files::new("/front", "./front"))
             .route("/", web::get().to(tera_update_data))

@@ -6,8 +6,6 @@ use crate::{
     UserAdState,
     FeedItemsState,
     SteamMostRecentResponse,
-    NotificationState,
-    NotificationPlayload
 };
 
 use crate::db::DataBase;
@@ -34,11 +32,6 @@ pub async fn tokio_user_ad_loop(state: web::Data<UserAdState>){
         drop(ads);
         tokio::time::sleep(Duration::from_secs(10)).await;
     }
-}
-
-///Make changes!!!
-pub async fn tokio_notification_receiver(state: web::Data<NotificationState>, mut receiver: broadcast::Receiver<NotificationPlayload>){
-
 }
 
 pub async fn tokio_receiver_most_recent_items_request(
