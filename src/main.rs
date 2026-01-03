@@ -192,7 +192,6 @@ async fn main()-> std::io::Result<()> {
             .route("/ws", web::get().to(ws_handler)) 
             .route("/ws/ads", web::get().to(ws_ad_handler)) 
             .route("/ws/chat", web::get().to(ws_chat_handler)) 
-            .route("/ws/notification", web::get().to(ws_notification_handler)) 
             .route("/api/logout", web::get().to(steam_logout)) 
             .route("/api/get_inventory_items", web::post().to(load_inventory)) 
             .route("/api/get_ad_cards_history", web::post().to(get_ad_cards_history)) 

@@ -1,4 +1,5 @@
 use actix_web_actors::ws;
+use actix::Addr;
 use actix_web::{Error, HttpRequest, Result, HttpResponse, web};
 use actix::prelude::*;
 
@@ -6,66 +7,77 @@ use steam_market_parser::{
     ChatQuery,
 };
 
-use crate::{
-    NotificationState,
-};
-
 #[derive(serde::Serialize, Clone)]
-pub struct ChatSessionPlayload {
+pub struct RoomId {
     buyer_steamid: String,
     trader_steamid: String,
 }
 
-#[derive(serde::Serialize, Clone)]
-pub struct NotificationPlayload {
-    steamid_to_get_notification: String,
+pub struct WsSession {
+    buyer_steamid: String,
+    trader_steamid: String,
 }
 
-struct NotificationWSActor {
-    state: web::Data<NotificationState>,
+#[derive(Message)]
+#[rtype(result = "()")]
+struct Join {
+    room: RoomId,
+    addr: Addr<WsSession>,
 }
 
-struct BroadcastNotification(NotificationPlayload);
-
-impl Message for BroadcastNotification {
-    type Result = ();
+#[derive(Message)]
+#[rtype(result = "()")]
+struct Leave {
+    room: RoomId,
+    addr: Addr<WsSession>,
 }
 
-impl Actor for NotificationWSActor {
-    type Context = ws::WebsocketContext<Self>;
-    
-    fn started(&mut self, ctx: &mut Self::Context) {
-        // Subscribe to broadcast channel and forward updates via actor messages
-        let mut rx = self.state.notification_broadcaster.subscribe();
-        let addr = ctx.address();
-
-        tokio::spawn(async move {
-            while let Ok(payload) = rx.recv().await {
-                let _ = addr.do_send(BroadcastNotification(payload));
-            }
-        });
-    }
+#[derive(Message)]
+#[rtype(result = "()")]
+struct Broadcast {
+    room: RoomId,
+    addr: Addr<WsSession>,
 }
 
-impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for NotificationWSActor {
-    fn handle(&mut self, _msg: Result<ws::Message, ws::ProtocolError>, _ctx: &mut Self::Context) {
-        // Handle incoming WebSocket messages if needed
-    }
+struct ChatHub{
+    rooms: HashMap<RoomId, HashSet<Addr<WsSession>>>
 }
 
-impl Handler<BroadcastNotification> for NotificationWSActor {
-    type Result = ();
-
-    fn handle(&mut self, msg: BroadcastNotification, ctx: &mut Self::Context) {
-        let payload = msg.0;
-        
-        if let Ok(json) = serde_json::to_string(&payload) {
-            ctx.text(json);
+impl ChatHub {
+    fn new()->Self{
+        Self{
+            rooms: HashMap::new(),
         }
     }
 }
 
-impl Actor for ChatSessionPlayload {
+impl Handler<Join> for ChatHub{
+    type Result = ();
+
+    fn handle(&mut self, msg: Join, _: &mut Context<Self>){
+        self.rooms
+        .entry(msg.room)
+        .or_default()
+        .insert(msg.addr);
+    }
+}
+
+impl Handler<Leave> for ChatHub{
+    type Result = ();
+
+    fn handle(&mut self, msg: Leave, _: &mut Context<Self>){
+        self.rooms
+        .entry(msg.room)
+        .or_default()
+        .insert(msg.addr);
+    }
+}
+
+impl Actor for ChatHub{
+    type Context = Context<Self>;
+}
+
+impl Actor for RoomId {
     type Context = ws::WebsocketContext<Self>;
     
     fn started(&mut self, _: &mut Self::Context) {
@@ -78,7 +90,7 @@ impl Actor for ChatSessionPlayload {
 
 }
 
-impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for ChatSessionPlayload
+impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for RoomId
  {
     fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
         match msg {
@@ -120,23 +132,10 @@ pub async fn ws_chat_handler(
     let buyer_steamid = query.buyer.clone();
     let trader_steamid = query.trader.clone();
 
-    let session = ChatSessionPlayload {
+    let session = RoomId {
         buyer_steamid: buyer_steamid.clone(),
         trader_steamid: trader_steamid.clone(),
     };
 
     ws::start(session, &req, stream)
-}
-
-pub async fn ws_notification_handler(
-    req: HttpRequest,
-    stream: web::Payload,
-    state: web::Data<NotificationState>,
-) -> Result<HttpResponse, Error> {
-
-    let ws_notification = NotificationWSActor {
-        state: state.clone(),
-    };
-
-    ws::start(ws_notification, &req, stream)
 }
