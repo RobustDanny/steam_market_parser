@@ -33,6 +33,7 @@ pub async fn load_inventory(_user_inventory: web::Data<UserInventoryState>, para
     let url = format!("https://steamcommunity.com/inventory/{}/{}/2", inventory.settings_steamid, inventory.settings_appid);   
 
     println!("{url}");
+    
     let client = reqwest::Client::new();
 
         let respond = client
@@ -142,35 +143,33 @@ pub async fn remove_from_store_queue(state: web::Data<StoreHashMapState>, store_
 
     let buyer_id = hashmap.pop_front().expect("Store queue is empty");
 
-    websocket_between_store_and_buyer(buyer_id, store_id.to_string(), websocket_list_state).await;
+    // websocket_between_store_and_buyer(buyer_id, store_id.to_string(), websocket_list_state).await;
 
-    let check = &state.store_hashmap_state;
     
     drop(hashmap);
 
     // println!("Buyer id from queue: {buyer_id}");
     // println!("{check:?}");
     
-    HttpResponse::Ok().json(json!({
-        "status": "ok",
-        "message": "Buyer removed from queue"
+    HttpResponse::Ok().json(serde_json::json!({
+        "buyer_id": buyer_id
     }))
 }
 
-async fn websocket_between_store_and_buyer(buyer_id: String, store_id: String, websocket_list_state: web::Data<StoreWebsocketListState>){
+// async fn websocket_between_store_and_buyer(buyer_id: String, store_id: String, websocket_list_state: web::Data<StoreWebsocketListState>){
 
-    println!("WebSocket between store and buyer: {buyer_id} and {store_id}");
+//     println!("WebSocket between store and buyer: {buyer_id} and {store_id}");
 
-    let mut websocket_list = websocket_list_state.websocket_list.lock().await;
+//     let mut websocket_list = websocket_list_state.websocket_list.lock().await;
 
-    websocket_list.insert(buyer_id.clone(), ChatSessionPlayload {
-        buyer: buyer_id,
-        trader: store_id,
-    });
+//     websocket_list.insert(buyer_id.clone(), ChatSessionPlayload {
+//         buyer: buyer_id,
+//         trader: store_id,
+//     });
 
-    // drop(websocket_list);
-    println!("{websocket_list:#?}");
-}
+//     // drop(websocket_list);
+//     println!("{websocket_list:#?}");
+// }
 
 pub async fn tera_update_data(session: Session, state: web::Data<AppState>, feed_state: web::Data<FeedItemsState>, _user_inventory: web::Data<UserInventoryState>) -> impl Responder {
     let items = feed_state.items.lock().await.clone();

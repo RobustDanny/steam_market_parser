@@ -16,8 +16,8 @@ document.getElementById("enter_store").addEventListener("click", async (e) => {
         console.log("Equal");
         return;
     }
-    console.log("steamid!:", store_steamid);
-    console.log("MY steamid!:", buyer_steamid);
+    console.log("Store Steamid:", store_steamid);
+    console.log("Buyer Steamid:", buyer_steamid);
 
     // Set the steamid value in the form
     const settingsSteamIdInput = document.querySelector("input[id='store_steamid']");
@@ -32,7 +32,6 @@ document.getElementById("enter_store").addEventListener("click", async (e) => {
 
     add_buyser_to_queue(store_steamid, buyer_steamid)
 });
-
 
 document.getElementById("store_menuBackdrop").addEventListener("click", (e) => {
     if (e.target.id !== "store_menuBackdrop") return;

@@ -8,7 +8,7 @@ use steam_market_parser::{
     ChatQuery,
 };
 
-#[derive(Hash, Eq, PartialEq, Clone)]
+#[derive(Hash, Eq, PartialEq, Clone, Debug)]
 pub struct RoomId {
     buyer_steamid: String,
     trader_steamid: String,
@@ -60,7 +60,6 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsSession {
     }
 }
 
-
 #[derive(Message)]
 #[rtype(result = "()")]
 struct Join {
@@ -102,6 +101,8 @@ impl Handler<Join> for ChatHub{
         .entry(msg.room)
         .or_default()
         .insert(msg.addr);
+
+    println!("Rooms: {:?}", self.rooms);
     }
 }
 

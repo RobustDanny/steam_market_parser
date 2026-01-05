@@ -158,3 +158,25 @@
     justify-content: center;
     height: 300px;
 }
+
+/* Store Chat*/
+
+.chat_message {
+    padding: 6px 10px;
+    margin-bottom: 6px;
+    max-width: 80%;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.chat_message_me {
+    align-self: flex-end;
+    background: #4a90e2;
+    color: white;
+}
+
+.chat_message_other {
+    align-self: flex-start;
+    background: #eee;
+}
+

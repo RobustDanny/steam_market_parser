@@ -8,20 +8,20 @@ if (e.target.id === "offer_listBackdrop") {
 }
 });
 
-document.getElementById("enter_my_store").addEventListener("click", () => {
-    // openStoreAndConnect(
-    //     document.getElementById("buyer_steam_id").value,
-    //     document.getElementById("main_steam_id").value,
-    //     "trader"
-    // );
+document.getElementById("enter_my_store").addEventListener("click", async () => {
+    const traderId = document.getElementById("main_steam_id").value;
+    const result = await remove_buyer_from_queue(traderId);
 
-    const store_steamid = document.getElementById("main_steam_id").value;
+    document.getElementById("user_store").style.display = "flex";
+    document.getElementById("user_storeBackdrop").style.display = "flex";
+    document.getElementById("offer_listBackdrop").style.display = "none";
 
-    remove_buyer_from_queue(store_steamid);
+    connectStoreChatWS(result.buyer_id, traderId);
 });
 
-function remove_buyer_from_queue(store_id){
-    fetch("/api/remove_from_store_queue", {
+
+async function remove_buyer_from_queue(store_id) {
+    const res = await fetch("/api/remove_from_store_queue", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -29,9 +29,10 @@ function remove_buyer_from_queue(store_id){
         body: JSON.stringify({
             store_id: store_id,
         }),
-    })
-    .then(res => res.json())
-    .then(json => {
-        console.log("Buyer is removing from the store queue:", json);
     });
+
+    const json = await res.json();
+    console.log("Buyer is removing from the store queue:", json.buyer_id);
+
+    return json;
 }

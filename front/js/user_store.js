@@ -1,3 +1,5 @@
+let storeChatWS = null;
+
 document.getElementById("user_storeBackdrop").addEventListener("click", (e) => {
     if (e.target.id !== "user_storeBackdrop") return;
     e.target.style.display = "none";
@@ -9,15 +11,17 @@ document.getElementById("store_filters_form").addEventListener("submit", async (
     
     const form = e.target;
 
-    // const store_steamid = document.getElementById("store_steamid").value;
-    // console.log("store_steamid!:", store_steamid);
-
-    // Just ensure the steamid is in the form before submission
-    const steamid = document.getElementById("user_store_steam_id").value;
-    const settingsSteamIdInput = document.querySelector("input[name='settings_steamid']");
-    if (settingsSteamIdInput) {
-        settingsSteamIdInput.value = steamid; // Ensure steamid is in the form
+    if (document.getElementById("user_store_steam_id").value == null){
+        steamid = document.getElementById("main_steam_id").value;
     }
+    else{
+        steamid = document.getElementById("user_store_steam_id").value;
+    }
+
+    const steamIdInput = document.getElementById("store_steamid");
+    steamIdInput.value = steamid;
+
+    console.log("form", form);
 
     const data = new URLSearchParams(new FormData(form));
 
@@ -45,7 +49,6 @@ document.getElementById("store_filters_form").addEventListener("submit", async (
     const assets = inventory.assets || [];
     const descriptions = inventory.descriptions || [];
     
-    // Quick lookup by classid+instanceid
     const descMap = {};
     descriptions.forEach(d => {
         const key = `${d.classid}_${d.instanceid}`;
@@ -95,35 +98,86 @@ document.getElementById("store_inventoryFilter").addEventListener("input", funct
     });
 });
 
-document.getElementById("enter_store").addEventListener("click", (e) => {
-    // Extract buyer and trader Steam IDs from data attributes
-    const buyerSteamId = document.getElementById("main_steam_id").value;
-    const traderSteamId = document.getElementById("user_store_steam_id").value;
+document.getElementById("enter_store").addEventListener("click", () => {
+    const buyerId = document.getElementById("main_steam_id").value;
+    const traderId = document.getElementById("user_store_steam_id").value;
 
-    if (buyerSteamId && traderSteamId) {
-        // Create the WebSocket URL with buyer and trader Steam IDs as query parameters
-        const wsUrl = `ws://127.0.0.1:8080/ws/chat?buyer=${buyerSteamId}&trader=${traderSteamId}`;
+    connectStoreChatWS(buyerId, traderId);
+});
 
-        // Open the WebSocket connection
-        const ws_chat = new WebSocket(wsUrl);
+document.getElementById("chat_send").addEventListener("click", sendChatMessage);
 
-        // Handle WebSocket events (open, message, close, etc.)
-        ws_chat.onopen = () => {
-            console.log("ws_chat connected");
-        };
-
-        ws_chat.onmessage = (event) => {
-            console.log("Message received from ws_chat:", event.data);
-        };
-
-        ws_chat.onclose = () => {
-            console.log("ws_chat closed");
-        };
-
-        ws_chat.onerror = (error) => {
-            console.error("ws_chat error:", error);
-        };
-    } else {
-        console.error("Buyer or trader Steam ID is missing.");
+document.getElementById("chat_input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+        sendChatMessage();
     }
 });
+
+function sendChatMessage() {
+    if (!storeChatWS || storeChatWS.readyState !== WebSocket.OPEN) {
+        console.warn("WS not connected");
+        return;
+    }
+
+    const input = document.getElementById("chat_input");
+    const text = input.value.trim();
+
+    if (!text) return;
+
+    const message = {
+        type: "chat",
+        text: text
+    };
+
+    storeChatWS.send(JSON.stringify(message));
+
+    // Optimistic UI (show immediately)
+    appendChatMessage("me", text);
+
+    input.value = "";
+}
+
+function appendChatMessage(from, text) {
+    const container = document.getElementById("chat_messages");
+
+    const messageEl = document.createElement("div");
+    messageEl.className = from === "me"
+        ? "chat_message chat_message_me"
+        : "chat_message chat_message_other";
+
+    messageEl.textContent = text;
+
+    container.appendChild(messageEl);
+
+    // Auto scroll
+    container.scrollTop = container.scrollHeight;
+}
+
+function connectStoreChatWS(buyerId, traderId) {
+    if (storeChatWS?.readyState === WebSocket.OPEN) {
+        console.warn("WS already connected");
+        return;
+    }
+
+    const wsUrl = `ws://127.0.0.1:8080/ws/chat?buyer=${buyerId}&trader=${traderId}`;
+
+    storeChatWS = new WebSocket(wsUrl);
+
+    storeChatWS.onopen = () => {
+        console.log("STORE CHAT WS CONNECTED");
+    };
+
+    storeChatWS.onmessage = (event) => {
+        const msg = JSON.parse(event.data);
+        appendChatMessage(msg.from, msg.text);
+    };
+
+    storeChatWS.onclose = () => {
+        console.log("STORE CHAT WS CLOSED");
+        storeChatWS = null;
+    };
+
+    storeChatWS.onerror = (e) => {
+        console.error("STORE CHAT WS ERROR", e);
+    };
+}
