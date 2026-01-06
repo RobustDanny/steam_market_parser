@@ -1,11 +1,18 @@
 let storeChatWS = null;
 
-document.getElementById("user_storeBackdrop").addEventListener("click", (e) => {
-    if (e.target.id !== "user_storeBackdrop") return;
-    e.target.style.display = "none";
+// document.getElementById("user_storeBackdrop").addEventListener("click", (e) => {
+//     if (e.target.id !== "user_storeBackdrop") return;
+//     e.target.style.display = "none";
+// });
+
+//load store items 
+
+document.getElementById("quit_store_icon").addEventListener("click", () => {
+    document.getElementById("user_storeBackdrop").style.display = "none";
+    document.getElementById("user_store").style.display = "none";
+    storeChatWS.close(1000, "Done using the connection");
 });
 
-//load store items
 document.getElementById("store_filters_form").addEventListener("submit", async (e) => {
     e.preventDefault();
     
@@ -132,7 +139,7 @@ function sendChatMessage() {
     storeChatWS.send(JSON.stringify(message));
 
     // Optimistic UI (show immediately)
-    appendChatMessage("me", text);
+    // appendChatMessage("me", text);
 
     input.value = "";
 }

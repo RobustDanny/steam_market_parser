@@ -4,8 +4,12 @@
       <form class="load_inventory_modal_form" id="SettingsFormInventory">
         <div style="display: flex; flex-direction: row; gap: 10px;">
           <input style="display: none;" name="settings_steamid" value="{% if steam_user %}{{ steam_user.steamid }}{% endif %}">
-        <input value="570" name="settings_appid">
-        <button type="submit">load</button>
+          <select class="store_input" name="settings_appid" id="settings_appid_select_user">
+            <option>Select game</option>
+        </select>
+        <button class="store_button" type="submit">
+          <img class="reload_store_icon" src="/front/svg/refresh_icon.svg" alt="reload inventory">
+      </button>
         </div>
       </form>
     <form id="adFormModal" class="card_view_modal_form">

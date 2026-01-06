@@ -31,6 +31,8 @@ document.getElementById("enter_store").addEventListener("click", async (e) => {
     document.getElementById("store_menuBackdrop").style.display = "none";
 
     add_buyser_to_queue(store_steamid, buyer_steamid)
+    get_inventory_games(store_steamid)
+    
 });
 
 document.getElementById("store_menuBackdrop").addEventListener("click", (e) => {
@@ -53,4 +55,34 @@ function add_buyser_to_queue(store_id, buyer_id) {
     .then(json => {
         console.log("Buyer added to queue:", json);
     });
+}
+
+async function get_inventory_games(store_steamid){
+
+    const response = await fetch("/api/get_inventory_games", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ store_steamid }),
+      });
+    
+      const data = await response.json();
+
+      const select = document.getElementById("settings_appid_select");
+
+    // Clear old options (in case user opens store again)
+    select.innerHTML = '<option value="" disabled>Select game</option>';
+
+    data.forEach(game => {
+        const option = document.createElement("option");
+        option.value = game.appid;
+        option.textContent = `${game.name} (${game.items})`;
+        select.appendChild(option);
+    });
+
+    // Auto-select first game (optional but UX-friendly)
+    // if (data.length > 0) {
+    //     select.value = data[0].appid;
+    // }
 }

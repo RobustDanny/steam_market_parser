@@ -1,7 +1,7 @@
 use std::{collections::{HashMap, VecDeque}, time::Duration};
 use tokio::sync::{mpsc, Mutex};
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Deserializer};
 
 mod steam_request;
 use steam_request::{ProcessSteamRequest, SteamRequest};
@@ -97,6 +97,25 @@ pub struct StoreID{
 //User inventory
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct LoadGameInventory{
+    pub store_steamid: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AppContext {
+    pub appid: u32,
+    pub name: String,
+    pub asset_count: u32,
+}
+
+#[derive(Debug, Serialize)]
+pub struct InventoryGame {
+    pub appid: u32,
+    pub name: String,
+    pub items: u32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct InventoryApp{
     pub settings_steamid: String,
     pub settings_appid: String,
@@ -181,16 +200,17 @@ pub struct AssetProperty {
     pub assetid: Option<String>,
     pub asset_properties: Option<Vec<Property>>,
 }
+
+///Need to fix Option<serde_json::Value>!!!
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(default)]
 pub struct Property {
     pub propertyid: Option<u32>,
-    pub float_value: Option<f32>,
-    pub int_value: Option<u32>,
+    pub float_value: Option<serde_json::Value>,
+    pub int_value: Option<serde_json::Value>,
     pub string_value: Option<String>,
     pub name: Option<String>,
 }
-
 
 //----------------------------------
 //----------------------------------
@@ -659,3 +679,54 @@ impl MostRecentItemsRequest {
         most_recent_items_request_struct
     }
 }
+
+// fn de_opt_u32_from_str_or_num<'de, D>(deserializer: D) -> Result<Option<u32>, D::Error>
+// where
+//     D: Deserializer<'de>,
+// {
+//     #[derive(Deserialize)]
+//     #[serde(untagged)]
+//     enum StrOrNum {
+//         Str(String),
+//         Num(u32),
+//         // sometimes steam can return larger numbers; add u64 if you want:
+//         Num64(u64),
+//     }
+
+//     let v = Option::<StrOrNum>::deserialize(deserializer)?;
+//     let out = match v {
+//         None => None,
+//         Some(StrOrNum::Num(n)) => Some(n),
+//         Some(StrOrNum::Num64(n)) => Some(u32::try_from(n).map_err(serde::de::Error::custom)?),
+//         Some(StrOrNum::Str(s)) => Some(
+//             s.parse::<u32>()
+//                 .map_err(serde::de::Error::custom)?
+//         ),
+//     };
+//     Ok(out)
+// }
+
+// fn de_opt_f32_from_str_or_num<'de, D>(deserializer: D) -> Result<Option<f32>, D::Error>
+// where
+//     D: Deserializer<'de>,
+// {
+//     #[derive(Deserialize)]
+//     #[serde(untagged)]
+//     enum StrOrNum {
+//         Str(String),
+//         Num(f32),
+//         Num64(f64),
+//     }
+
+//     let v = Option::<StrOrNum>::deserialize(deserializer)?;
+//     let out = match v {
+//         None => None,
+//         Some(StrOrNum::Num(n)) => Some(n),
+//         Some(StrOrNum::Num64(n)) => Some(n as f32),
+//         Some(StrOrNum::Str(s)) => Some(
+//             s.parse::<f32>()
+//                 .map_err(serde::de::Error::custom)?
+//         ),
+//     };
+//     Ok(out)
+// }

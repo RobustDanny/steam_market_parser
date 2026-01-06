@@ -1,7 +1,9 @@
 use actix_session::{Session};
-use actix_web::{HttpResponse, Responder, web};
+use actix_web::{HttpResponse, Responder, web, Result};
 use tera::{Context};
 use serde_json::json;
+use regex::Regex;
+use std::collections::HashMap;
 
 use crate::{
     AppState, 
@@ -21,7 +23,9 @@ use steam_market_parser::{
     AdCardHistoryVec,
     BuyerAndStoreIDS,
     StoreID,
-    ChatSessionPlayload
+    AppContext,
+    LoadGameInventory,
+    InventoryGame
 };
 
 use crate::db::DataBase;
@@ -45,6 +49,8 @@ pub async fn load_inventory(_user_inventory: web::Data<UserInventoryState>, para
             .text()
             .await
             .unwrap();
+
+        // println!("{respond:#?}");
 
         let respond: Inventory = serde_json::from_str(&respond).unwrap();
 
@@ -143,33 +149,62 @@ pub async fn remove_from_store_queue(state: web::Data<StoreHashMapState>, store_
 
     let buyer_id = hashmap.pop_front().expect("Store queue is empty");
 
-    // websocket_between_store_and_buyer(buyer_id, store_id.to_string(), websocket_list_state).await;
-
-    
     drop(hashmap);
-
-    // println!("Buyer id from queue: {buyer_id}");
-    // println!("{check:?}");
     
     HttpResponse::Ok().json(serde_json::json!({
         "buyer_id": buyer_id
     }))
 }
 
-// async fn websocket_between_store_and_buyer(buyer_id: String, store_id: String, websocket_list_state: web::Data<StoreWebsocketListState>){
+pub async fn get_inventory_games(params: web::Json<LoadGameInventory>) -> Result<HttpResponse> {
+    let steamid = params.store_steamid.trim();
+    if steamid.is_empty() {
+        return Ok(HttpResponse::BadRequest().body("steamid is required"));
+    }
 
-//     println!("WebSocket between store and buyer: {buyer_id} and {store_id}");
+    let url = format!("https://steamcommunity.com/profiles/{}/inventory/", steamid);
 
-//     let mut websocket_list = websocket_list_state.websocket_list.lock().await;
+    let client = reqwest::Client::new();
 
-//     websocket_list.insert(buyer_id.clone(), ChatSessionPlayload {
-//         buyer: buyer_id,
-//         trader: store_id,
-//     });
+        let respond = client
+            .get(url)
+            .header("Accept", "application/json")
+            .send()
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
 
-//     // drop(websocket_list);
-//     println!("{websocket_list:#?}");
-// }
+    // (?s) enables "dot matches newline" so .*? spans across lines
+    let re = Regex::new(r#"(?s)var\s+g_rgAppContextData\s*=\s*(\{.*?\});"#)
+        .map_err(actix_web::error::ErrorInternalServerError)?;
+
+    let caps = re
+        .captures(&respond)
+        .ok_or_else(|| actix_web::error::ErrorBadGateway("g_rgAppContextData not found"))?;
+
+    let json_str = &caps[1];
+
+    let data: HashMap<String, AppContext> = serde_json::from_str(json_str)
+        .map_err(actix_web::error::ErrorBadGateway)?;
+
+    // Convert into a clean response list
+    let games: Vec<InventoryGame> = data
+        .into_iter()
+        .map(|(_k, app)| InventoryGame {
+            appid: app.appid,
+            name: app.name,
+            items: app.asset_count,
+        })
+        .collect();
+
+    // games.sort_by_key(|g| g.appid);
+
+    println!("{games:#?}");
+
+    Ok(HttpResponse::Ok().json(games))
+}
 
 pub async fn tera_update_data(session: Session, state: web::Data<AppState>, feed_state: web::Data<FeedItemsState>, _user_inventory: web::Data<UserInventoryState>) -> impl Responder {
     let items = feed_state.items.lock().await.clone();
@@ -191,9 +226,6 @@ pub async fn tera_update_data(session: Session, state: web::Data<AppState>, feed
     
     println!("filters: {filters:#?}");
     println!("steam_user: {steam_user:#?}");
-
-    // let inventory = user_inventory.inventory.lock().await;
-    // let inventory = (*inventory).clone();
     
     let mut ctx = Context::new();
     // ctx.insert("user_inventory", &inventory);

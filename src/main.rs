@@ -44,7 +44,8 @@ use routes::{
     add_ad_steam_user_to_db,
     get_ad_cards_history,
     add_to_store_queue,
-    remove_from_store_queue
+    remove_from_store_queue,
+    get_inventory_games
 };
 
 mod background_tasks;
@@ -179,7 +180,8 @@ async fn main()-> std::io::Result<()> {
             .route("/ws/ads", web::get().to(ws_ad_handler)) 
             .route("/ws/chat", web::get().to(ws_chat_handler)) 
             .route("/api/logout", web::get().to(steam_logout)) 
-            .route("/api/get_inventory_items", web::post().to(load_inventory)) 
+            .route("/api/get_inventory_items", web::post().to(load_inventory))
+            .route("/api/get_inventory_games", web::post().to(get_inventory_games))
             .route("/api/get_ad_cards_history", web::post().to(get_ad_cards_history)) 
             .route("/api/filters", web::get().to(post_most_recent_item_filters))
             .route("/api/add_to_ad_queue", web::post().to(add_ad_steam_user_to_db))

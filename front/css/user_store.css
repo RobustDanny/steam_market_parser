@@ -17,6 +17,7 @@
     padding: 25px;
     border-radius: 12px;
     width: 90%;
+    height: 80%;
     max-width: 1200px;
     border: 1px solid #323232;
     box-shadow: 0 8px 25px rgba(0,0,0,0.35);
@@ -29,18 +30,46 @@
 
 .store_grid {
     width: 100%;
+    height: 100%;
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
-    grid-template-rows: auto auto 1fr;
+    grid-template-rows: 0.2fr 0.3fr 1fr;
     gap: 14px;
 }
 
 
 /* Row 1 – Col 1 */
+.div_quit_store{
+    justify-content: center;
+    align-content: center;
+}
+
+.div_quit_store .hidden-text {
+    opacity: 1;
+    visibility: visible;
+}
+
+.quit_store_icon{
+    /* width: 20px; */
+    height: 50px;
+    cursor: pointer;
+    transform: rotate(180deg);
+}
+
+.reload_store_icon{
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
 .store_filters {
+    display: flex;
+    flex-direction: row;
     background: #282828;
     padding: 12px;
     border-radius: 8px;
+
+    justify-content: space-between;
 }
 
 /* Row 1 – Col 2 */
@@ -48,32 +77,29 @@
     background: #282828;
     padding: 12px;
     border-radius: 8px;
+
+    height: 1fr;
 }
 
 /* CHAT — spans both rows in column 3 */
 .store_chat {
     grid-column: 3 / 4;
-    grid-row: 1 / 5;
+    grid-row: 1 / 4;
 
     background: #282828;
     padding: 12px;
     border-radius: 8px;
-
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
-}
 
-.chat_messages {
-    flex: 1;
-    /* border: 1px solid #333; */
-    border-radius: 6px;
-    padding: 10px;
-    overflow-y: auto;
-    margin-bottom: 10px;
+    height: 1fr;
 }
 
 .chat_input_group {
     display: flex;
+    overflow-x: hidden;
+    width: 100%;
     gap: 8px;
 }
 
@@ -94,7 +120,7 @@
 }
 
 .chat_input_group input {
-    width: auto;
+    width: 100%;
     height: 34px;
     padding: 0 10px;
     border-radius: 5px;
@@ -110,31 +136,46 @@
 }
 
 .store_button {
-    padding: 12px;
-    margin-top: 4px;
-    border: 1px solid #323232;
-    border-radius: 6px;
-    background: #28a4c6;                 /* your blue highlight */
-    color: white;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.25s ease, transform 0.15s ease;
+    /* padding: 12px; */
+    /* margin-top: 4px; */
+    border: transparent;
+    /* border-radius: 6px; */
+    background: transparent;              
+    color: transparent;
+    /* font-size: 14px; */
+    /* font-weight: 600; */
+    /* cursor: pointer; */
+    /* transition: background 0.25s ease, transform 0.15s ease; */
 }
     
-.store_button:hover {
+/* .store_button:hover {
     background: #66dbe6;                 
     transform: translateY(-2px);  
-}
+} */
 
 /* Inventory block: spans row 2 and columns 1-2 */
+.inventory_input_group{
+    align-self: center;
+    justify-self: center;
+    margin-bottom: 12px;
+}
+
+.store_no_items_span{
+    justify-self: center;
+    align-self: center;
+}
+
 .store_inventory_area {
     grid-column: 1 / 3;
-    grid-row: 4 / 4;   /* updated from 3 / 4 */
+    grid-row: 3 / 4;
+
     background: #282828;
     padding: 12px;
     border-radius: 8px;
-    min-height: 220px;
+
+    display: flex;                
+    flex-direction: column;
+    min-height: 0;                
 }
 
 .store_selected_items {
@@ -148,35 +189,66 @@
     display: flex;
     /* align-items: center; */
     gap: 8px;
+
+    height: 1fr;
 }
 
 .store_inventory_list {
-    display: flex; 
-    flex-wrap: wrap; 
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-content: center;
+
+    flex: 1;                     
+    min-height: 0;                
     overflow-y: auto;
     overflow-x: hidden;
-    justify-content: center;
-    height: 300px;
 }
+
 
 /* Store Chat*/
 
-.chat_message {
-    padding: 6px 10px;
-    margin-bottom: 6px;
-    max-width: 80%;
+/* Chat container already flex-column, this helps alignment */
+.chat_messages {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    flex: 1;
+    /* border: 1px solid #333; */
     border-radius: 6px;
-    font-size: 14px;
+    padding: 10px;
+    overflow-y: auto;
+    margin-bottom: 10px;
 }
 
+/* Base message */
+.chat_message {
+    padding: 8px 12px;
+    max-width: 80%;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.4;
+    word-wrap: break-word;
+    animation: fadeIn 0.15s ease-out;
+}
+
+/* Your messages (right side) */
 .chat_message_me {
     align-self: flex-end;
-    background: #4a90e2;
-    color: white;
+    background: linear-gradient(135deg, #28a4c6, #4fc3d7);
+    color: #ffffff;
+    border-bottom-right-radius: 3px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
 }
 
+/* Other user's messages (left side) */
 .chat_message_other {
     align-self: flex-start;
-    background: #eee;
+    background: #1f1f1f;
+    color: #eaeaea;
+    border: 1px solid #2f2f2f;
+    border-bottom-left-radius: 3px;
 }
+
 
