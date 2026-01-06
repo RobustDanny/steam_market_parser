@@ -25,8 +25,7 @@ ws_ad.onmessage = (event) => {
     const img4 = user_ad.fourth_item_image || "/front/svg/default_item_icon.svg";
 
     container.insertAdjacentHTML("afterbegin", `
-      <div class="ad_card_from_feed" id="ad_card_for_inventory_load">
-        <input name="user_store_steam_id" id="user_store_steam_id" style="display: none;" type="hidden" value="${user_ad.steamid}">
+      <div class="ad_card_from_feed" id="ad_card_for_inventory_load" data-steamid="${user_ad.steamid}">
         <div class="card_hover-container">
           <div class="ad_card">
             <div class="ad_image_container">
