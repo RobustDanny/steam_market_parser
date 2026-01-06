@@ -35,7 +35,7 @@ color: white;
 /* padding: 20px; */
 box-shadow: 2px 0 10px rgba(0,0,0,0.2);
 z-index: 100;
-transition: width 0.3s ease;
+transition: width 0.1s ease;
 }
 
 .side_panel:hover {

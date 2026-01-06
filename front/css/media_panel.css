@@ -35,20 +35,19 @@ height: 20px;
 }
 
 .hidden-text {
-position: absolute;
-top: 105%;
-left: 50%;
-transform: translateX(-50%);
-background-color: #333;
-color: white;
-padding: 5px 8px;
-border-radius: 3px;
-white-space: nowrap;
-opacity: 0;
-font-size: 8pt;
-visibility: hidden;
-transition: opacity 0.3s ease, visibility 0.3s ease;
-z-index: 1000;
+    position: fixed;            /* important */
+    background-color: #333;
+    color: white;
+    padding: 5px 8px;
+    border-radius: 4px;
+    font-size: 8pt;
+    white-space: nowrap;
+
+    pointer-events: none;       /* prevents flicker */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s ease;
+    z-index: 10000;
 }
 
 .pause_icon{

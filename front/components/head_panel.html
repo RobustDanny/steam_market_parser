@@ -23,8 +23,10 @@
             </a>
         </div>
         </div>
-        <img class="sign_in_icon" src="/front/svg/offer_list.svg">
+        <img id="go_trade" class="sign_in_icon" src="/front/svg/offer_list.svg">
+        <span class="hidden_text_head_panel">Go Trade</span>
         <img id="ad_me" class="sign_in_icon" src="/front/svg/ad_me_icon.svg">
+        <span class="hidden_text_head_panel">Make Ad</span>
         <img class="sign_in_icon" src="{{ steam_user.avatar_url_full }}">
         {% else %}
         <div class="hidded_button">
@@ -36,3 +38,29 @@
         {% endif %}
     </div>
 </div>
+
+<script>
+    const trade = document.getElementById("go_trade");
+    const ad = document.getElementById("ad_me");
+    sticky_tooltip(trade);
+    sticky_tooltip(ad);
+
+function sticky_tooltip(element){
+    const tooltip = element.nextElementSibling;
+    
+    element.addEventListener("mouseenter", () => {
+        tooltip.style.opacity = "1";
+        tooltip.style.visibility = "visible";
+    });
+    
+    element.addEventListener("mouseleave", () => {
+        tooltip.style.opacity = "0";
+        tooltip.style.visibility = "hidden";
+    });
+    
+    element.addEventListener("mousemove", (e) => {
+        tooltip.style.left = e.clientX + 12 + "px";
+        tooltip.style.top = e.clientY + 12 + "px";
+    });
+}
+</script>

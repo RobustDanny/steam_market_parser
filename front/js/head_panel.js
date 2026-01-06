@@ -1,7 +1,9 @@
 document.getElementById("ad_me").addEventListener("click", async (e) => {
 
     const store_steamid = document.getElementById("main_steam_id").value;
-
+    console.log("HEH!!!");
+    console.warn("HEH WARN");
+    console.error("HEH ERROR");
     get_inventory_games_user(store_steamid)
 });
 
@@ -18,7 +20,9 @@ async function get_inventory_games_user(store_steamid){
       const data = await response.json();
 
       const select = document.getElementById("settings_appid_select_user");
-
+      console.log("HEH!!!");
+    console.warn("HEH WARN");
+    console.error("HEH ERROR");
     // Clear old options (in case user opens store again)
     select.innerHTML = '<option value="" disabled>Select game</option>';
 

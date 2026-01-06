@@ -44,11 +44,6 @@
     align-content: center;
 }
 
-.div_quit_store .hidden-text {
-    opacity: 1;
-    visibility: visible;
-}
-
 .quit_store_icon{
     /* width: 20px; */
     height: 50px;
@@ -79,6 +74,21 @@
     border-radius: 8px;
 
     height: 1fr;
+}
+
+.store_icons_group{
+    display: flex;
+    flex-direction: column;
+}
+
+.queue_icon{
+    width: 20px;
+    height: 20px;
+}
+
+.timer_icon{
+    width: 20px;
+    height: 20px;
 }
 
 /* CHAT — spans both rows in column 3 */
@@ -133,6 +143,22 @@
     /* margin-bottom: 10px; */
     align-self: center;
     display: flex;
+}
+
+.hidden_text_store {
+    position: fixed;            /* important */
+    background-color: #333;
+    color: white;
+    padding: 5px 8px;
+    border-radius: 4px;
+    font-size: 8pt;
+    white-space: nowrap;
+
+    pointer-events: none;       /* prevents flicker */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s ease;
+    z-index: 10000;
 }
 
 .store_button {
@@ -250,5 +276,3 @@
     border: 1px solid #2f2f2f;
     border-bottom-left-radius: 3px;
 }
-
-
