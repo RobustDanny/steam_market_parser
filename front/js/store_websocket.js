@@ -1,3 +1,5 @@
+let storeChatWS = null;
+
 function sendChatMessage() {
     if (!storeChatWS || storeChatWS.readyState !== WebSocket.OPEN) {
         console.warn("WS not connected");
@@ -38,7 +40,7 @@ function appendChatMessage(from, text) {
     container.scrollTop = container.scrollHeight;
 }
 
-function connectStoreChatWS(buyerId, traderId) {
+export function connectStoreChatWS(buyerId, traderId) {
     if (storeChatWS?.readyState === WebSocket.OPEN) {
         console.warn("WS already connected");
         return;

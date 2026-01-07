@@ -66,23 +66,3 @@
 
     </div>
 </div>
-
-<script>
-    const quitIcon = document.getElementById("quit_store_icon");
-    const tooltip = quitIcon.nextElementSibling;
-    
-    quitIcon.addEventListener("mouseenter", () => {
-        tooltip.style.opacity = "1";
-        tooltip.style.visibility = "visible";
-    });
-    
-    quitIcon.addEventListener("mouseleave", () => {
-        tooltip.style.opacity = "0";
-        tooltip.style.visibility = "hidden";
-    });
-    
-    quitIcon.addEventListener("mousemove", (e) => {
-        tooltip.style.left = e.clientX + 12 + "px";
-        tooltip.style.top = e.clientY + 12 + "px";
-    });
-</script>

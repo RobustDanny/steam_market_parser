@@ -2,6 +2,11 @@
 // SECOND (store + chat code)
 // =======================
 
+import { sticky_tooltip } from "./sticky_tooltip.js";
+
+const quitIcon = document.getElementById("quit_store_icon");
+sticky_tooltip(quitIcon);
+
 let storeChatWS = null;
 
 document.getElementById("quit_store_icon").addEventListener("click", () => {

@@ -2,6 +2,9 @@
 // THIRD (open menu + enter store + queue + games)
 // =======================
 
+import { connectStoreChatWS } from "./store_websocket.js";
+import { get_inventory_games } from "./sticky_tooltip.js";
+
 document.addEventListener("click", (e) => {
     const card = e.target.closest(".ad_card_from_feed");
     if (!card) return;
@@ -48,7 +51,8 @@ document.addEventListener("click", (e) => {
   
     // Queue + games
     add_buyser_to_queue(store_steamid, buyer_steamid);
-    await get_inventory_games(store_steamid);
+    const element = document.getElementById("settings_appid_select");
+    await get_inventory_games(store_steamid, element);
   
     // Connect chat here (REMOVES need for a second enter_store listener)
     connectStoreChatWS(buyer_steamid, store_steamid);
@@ -68,30 +72,5 @@ document.addEventListener("click", (e) => {
       .then(res => res.json())
       .then(json => console.log("Buyer added to queue:", json))
       .catch(err => console.error("add_to_store_queue error:", err));
-  }
-  
-  async function get_inventory_games(store_steamid) {
-    const response = await fetch("/api/get_inventory_games", {
-      method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      body: JSON.stringify({ store_steamid }),
-    });
-  
-    const data = await response.json();
-  
-    const select = document.getElementById("settings_appid_select");
-    if (!select) return;
-  
-    // Clear old options
-    select.innerHTML = '<option value="" disabled>Select game</option>';
-  
-    (data || []).forEach(game => {
-      const option = document.createElement("option");
-      option.value = game.appid;
-      option.textContent = `${game.name} (${game.items})`;
-      select.appendChild(option);
-    });
   }
   

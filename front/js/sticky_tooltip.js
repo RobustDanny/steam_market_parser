@@ -6,7 +6,7 @@
 //   sticky_tooltip(pause);
 //   sticky_tooltip(arrow_down);
 
-function sticky_tooltip(element){
+export function sticky_tooltip(element){
     const tooltip = element.nextElementSibling;
     
     element.addEventListener("mouseenter", () => {
@@ -24,3 +24,28 @@ function sticky_tooltip(element){
         tooltip.style.top = e.clientY + 12 + "px";
     });
 }
+
+export async function get_inventory_games(store_steamid, element) {
+    console.warn("HEH WARN");
+    if (!element) return;
+    console.warn("HEH WARN");
+    const response = await fetch("/api/get_inventory_games", {
+      method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      body: JSON.stringify({ store_steamid }),
+    });
+  
+    const data = await response.json();
+  
+    // Clear old options
+    element.innerHTML = '<option value="" disabled>Select game</option>';
+  
+    (data || []).forEach(game => {
+      const option = document.createElement("option");
+      option.value = game.appid;
+      option.textContent = `${game.name} (${game.items})`;
+      element.appendChild(option);
+    });
+  }

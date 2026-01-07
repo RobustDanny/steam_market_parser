@@ -1,3 +1,5 @@
+import { connectStoreChatWS } from "./store_websocket.js";
+
 document.getElementById("offerList")?.addEventListener("click", () => {
     document.getElementById("offer_listBackdrop").style.display = "flex";
   });
