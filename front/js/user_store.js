@@ -3,6 +3,7 @@
 // =======================
 
 import { sticky_tooltip } from "./sticky_tooltip.js";
+import { sendChatMessage } from "./store_websocket.js";
 
 const quitIcon = document.getElementById("quit_store_icon");
 sticky_tooltip(quitIcon);
@@ -105,64 +106,3 @@ document.getElementById("chat_input").addEventListener("keydown", (e) => {
         sendChatMessage();
     }
 });
-
-function sendChatMessage() {
-  if (!storeChatWS || storeChatWS.readyState !== WebSocket.OPEN) {
-    console.warn("WS not connected");
-    return;
-  }
-
-  const input = document.getElementById("chat_input");
-  const text = input.value.trim();
-  if (!text) return;
-
-  storeChatWS.send(JSON.stringify({ type: "chat", text }));
-  input.value = "";
-}
-
-function appendChatMessage(from, text) {
-  const container = document.getElementById("chat_messages");
-
-  const messageEl = document.createElement("div");
-  messageEl.className = from === "me"
-    ? "chat_message chat_message_me"
-    : "chat_message chat_message_other";
-
-  messageEl.textContent = text;
-
-  container.appendChild(messageEl);
-  container.scrollTop = container.scrollHeight;
-}
-
-function connectStoreChatWS(buyerId, traderId) {
-  if (!buyerId || !traderId) {
-    console.warn("Missing buyerId or traderId for chat WS");
-    return;
-  }
-/// Check This out!
-  // Close previous if any
-  if (storeChatWS && storeChatWS.readyState === WebSocket.OPEN) {
-    storeChatWS.close(1000, "Switch store chat");
-  }
-
-  const wsUrl = `ws://127.0.0.1:8080/ws/chat?buyer=${buyerId}&trader=${traderId}`;
-  storeChatWS = new WebSocket(wsUrl);
-
-    storeChatWS.onopen = () => {
-        console.log("STORE CHAT WS CONNECTED");
-    };
-
-  storeChatWS.onmessage = (event) => {
-    const msg = JSON.parse(event.data);
-    appendChatMessage(msg.from, msg.text);
-  };
-
-  storeChatWS.onclose = () => {
-    console.log("STORE CHAT WS CLOSED");
-    storeChatWS = null;
-  };
-
-    storeChatWS.onerror = (e) => {
-        console.error("STORE CHAT WS ERROR", e);
-    };
-}

@@ -1,10 +1,12 @@
 // const arrow_up = document.getElementById("arrow_up");
-//   const pause = document.getElementById("pause");
+//   const pause = document.getElementById("pause_icon");
 //   const arrow_down = document.getElementById("arrow_down");
 
+//   document.addEventListener("DOMContentLoaded", () => {
 //   sticky_tooltip(arrow_up);
 //   sticky_tooltip(pause);
 //   sticky_tooltip(arrow_down);
+// });
 
 export function sticky_tooltip(element){
     const tooltip = element.nextElementSibling;
@@ -26,9 +28,7 @@ export function sticky_tooltip(element){
 }
 
 export async function get_inventory_games(store_steamid, element) {
-    console.warn("HEH WARN");
     if (!element) return;
-    console.warn("HEH WARN");
     const response = await fetch("/api/get_inventory_games", {
       method: "POST",
         headers: {

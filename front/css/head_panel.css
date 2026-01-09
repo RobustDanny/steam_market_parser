@@ -71,9 +71,10 @@ visibility: visible;
 .hidden_user_tooltip{
 background-color: #323232;
 transform: translateX(-50%);
-border-radius: 3px;
+border-radius: 8%;
 position: absolute;
-justify-self: start;
+padding: 10px 12px;
+/* justify-self: start; */
 visibility: hidden;
 display: flex;
 flex-direction: column;
@@ -92,7 +93,7 @@ height: 20px;
 border-radius: 100%;
 }
 
-.hidden_text_head_panel {
+.hidden_text_head_panel{
     position: fixed;            /* important */
     background-color: #333;
     color: white;
@@ -106,4 +107,11 @@ border-radius: 100%;
     visibility: hidden;
     transition: opacity 0.15s ease;
     z-index: 10000;
+}
+
+.img_and_span_cont{
+    display: flex; 
+    flex-direction: row; 
+    gap: 10px;
+    /* padding: 10px 12px; */
 }

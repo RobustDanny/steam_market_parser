@@ -79,6 +79,8 @@
 .store_icons_group{
     display: flex;
     flex-direction: column;
+    padding: 12px;
+    gap: 10px;
 }
 
 .queue_icon{
@@ -162,22 +164,10 @@
 }
 
 .store_button {
-    /* padding: 12px; */
-    /* margin-top: 4px; */
     border: transparent;
-    /* border-radius: 6px; */
     background: transparent;              
     color: transparent;
-    /* font-size: 14px; */
-    /* font-weight: 600; */
-    /* cursor: pointer; */
-    /* transition: background 0.25s ease, transform 0.15s ease; */
 }
-    
-/* .store_button:hover {
-    background: #66dbe6;                 
-    transform: translateY(-2px);  
-} */
 
 /* Inventory block: spans row 2 and columns 1-2 */
 .inventory_input_group{

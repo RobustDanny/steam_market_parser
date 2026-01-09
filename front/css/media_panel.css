@@ -23,18 +23,13 @@ align-items: center;
 visibility: hidden;
 }
 
-.media_icons_play_cont:hover .hidden-text{
-opacity: 1;
-visibility: visible;
-}
-
 .play_icon{
 /* position: relative; */
 width: 20px;
 height: 20px;
 }
 
-.hidden-text {
+.hidden_text_media {
     position: fixed;            /* important */
     background-color: #333;
     color: white;
@@ -81,21 +76,6 @@ justify-content: center;
 align-items: center;
 }
 
-.media_icons_pause_cont:hover .hidden-text{
-opacity: 1;
-visibility: visible;
-}
-
-.arrow_down_cont:hover .hidden-text{
-opacity: 1;
-visibility: visible;
-}
-
-.arrow_up_cont:hover .hidden-text{
-opacity: 1;
-visibility: visible;
-}
-
 .arrow_up_cont{
 width: 40px;
 height: 40px;
@@ -108,8 +88,26 @@ align-items: center;
 cursor: pointer;
 }
 
-.arrows_icons{
+.arrow_down_cont{
+width: 40px;
+height: 40px;
+display: flex;
+border-radius: 100%;
+border: 1px solid #323232;
+background-color: #212121;
+justify-content: center;
+align-items: center;
+cursor: pointer;
+}
+
+.arrow_up{
 cursor: pointer;
 width: 15px;
 height: 15px;
+}
+
+.arrow_down{
+    cursor: pointer;
+    width: 15px;
+    height: 15px;
 }

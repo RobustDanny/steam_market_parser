@@ -1,6 +1,6 @@
 let storeChatWS = null;
 
-function sendChatMessage() {
+export function sendChatMessage() {
     if (!storeChatWS || storeChatWS.readyState !== WebSocket.OPEN) {
         console.warn("WS not connected");
         return;
@@ -24,7 +24,7 @@ function sendChatMessage() {
     input.value = "";
 }
 
-function appendChatMessage(from, text) {
+export function appendChatMessage(from, text) {
     const container = document.getElementById("chat_messages");
 
     const messageEl = document.createElement("div");

@@ -24,6 +24,7 @@ background: #212121;                 /* same as your cards */
 padding: 25px;
 border-radius: 12px;
 width: 90%;
+height: 90%;
 max-width: 640px;
 border: 1px solid #323232;           /* consistent border */
 box-shadow: 0 8px 25px rgba(0,0,0,0.35);
@@ -41,8 +42,8 @@ animation: fadeIn 0.25s ease-out;
 background: transparent;                 /* same as your cards */
 padding: 25px;
 /* border-radius: 12px; */
-width: 100%;
-max-width: 640px;
+/* width: 100%;
+max-width: 640px; */
 /* border: 1px solid #323232;           consistent border */
 /* box-shadow: 0 8px 25px rgba(0,0,0,0.35); */
 color: #fff;
@@ -62,7 +63,7 @@ opacity: 0.85;
 
 /* Inputs, textareas */
 .load_inventory_modal_form input{
-width: 30%;
+width: 90%;
 padding: 10px 12px;
 background: #2d2d2d;                 /* matches .input_field */
 color: #fff;
@@ -71,27 +72,6 @@ border-radius: 6px;
 outline: none;
 font-size: 13px;
 transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-
-
-/* Submit button */
-.load_inventory_modal_form button {
-padding: 10px 12px;
-/* margin-top: 4px; */
-border: 1px solid #323232;
-border-radius: 6px;
-background: #28a4c6;                 /* your blue highlight */
-color: white;
-font-size: 14px;
-font-weight: 600;
-cursor: pointer;
-transition: background 0.25s ease, transform 0.15s ease;
-}
-
-.load_inventory_modal_form button:hover {
-background: #66dbe6;                 
-transform: translateY(-2px);  
 }
 
 .card_view_modal_form {
@@ -165,6 +145,12 @@ opacity: 1;
 visibility: visible;
 }
 
+.store_button {
+    border: transparent;
+    background: transparent;              
+    color: transparent;
+}
+
 .ad_card {
 width: 80px;
 height: 90px;
@@ -206,29 +192,13 @@ object-fit: cover;
 border-radius: 4px;  
 }
 
-.ad_input_field {
-width: auto;
-height: 34px;
-padding: 0 10px;
-border-radius: 5px;
-border: 1px solid #2e2e2e;
-background: #2d2d2d;
-color: white;
-font-size: 12px;
-outline: none;
-transition: border 0.2s ease, box-shadow 0.2s ease;
-/* margin-bottom: 10px; */
-align-self: center;
-display: flex;
-}
-
 .user_inventory{
 display: flex; 
 flex-wrap: wrap; 
 overflow-y: auto;
 overflow-x: hidden;
 justify-content: center;
-height: 300px;
+height: 400px;
 }
 
 .user_inventory span{

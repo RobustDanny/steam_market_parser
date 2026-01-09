@@ -12,14 +12,18 @@
         <img src="{{ steam_user.avatar_url_full }}" class="steam_user_avatar">
         <div class="hidden_user_tooltip">
             <div id="open_setting_form">
-            <img src="/front/svg/user_settings.svg" class="user_settings_icons">
-            <span style="color: #9E9E9E;">settings</span>
-        </div>
-            <a href="/api/logout">
-            <div>
-            <img src="/front/svg/user_logout.svg" class="user_settings_icons">
-            <span style="color: #9E9E9E;">logout</span>
+                <div class="img_and_span_cont">
+                    <img src="/front/svg/user_settings.svg" class="user_settings_icons">
+                    <span style="color: #9E9E9E;">settings</span>
+                </div>
             </div>
+            <a href="/api/logout">
+                <div>
+                    <div class="img_and_span_cont">
+                        <img src="/front/svg/user_logout.svg" class="user_settings_icons">
+                        <span style="color: #9E9E9E;">logout</span>
+                    </div> 
+                </div>
             </a>
         </div>
         </div>
@@ -38,29 +42,3 @@
         {% endif %}
     </div>
 </div>
-
-<script>
-    const trade = document.getElementById("go_trade");
-    const ad = document.getElementById("ad_me");
-    sticky_tooltip(trade);
-    sticky_tooltip(ad);
-
-function sticky_tooltip(element){
-    const tooltip = element.nextElementSibling;
-    
-    element.addEventListener("mouseenter", () => {
-        tooltip.style.opacity = "1";
-        tooltip.style.visibility = "visible";
-    });
-    
-    element.addEventListener("mouseleave", () => {
-        tooltip.style.opacity = "0";
-        tooltip.style.visibility = "hidden";
-    });
-    
-    element.addEventListener("mousemove", (e) => {
-        tooltip.style.left = e.clientX + 12 + "px";
-        tooltip.style.top = e.clientY + 12 + "px";
-    });
-}
-</script>
