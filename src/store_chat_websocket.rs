@@ -17,7 +17,9 @@ pub struct RoomId {
 pub struct WsSession {
     room: RoomId,
     hub: Addr<ChatHub>,
+    role: String, // "buyer" | "trader"
 }
+
 
 #[derive(Message)]
 #[rtype(result = "()")]
@@ -51,14 +53,50 @@ impl Actor for WsSession {
 
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsSession {
     fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, _: &mut Self::Context) {
-        if let Ok(ws::Message::Text(text)) = msg {
-            self.hub.do_send(Broadcast {
-                room: self.room.clone(),
-                text: text.to_string(),
-            });
+        let Ok(ws::Message::Text(text)) = msg else { return };
+
+        let parsed: serde_json::Value = match serde_json::from_str(&text) {
+            Ok(v) => v,
+            Err(_) => return,
+        };
+
+        let msg_type = parsed.get("type").and_then(|v| v.as_str()).unwrap_or("");
+
+        // Read text
+        let body = parsed
+            .get("text")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .trim()
+            .to_string();
+
+        if body.is_empty() {
+            return;
+        }
+
+        match msg_type {
+            "chat" => {
+                self.hub.do_send(Broadcast {
+                    room: self.room.clone(),
+                    msg_type: "chat".to_string(),
+                    from_role: self.role.clone(), // buyer/trader
+                    text: body,
+                });
+            }
+            "system" => {
+                self.hub.do_send(Broadcast {
+                    room: self.room.clone(),
+                    msg_type: "system".to_string(),
+                    from_role: "system".to_string(),
+                    text: body,
+                });
+            }
+            _ => {}
         }
     }
 }
+
+
 
 #[derive(Message)]
 #[rtype(result = "()")]
@@ -78,6 +116,8 @@ struct Leave {
 #[rtype(result = "()")]
 struct Broadcast {
     room: RoomId,
+    msg_type: String,   // "chat" | "system"
+    from_role: String,  // "buyer" | "trader" | "system"
     text: String,
 }
 
@@ -124,12 +164,21 @@ impl Handler<Broadcast> for ChatHub {
 
     fn handle(&mut self, msg: Broadcast, _: &mut Context<Self>) {
         if let Some(room) = self.rooms.get(&msg.room) {
+            let payload = serde_json::json!({
+                "type": msg.msg_type,
+                "from_role": msg.from_role,
+                "text": msg.text
+            })
+            .to_string();
+
             for addr in room {
-                addr.do_send(WsText(msg.text.clone()));
+                addr.do_send(WsText(payload.clone()));
             }
         }
     }
 }
+
+
 
 impl Actor for ChatHub{
     type Context = Context<Self>;
@@ -146,10 +195,17 @@ pub async fn ws_chat_handler(
         buyer_steamid: query.buyer.clone(),
         trader_steamid: query.trader.clone(),
     };
-    
+
+    let role = match query.role.as_deref() {
+        Some("buyer") => "buyer",
+        Some("trader") => "trader",
+        _ => "buyer", // safe default
+    }.to_string();
+
     let session = WsSession {
         room,
         hub: hub.get_ref().clone(),
+        role,
     };
 
     ws::start(session, &req, stream)

@@ -1,5 +1,5 @@
 
-import "./js/sticky_tooltip.js";
+import "./js/shared_fns.js";
 import "./js/head_panel.js";
 
 import "./js/add_ad.js";

@@ -1,70 +1,104 @@
 let storeChatWS = null;
+let myRole = null; // "buyer" | "trader"
+let openPromise = null;
+
+export function connectStoreChatWS(buyerId, traderId, role) {
+    myRole = role;
+  
+    // Already open -> resolve immediately
+    if (storeChatWS && storeChatWS.readyState === WebSocket.OPEN) {
+      return Promise.resolve();
+    }
+  
+    // Already connecting -> return existing promise
+    if (storeChatWS && storeChatWS.readyState === WebSocket.CONNECTING && openPromise) {
+      return openPromise;
+    }
+  
+    const wsUrl = `ws://127.0.0.1:8080/ws/chat?buyer=${buyerId}&trader=${traderId}&role=${role}`;
+    storeChatWS = new WebSocket(wsUrl);
+  
+    openPromise = new Promise((resolve, reject) => {
+      storeChatWS.onopen = () => {
+        console.log("STORE CHAT WS CONNECTED");
+        resolve();
+      };
+  
+      storeChatWS.onerror = (e) => {
+        console.error("STORE CHAT WS ERROR", e);
+        reject(e);
+      };
+    });
+  
+    // keep your existing message handler
+    storeChatWS.onmessage = (event) => {
+      let msg;
+      try {
+        msg = JSON.parse(event.data);
+      } catch {
+        appendChatMessage({ type: "system", text: event.data });
+        return;
+      }
+      appendChatMessage(msg);
+    };
+  
+    storeChatWS.onclose = () => {
+      console.log("STORE CHAT WS CLOSED");
+      storeChatWS = null;
+      openPromise = null;
+    };
+  
+    return openPromise;
+  }
 
 export function sendChatMessage() {
-    if (!storeChatWS || storeChatWS.readyState !== WebSocket.OPEN) {
-        console.warn("WS not connected");
-        return;
-    }
+  if (!storeChatWS || storeChatWS.readyState !== WebSocket.OPEN) {
+    console.warn("WS not connected");
+    return;
+  }
 
-    const input = document.getElementById("chat_input");
-    const text = input.value.trim();
+  const input = document.getElementById("chat_input");
+  const text = input.value.trim();
+  if (!text) return;
 
-    if (!text) return;
+  storeChatWS.send(JSON.stringify({ type: "chat", text }));
+  input.value = "";
 
-    const message = {
-        type: "chat",
-        text: text
-    };
-
-    storeChatWS.send(JSON.stringify(message));
-
-    // Optimistic UI (show immediately)
-    appendChatMessage("me", text);
-
-    input.value = "";
+  // IMPORTANT: don't optimistic-append (or you'll get duplicates)
+  // appendChatMessage({type:"chat", from_role: myRole, text});
 }
 
-export function appendChatMessage(from, text) {
-    const container = document.getElementById("chat_messages");
+export function appendChatMessage(msg) {
+  const container = document.getElementById("chat_messages");
 
-    const messageEl = document.createElement("div");
-    messageEl.className = from === "me"
-        ? "chat_message chat_message_me"
-        : "chat_message chat_message_other";
+  const messageEl = document.createElement("div");
 
-    messageEl.textContent = text;
-
+  // System message
+  if (msg.type === "system" || msg.from_role === "system") {
+    messageEl.className = "chat_message chat_message_system";
+    messageEl.textContent = msg.text ?? "";
     container.appendChild(messageEl);
-
-    // Auto scroll
     container.scrollTop = container.scrollHeight;
+    return;
+  }
+
+  // Chat message: decide if it's mine
+  const fromRole = msg.from_role; // "buyer" | "trader"
+  const isMine = myRole && fromRole === myRole;
+
+  messageEl.className = isMine
+    ? "chat_message chat_message_me"
+    : "chat_message chat_message_other";
+
+  messageEl.textContent = msg.text ?? "";
+  container.appendChild(messageEl);
+  container.scrollTop = container.scrollHeight;
 }
 
-export function connectStoreChatWS(buyerId, traderId) {
-    if (storeChatWS?.readyState === WebSocket.OPEN) {
-        console.warn("WS already connected");
-        return;
+export function sendWS(payload) {
+    if (!storeChatWS || storeChatWS.readyState !== WebSocket.OPEN) {
+      console.warn("WS not connected (send skipped)");
+      return;
     }
-
-    const wsUrl = `ws://127.0.0.1:8080/ws/chat?buyer=${buyerId}&trader=${traderId}`;
-
-    storeChatWS = new WebSocket(wsUrl);
-
-    storeChatWS.onopen = () => {
-        console.log("STORE CHAT WS CONNECTED");
-    };
-
-    storeChatWS.onmessage = (event) => {
-        const msg = JSON.parse(event.data);
-        appendChatMessage(msg.from, msg.text);
-    };
-
-    storeChatWS.onclose = () => {
-        console.log("STORE CHAT WS CLOSED");
-        storeChatWS = null;
-    };
-
-    storeChatWS.onerror = (e) => {
-        console.error("STORE CHAT WS ERROR", e);
-    };
-}
+    storeChatWS.send(JSON.stringify(payload));
+  }

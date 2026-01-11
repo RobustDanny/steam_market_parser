@@ -3,7 +3,7 @@
 // =======================
 
 import { connectStoreChatWS } from "./store_websocket.js";
-import { get_inventory_games } from "./sticky_tooltip.js";
+import { get_inventory_games } from "./shared_fns.js";
 
 document.addEventListener("click", (e) => {
     const card = e.target.closest(".ad_card_from_feed");
@@ -55,7 +55,7 @@ document.addEventListener("click", (e) => {
     await get_inventory_games(store_steamid, element);
   
     // Connect chat here (REMOVES need for a second enter_store listener)
-    connectStoreChatWS(buyer_steamid, store_steamid);
+    connectStoreChatWS(buyer_steamid, store_steamid, "buyer");
   });
   
   function add_buyser_to_queue(store_id, buyer_id) {

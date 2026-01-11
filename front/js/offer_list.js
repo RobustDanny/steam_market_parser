@@ -1,4 +1,5 @@
-import { connectStoreChatWS } from "./store_websocket.js";
+import { connectStoreChatWS, sendWS } from "./store_websocket.js";
+import { get_inventory_games } from "./shared_fns.js";
 
 document.getElementById("offerList")?.addEventListener("click", () => {
     document.getElementById("offer_listBackdrop").style.display = "flex";
@@ -18,7 +19,11 @@ document.getElementById("enter_my_store").addEventListener("click", async () => 
     document.getElementById("user_storeBackdrop").style.display = "flex";
     document.getElementById("offer_listBackdrop").style.display = "none";
 
-    connectStoreChatWS(result.buyer_id, traderId);
+    const element = document.getElementById("settings_appid_select");
+    await get_inventory_games(traderId, element);
+
+    await connectStoreChatWS(result.buyer_id, traderId, "trader");
+    sendWS({ type: "system", text: "Trader connected!" });
 });
 
 

@@ -1,4 +1,4 @@
-import { get_inventory_games } from "./sticky_tooltip.js";
+import { get_inventory_games } from "./shared_fns.js";
 
 if (document.getElementById("ad_me")){
     document.getElementById("adMeBtn").addEventListener("click", async (e) => {

@@ -59,6 +59,7 @@ pub struct AdCardHistoryVec{
 pub struct ChatQuery {
     pub buyer: String,
     pub trader: String,
+    pub role: Option<String>, // "buyer" | "trader"
 }
 
 #[derive(Deserialize, Debug)]
