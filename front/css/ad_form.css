@@ -225,7 +225,7 @@ margin: 0.4rem;
     /* gap: .5em; */
     display: grid;
     place-content: center;
-    }
+}
 
 .inventory_item_icon{
 padding-left: 5px;

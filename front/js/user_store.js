@@ -70,52 +70,64 @@ function renderStoreInventory(inventory) {
     const name = desc.name || "Unknown item";
 
     const card = `
-      <div class="card_hover-container inventory-select" data-image="${icon}">
-        <div class="inventory_card">
-          <div class="inventory_card_details">
-            <div>
-              <img class="inventory_item_icon" src="${icon}" alt="${name}">
-            </div>
-            <span class="hidden-text">${name}</span>
-            <div class="store_inventory_hidden_buttons">
-              <div class="store_inventory_card_backdrop">
-              
-                <div class="store_inventory_buttons_column">
-                  <div class="store_inventory_buttons_row">
-                    <div class="store_inventory_remove_from_offer">
-                      <img id="store_inventory_remove_from_offer" class="store_inventory_button" src="/front/svg/remove_icon.svg" >
-                      <span class="store_inventory_hidden_button_text">Remove from offer</span>
-                    </div>
+  <div class="card_hover-container inventory-select"
+       data-appid="${desc.appid}"
+       data-classid="${asset.classid}"
+       data-instanceid="${asset.instanceid}"
+       data-assetid="${asset.assetid}"
+       data-contextid="${asset.contextid}"
+       data-name="${encodeURIComponent(name)}"
+       data-image="${encodeURIComponent(icon)}"
+       data-market_hash_name="${encodeURIComponent(desc.market_hash_name || "")}">
+    <div class="inventory_card">
+      <div class="inventory_card_details">
+        <div>
+          <img class="inventory_item_icon" src="${icon}" alt="${name}">
+        </div>
+        <span class="hidden-text">${name}</span>
 
-                    <div class="store_inventory_check_steam">
-                        <a href="https://steamcommunity.com/market/listings/${desc.appid}/${desc.market_hash_name}"
-                      target="_blank" rel="noopener noreferrer">
-                          <img id="store_inventory_check_steam" class="store_inventory_button" src="/front/svg/info_icon.svg" >
-                        </a>
-                      <span class="store_inventory_hidden_button_text">Check price</span>
-                    </div>
-
-                  </div>
-
-                  <div class="store_inventory_buttons_row">
-                    <div class="store_inventory_add_to_offer">
-                      <img id="store_inventory_add_to_offer" class="store_inventory_button" src="/front/svg/add_to_offer_icon.svg">
-                      <span class="store_inventory_hidden_button_text">Add to offer</span>
-                    </div>
-
-                    <div class="store_inventory_sent_to_chat">
-                      <img id="store_inventory_sent_to_chat" class="store_inventory_button" src="/front/svg/ask_tader_icon.svg">
-                      <span class="store_inventory_hidden_button_text">Ask trader</span>
-                    </div>
-
-                  </div>
+        <div class="store_inventory_hidden_buttons">
+          <div class="store_inventory_card_backdrop">
+            <div class="store_inventory_buttons_column">
+              <div class="store_inventory_buttons_row">
+                <div class="store_inventory_remove_from_offer">
+                  <img class="store_inventory_button store_inventory_remove_from_offer_btn"
+                       src="/front/svg/remove_icon.svg">
+                  <span class="store_inventory_hidden_button_text">Remove from offer</span>
                 </div>
 
+                <div class="store_inventory_check_steam">
+                  <a href="https://steamcommunity.com/market/listings/${desc.appid}/${desc.market_hash_name}"
+                     target="_blank" rel="noopener noreferrer">
+                    <img class="store_inventory_button"
+                         src="/front/svg/info_icon.svg">
+                  </a>
+                  <span class="store_inventory_hidden_button_text">Check price</span>
+                </div>
+              </div>
+
+              <div class="store_inventory_buttons_row">
+                <div class="store_inventory_add_to_offer">
+                  <img class="store_inventory_button store_inventory_add_to_offer_btn"
+                       src="/front/svg/add_to_offer_icon.svg">
+                  <span class="store_inventory_hidden_button_text">Add to offer</span>
+                </div>
+
+                <div class="store_inventory_sent_to_chat">
+                  <img class="store_inventory_button"
+                       src="/front/svg/ask_tader_icon.svg">
+                  <span class="store_inventory_hidden_button_text">Ask trader</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
+
       </div>
-    `;
+    </div>
+  </div>
+`;
+
 
     container.insertAdjacentHTML("beforeend", card);
 
@@ -123,8 +135,82 @@ function renderStoreInventory(inventory) {
     //   sticky_tooltip(btn);
     // });
     
+    const inventoryContainer = document.getElementById("store_inventory");
+    const selectedContainer =
+      document.getElementById("store_selected_items_list") ||
+      document.querySelector(".store_selected_items_list");
+
+function decode(s) {
+  try { return decodeURIComponent(s || ""); } catch { return s || ""; }
+}
+
+function makeSelectedCard(item) {
+  // item: { key, name, image }
+  return `
+    <div class="selected_item_card" data-key="${item.key}">
+
+      <button type="button" class="selected_item_remove_btn" title="Remove">
+        ✕
+      </button>
+
+      <div style="height: 100%; display: grid; place-content: center;">
+        <img class="selected_item_icon" src="${item.image}" alt="${item.name}">
+      </div>
+
+      <div>
+        <input class="selected_item_price_input" placeholder="$">
+      </div>
+      
+    </div>
+  `;
+}
+
+inventoryContainer.addEventListener("click", (e) => {
+  // ADD TO OFFER
+  const addBtn = e.target.closest(".store_inventory_add_to_offer_btn");
+  if (addBtn) {
+    const card = e.target.closest(".card_hover-container");
+    if (!card || !selectedContainer) return;
+
+    const key = `${card.dataset.appid}:${card.dataset.contextid}:${card.dataset.assetid}`;
+    const name = decode(card.dataset.name);
+    const image = decode(card.dataset.image);
+
+    // prevent duplicates
+    if (selectedContainer.querySelector(`[data-key="${CSS.escape(key)}"]`)) {
+      return;
+    }
+
+    selectedContainer.insertAdjacentHTML("beforeend", makeSelectedCard({ key, name, image }));
+    return;
+  }
+
+  // (Optional) REMOVE FROM OFFER button in inventory (if you want it to remove from selected)
+  const removeBtn = e.target.closest(".store_inventory_remove_from_offer_btn");
+  if (removeBtn) {
+    const card = e.target.closest(".card_hover-container");
+    if (!card || !selectedContainer) return;
+
+    const key = `${card.dataset.appid}:${card.dataset.contextid}:${card.dataset.assetid}`;
+    const selected = selectedContainer.querySelector(`[data-key="${CSS.escape(key)}"]`);
+    if (selected) selected.remove();
+    return;
+  }
+});
+
+// Remove from selected list
+selectedContainer?.addEventListener("click", (e) => {
+  const rm = e.target.closest(".selected_item_remove_btn");
+  if (!rm) return;
+  const selectedCard = e.target.closest(".selected_item_card");
+  if (selectedCard) selectedCard.remove();
+});
+
+
   });
 }
+
+
 
 // filter inventory
 document.getElementById("store_inventoryFilter").addEventListener("input", function () {
