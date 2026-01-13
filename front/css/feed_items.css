@@ -13,6 +13,7 @@ flex-wrap: wrap;
 .card_hover-container {
 display: inline-block;
 cursor: default;
+animation: fadeIn 0.4s ease-out;
 }
 
 .card_hover-container:hover .hidden-text {

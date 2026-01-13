@@ -198,7 +198,7 @@ flex-wrap: wrap;
 overflow-y: auto;
 overflow-x: hidden;
 justify-content: center;
-height: 400px;
+height: 300px;
 }
 
 .user_inventory span{
@@ -285,8 +285,8 @@ box-shadow: 0 0 2px 2px rgba(102, 219, 230, 0.4);
 }
 
 20% {
-transform: scale(1.03);
-box-shadow: 0 0 12px 6px rgba(102, 219, 230, 0.25);
+transform: scale(1.02);
+box-shadow: 0 0 4px 2px rgba(102, 219, 230, 0.25);
 }
 
 40% {

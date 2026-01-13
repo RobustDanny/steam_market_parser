@@ -101,4 +101,20 @@ export function sendWS(payload) {
       return;
     }
     storeChatWS.send(JSON.stringify(payload));
+}
+
+export function closeStoreChatWS() {
+  if (!storeChatWS) return;
+
+  if (
+    storeChatWS.readyState === WebSocket.OPEN ||
+    storeChatWS.readyState === WebSocket.CONNECTING
+  ) {
+    console.log("Closing STORE CHAT WS...");
+    storeChatWS.close(1000, "User quit store");
   }
+
+  storeChatWS = null;
+  openPromise = null;
+  myRole = null;
+}

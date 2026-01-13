@@ -3,19 +3,21 @@
 // =======================
 
 import { sticky_tooltip } from "./shared_fns.js";
-import { sendChatMessage } from "./store_websocket.js";
+import { sendChatMessage, closeStoreChatWS, sendWS } from "./store_websocket.js";
 
 const quitIcon = document.getElementById("quit_store_icon");
 sticky_tooltip(quitIcon);
 
-document.getElementById("quit_store_icon").addEventListener("click", () => {
+quitIcon.addEventListener("click", () => {
+  sendWS({ type: "system", text: "Trader left chat" });
+
+  closeStoreChatWS(); // ✅ WS logic lives in its own module
+  // UI cleanup
+  document.getElementById("chat_messages").innerHTML = "";
   document.getElementById("user_storeBackdrop").style.display = "none";
   document.getElementById("user_store").style.display = "none";
 
-  if (storeChatWS && storeChatWS.readyState === WebSocket.OPEN) {
-    storeChatWS.close(1000, "Done using the connection");
-  }
-  storeChatWS = null;
+  console.log("Store closed, WS disconnected");
 });
 
 document.getElementById("store_filters_form").addEventListener("submit", async (e) => {
@@ -75,12 +77,52 @@ function renderStoreInventory(inventory) {
               <img class="inventory_item_icon" src="${icon}" alt="${name}">
             </div>
             <span class="hidden-text">${name}</span>
+            <div class="store_inventory_hidden_buttons">
+              <div class="store_inventory_card_backdrop">
+              
+                <div class="store_inventory_buttons_column">
+                  <div class="store_inventory_buttons_row">
+                    <div class="store_inventory_remove_from_offer">
+                      <img id="store_inventory_remove_from_offer" class="store_inventory_button" src="/front/svg/remove_icon.svg" >
+                      <span class="store_inventory_hidden_button_text">Remove from offer</span>
+                    </div>
+
+                    <div class="store_inventory_check_steam">
+                        <a href="https://steamcommunity.com/market/listings/${desc.appid}/${desc.market_hash_name}"
+                      target="_blank" rel="noopener noreferrer">
+                          <img id="store_inventory_check_steam" class="store_inventory_button" src="/front/svg/info_icon.svg" >
+                        </a>
+                      <span class="store_inventory_hidden_button_text">Check price</span>
+                    </div>
+
+                  </div>
+
+                  <div class="store_inventory_buttons_row">
+                    <div class="store_inventory_add_to_offer">
+                      <img id="store_inventory_add_to_offer" class="store_inventory_button" src="/front/svg/add_to_offer_icon.svg">
+                      <span class="store_inventory_hidden_button_text">Add to offer</span>
+                    </div>
+
+                    <div class="store_inventory_sent_to_chat">
+                      <img id="store_inventory_sent_to_chat" class="store_inventory_button" src="/front/svg/ask_tader_icon.svg">
+                      <span class="store_inventory_hidden_button_text">Ask trader</span>
+                    </div>
+
+                  </div>
+                </div>
+
+            </div>
           </div>
         </div>
       </div>
     `;
 
     container.insertAdjacentHTML("beforeend", card);
+
+    // container.querySelectorAll(".store_inventory_button").forEach(btn => {
+    //   sticky_tooltip(btn);
+    // });
+    
   });
 }
 

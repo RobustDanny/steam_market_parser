@@ -23,7 +23,7 @@ document.getElementById("enter_my_store").addEventListener("click", async () => 
     await get_inventory_games(traderId, element);
 
     await connectStoreChatWS(result.buyer_id, traderId, "trader");
-    sendWS({ type: "system", text: "Trader connected!" });
+    sendWS({ type: "system", text: "Trader connected" });
 });
 
 
