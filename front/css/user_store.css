@@ -411,7 +411,7 @@ align-self: center;
   }
 
   .selected_item_price_input{
-    width: 100%;
+    width: 50px;
     height: 20px;
     padding: 0 10px;
     border-radius: 5px;
@@ -423,7 +423,6 @@ align-self: center;
     transition: border 0.2s ease, box-shadow 0.2s ease;
     align-self: center;
     justify-self: center;
-    place-content: center;
   }
 
   .selected_items_accept_btn_cont{
@@ -434,16 +433,22 @@ align-self: center;
 
   .selected_items_accept_btn{
     padding: 12px;
-margin-top: 4px;
-border: 1px solid #323232;
-border-radius: 6px;
-background: #28a4c6;                 /* your blue highlight */
-color: white;
-font-size: 14px;
-font-weight: 600;
-cursor: pointer;
-transition: background 0.25s ease, transform 0.15s ease;
-  }
+    margin-top: 4px;
+    border: 1px solid #323232;
+    border-radius: 6px;
+    background: #909192;                 /* your blue highlight */
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.25s ease, transform 0.15s ease;
+}
 
+.selected_item_card_cont{
+    display:flex; 
+    flex-direction: column; 
+    gap: 5px; 
+    /* overflow-x: hidden; */
+}
   .selected_item_remove_btn:hover { opacity: 1; }
   

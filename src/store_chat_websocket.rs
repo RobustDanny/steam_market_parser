@@ -62,7 +62,8 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsSession {
 
         let msg_type = parsed.get("type").and_then(|v| v.as_str()).unwrap_or("");
 
-        // Read text
+match msg_type {
+    "chat" | "system" => {
         let body = parsed
             .get("text")
             .and_then(|v| v.as_str())
@@ -74,25 +75,27 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsSession {
             return;
         }
 
-        match msg_type {
-            "chat" => {
-                self.hub.do_send(Broadcast {
-                    room: self.room.clone(),
-                    msg_type: "chat".to_string(),
-                    from_role: self.role.clone(), // buyer/trader
-                    text: body,
-                });
-            }
-            "system" => {
-                self.hub.do_send(Broadcast {
-                    room: self.room.clone(),
-                    msg_type: "system".to_string(),
-                    from_role: "system".to_string(),
-                    text: body,
-                });
-            }
-            _ => {}
-        }
+        self.hub.do_send(Broadcast {
+            room: self.room.clone(),
+            msg_type: msg_type.to_string(),
+            from_role: self.role.clone(),
+            text: body,
+        });
+    }
+
+    "offer_items" => {
+        self.hub.do_send(Broadcast {
+            room: self.room.clone(),
+            msg_type: "offer_items".to_string(),
+            from_role: self.role.clone(),
+            text: parsed.to_string(), // full JSON
+        });
+    }
+
+    _ => {}
+}
+
+        
     }
 }
 
@@ -164,12 +167,23 @@ impl Handler<Broadcast> for ChatHub {
 
     fn handle(&mut self, msg: Broadcast, _: &mut Context<Self>) {
         if let Some(room) = self.rooms.get(&msg.room) {
-            let payload = serde_json::json!({
-                "type": msg.msg_type,
-                "from_role": msg.from_role,
-                "text": msg.text
-            })
-            .to_string();
+            let payload = if msg.msg_type == "offer_items" {
+                let v: serde_json::Value = serde_json::from_str(&msg.text).unwrap();
+                serde_json::json!({
+                    "type": "offer_items",
+                    "from_role": msg.from_role,
+                    "items": v.get("items").unwrap()
+                })
+            } else {
+                serde_json::json!({
+                    "type": msg.msg_type,
+                    "from_role": msg.from_role,
+                    "text": msg.text
+                })
+            };
+            
+            
+            let payload = payload.to_string();
 
             for addr in room {
                 addr.do_send(WsText(payload.clone()));
