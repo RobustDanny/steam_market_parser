@@ -155,7 +155,8 @@
     padding: 5px 8px;
     border-radius: 4px;
     font-size: 8pt;
-    white-space: nowrap;
+    /* white-space: nowrap; */
+    max-width: 100px;
 
     pointer-events: none;       /* prevents flicker */
     opacity: 0;
@@ -264,8 +265,8 @@
 /* Your messages (right side) */
 .chat_message_me {
     align-self: flex-end;
-    background: linear-gradient(135deg, #28a4c6, #4fc3d7);
-    color: #ffffff;
+    background: linear-gradient(135deg, #184466, #146bad);
+    color: #eaeaea;
     border-bottom-right-radius: 3px;
     /* box-shadow: 0 4px 10px rgba(0,0,0,0.25); */
 }
@@ -273,7 +274,7 @@
 /* Other user's messages (left side) */
 .chat_message_other {
     align-self: flex-start;
-    background: #1f1f1f;
+    background: #0b1f2e;
     color: #eaeaea;
     border: 1px solid #2f2f2f;
     border-bottom-left-radius: 3px;
@@ -367,8 +368,8 @@ z-index: 9998;
 } */
   
   .selected_item_card {
-    width: 50px;
-    height: 60px;
+    width: 100%;
+    box-sizing: border-box;
     border-radius: 10px;
     background: #212121;
     position: relative;
@@ -411,7 +412,8 @@ align-self: center;
   }
 
   .selected_item_price_input{
-    width: 50px;
+    width: 100%;
+    box-sizing: border-box;
     height: 20px;
     padding: 0 10px;
     border-radius: 5px;
@@ -444,9 +446,18 @@ align-self: center;
     transition: background 0.25s ease, transform 0.15s ease;
 }
 
+.selected_items_button_group{
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    gap: 12px;
+}
+
 .selected_item_card_cont{
+    width: 90px;
     display:flex; 
     flex-direction: column; 
+    padding-bottom: 5px;
     gap: 5px; 
     /* overflow-x: hidden; */
 }

@@ -14,7 +14,78 @@ function getChatRole() {
     : "trader";
 }
 
-document.getElementById("selected_items_accept_btn").addEventListener("click", () => {
+export function renderActionButtons() {
+  const button_cont = document.querySelector(".selected_items_accept_btn_cont");
+  if (!button_cont) return;
+
+  button_cont.innerHTML = ""; // IMPORTANT: clear old buttons
+
+  const role = getChatRole();
+
+  if (role === "buyer") {
+    button_cont.insertAdjacentHTML("beforeend", `
+      <div class="selected_items_button_group">
+        <div>
+        <button id="send_btn" class="selected_items_accept_btn">Send</button>
+        <span class="hidden_text_store">Send offer. You can change amount of items and their price</span>
+        </div>
+        <div>
+        <button id="pay_btn" class="selected_items_accept_btn">Pay</button>
+        <span class="hidden_text_store">Pay offer. This action valid only when trader accepted your offer</span>
+        </div>
+      </div>
+    `);
+
+    const send_btn = document.getElementById("send_btn");
+    const pay_btn = document.getElementById("pay_btn");
+    sticky_tooltip(send_btn);
+    sticky_tooltip(pay_btn);
+
+    document.getElementById("send_btn").onclick = sendItems;
+    document.getElementById("pay_btn").onclick = payForItems;
+  } else {
+    button_cont.insertAdjacentHTML("beforeend", `
+      <div class="selected_items_button_group">
+      <div>
+        <button id="send_btn" class="selected_items_accept_btn">Send</button>
+        <span class="hidden_text_store">Send offer. You can change amount of items and their price</span>
+      </div>
+      <div>
+        <button id="accept_btn" class="selected_items_accept_btn">Accept</button>
+        <span class="hidden_text_store">Accept offer. Buyer will able to pay only after accepting offer</span>
+      </div>
+      </div>
+    `);
+
+    const send_btn = document.getElementById("send_btn");
+    const accept_btn = document.getElementById("accept_btn");
+    sticky_tooltip(send_btn);
+    sticky_tooltip(accept_btn);
+
+    document.getElementById("send_btn").onclick = sendItems;
+ 
+  }
+
+  console.log("ROLE DEBUG", {
+    main: document.getElementById("main_steam_id").value,
+    selected: window.selectedStoreSteamId,
+    role: getChatRole()
+  });
+  
+}
+
+const load_store = document.getElementById("reload_store");
+sticky_tooltip(load_store);
+
+document.getElementById("send_btn")?.addEventListener("click", () => {
+  sendItems();
+});
+
+document.getElementById("pay_btn")?.addEventListener("click", () => {
+  payForItems();
+});
+
+function sendItems() {
   const container = document.querySelector(".store_selected_items_list");
   if (!container || container.childElementCount === 0) return;
 
@@ -29,7 +100,11 @@ document.getElementById("selected_items_accept_btn").addEventListener("click", (
     type: "offer_items",
     items
   });
-});
+}
+
+function payForItems() {
+  sendWS({ type: "pay" });
+}
 
 
 
@@ -53,6 +128,8 @@ quitIcon.addEventListener("click", () => {
 
   console.log("Store closed, WS disconnected");
 });
+
+
 
 document.getElementById("store_filters_form").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -193,9 +270,7 @@ function makeSelectedCard(item) {
       </div>
     </div>
 
-    <div>
         <input class="selected_item_price_input" placeholder="$">
-    </div>
     </div>
   `;
 }
@@ -233,14 +308,12 @@ inventoryContainer.addEventListener("click", (e) => {
   }
 });
 
-function checkSelectedItemsCount(element){
-    if(element.childElementCount !== 0){
-        document.getElementById("selected_items_accept_btn").style.background = "#28a4c6";
-    }
-    else{
-      document.getElementById("selected_items_accept_btn").style.background = "#909192";
-    }
-};
+function checkSelectedItemsCount(element) {
+  document.querySelectorAll(".selected_items_accept_btn").forEach(btn => {
+    btn.style.background =
+      element.childElementCount !== 0 ? "#28a4c6" : "#909192";
+  });
+}
 
 // Remove from selected list
 selectedContainer?.addEventListener("click", (e) => {

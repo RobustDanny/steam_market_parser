@@ -73,13 +73,18 @@ export function connectStoreChatWS(buyerId, traderId, role) {
           container.insertAdjacentHTML("beforeend", `
             <div class="selected_item_card_cont" data-key="${item.key}">
               <div class="selected_item_card" >
+
+                <button type="button" class="selected_item_remove_btn" title="Remove">
+                  ✕
+                </button>
+
                 <div style="height: 100%; display: grid; place-content: center;">
                   <img class="selected_item_icon" src="${item.image}" alt="${item.name}">
                 </div>
               </div>
 
               <div>
-                  <input class="selected_item_price_input" value="${item.price || ""}">
+                  <input class="selected_item_price_input" value="${item.price || ""}" placeholder="$">
               </div>
             </div>
           `);

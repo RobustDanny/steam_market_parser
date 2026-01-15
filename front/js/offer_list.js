@@ -1,5 +1,6 @@
 import { connectStoreChatWS, sendWS } from "./store_websocket.js";
 import { get_inventory_games } from "./shared_fns.js";
+import { renderActionButtons } from "./user_store.js";
 
 document.getElementById("offerList")?.addEventListener("click", () => {
     document.getElementById("offer_listBackdrop").style.display = "flex";
@@ -12,6 +13,7 @@ if (e.target.id === "offer_listBackdrop") {
 });
 
 document.getElementById("enter_my_store").addEventListener("click", async () => {
+    renderActionButtons();
     const traderId = document.getElementById("main_steam_id").value;
     const result = await remove_buyer_from_queue(traderId);
 

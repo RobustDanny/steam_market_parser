@@ -4,6 +4,7 @@
 
 import { connectStoreChatWS } from "./store_websocket.js";
 import { get_inventory_games } from "./shared_fns.js";
+import { renderActionButtons } from "./user_store.js";
 
 document.addEventListener("click", (e) => {
     const card = e.target.closest(".ad_card_from_feed");
@@ -23,6 +24,7 @@ document.addEventListener("click", (e) => {
   });
   
   document.getElementById("enter_store").addEventListener("click", async () => {
+    renderActionButtons();
     const store_steamid = window.selectedStoreSteamId; // <-- use selected, NOT getElementById
     const buyer_steamid = document.getElementById("main_steam_id").value;
   
