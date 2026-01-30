@@ -20,6 +20,38 @@ export function sticky_tooltip(element) {
   });
 }
 
+export function horizontallScroll(el) {
+  if (!el) return;
+  if (el.dataset.middleScrollAttached) return;
+  el.dataset.middleScrollAttached = "1";
+
+  let active = false;
+  let startX = 0;
+  let startScrollLeft = 0;
+
+  el.addEventListener("mousedown", (e) => {
+    if (e.button !== 1) return; // middle mouse only
+    e.preventDefault();
+
+    active = true;
+    startX = e.clientX;
+    startScrollLeft = el.scrollLeft;
+
+    document.body.style.cursor = "grabbing";
+  });
+
+  document.addEventListener("mousemove", (e) => {
+    if (!active) return;
+    const dx = e.clientX - startX;
+    el.scrollLeft = startScrollLeft - dx;
+  });
+
+  document.addEventListener("mouseup", () => {
+    if (!active) return;
+    active = false;
+    document.body.style.cursor = "";
+  });
+}
 
 export async function get_inventory_games(store_steamid, element) {
     if (!element) return;

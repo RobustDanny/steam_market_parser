@@ -1,13 +1,5 @@
 import { sticky_tooltip } from "./shared_fns.js";
 
-const arrowUp = document.getElementById("arrow_up");
-sticky_tooltip(arrowUp);
-const pause = document.getElementById("pause_icon");
-sticky_tooltip(pause);
-const arrowDown = document.getElementById("arrow_down");
-sticky_tooltip(arrowDown);
-
-
 function updateFilters() {
   
     const msg = {

@@ -1,6 +1,7 @@
 use actix_session::{Session};
 use actix_web::{HttpResponse, Responder, web, Result};
 use tera::{Context};
+use uuid::Uuid;
 use serde_json::json;
 use regex::Regex;
 use std::collections::HashMap;
@@ -11,21 +12,22 @@ use crate::{
     FeedItemsState, 
     UserInventoryState,
     StoreHashMapState,
-    StoreWebsocketListState
+    StoreWebsocketListState,
 };
 use steam_market_parser::{
-    InventoryApp, 
-    UserProfileAds, 
-    Inventory, 
+    AdCardHistoryVec, 
+    AppContext, 
+    BuyerAndStoreIDS, 
     FilterInput, 
-    SteamUser,
-    HistoryForm,
-    AdCardHistoryVec,
-    BuyerAndStoreIDS,
-    StoreID,
-    AppContext,
-    LoadGameInventory,
-    InventoryGame
+    HistoryForm, 
+    Inventory, 
+    InventoryApp, 
+    InventoryGame, 
+    LoadGameInventory, 
+    OfferMakingPlayload, 
+    SteamUser, 
+    StoreID, 
+    UserProfileAds
 };
 
 use crate::db::DataBase;
@@ -204,6 +206,44 @@ pub async fn get_inventory_games(params: web::Json<LoadGameInventory>) -> Result
     println!("{games:#?}");
 
     Ok(HttpResponse::Ok().json(games))
+}
+
+pub async fn store_rating(session: Session, state: web::Data<AppState>) -> impl Responder {
+    
+    let steam_user: Option<SteamUser> = session.get("steam_user").unwrap_or(None);
+
+    println!("steam_user: {steam_user:#?}");
+    
+    let mut ctx = Context::new();
+
+    ctx.insert("steam_user", &steam_user);
+
+    state
+        .tera
+        .render("store_list.html", &ctx)
+        .map(|body| HttpResponse::Ok().content_type("text/html").body(body))
+        .map_err(|e| {
+            println!("Tera render error: {:?}", e);
+            actix_web::error::ErrorInternalServerError("Template error")
+        })
+}
+
+pub async fn offer_make_offer(ids: web::Json<BuyerAndStoreIDS>) -> OfferMakingPlayload{
+     
+    let db = DataBase::connect_to_db();
+
+    // Consume the JSON payload to move out the owned strings
+    let BuyerAndStoreIDS { buyer_id, store_id } = ids.into_inner();
+
+    let offer_id = db.db_offer_make_offer(buyer_id, store_id);
+
+    drop(db);
+    
+    let playload  = OfferMakingPlayload {
+        offer_id
+    };
+
+    playload
 }
 
 pub async fn tera_update_data(session: Session, state: web::Data<AppState>, feed_state: web::Data<FeedItemsState>, _user_inventory: web::Data<UserInventoryState>) -> impl Responder {

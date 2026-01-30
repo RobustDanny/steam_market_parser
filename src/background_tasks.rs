@@ -30,7 +30,7 @@ pub async fn tokio_user_ad_loop(state: web::Data<UserAdState>){
         let _ = state.ads_broadcaster.send(playload);
 
         drop(ads);
-        tokio::time::sleep(Duration::from_secs(10)).await;
+        tokio::time::sleep(Duration::from_secs(4)).await;
     }
 }
 

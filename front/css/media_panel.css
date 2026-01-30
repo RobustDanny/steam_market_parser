@@ -1,5 +1,5 @@
 .media_container{
-grid-column: 3;
+grid-column: 4;
 position: fixed; 
 top: 50%;
 right: 15px;
@@ -8,25 +8,7 @@ transform: translateY(-50%);
 justify-content: center;
 flex-direction: column;
 gap: 10px;  
-z-index: 999;
-}
-
-.media_icons_play_cont{
-width: 40px;
-height: 40px;
-display: flex;
-border-radius: 100%;
-border: 1px solid #323232;
-background-color: #212121;
-justify-content: center;
-align-items: center;
-visibility: hidden;
-}
-
-.play_icon{
-/* position: relative; */
-width: 20px;
-height: 20px;
+/* z-index: 999; */
 }
 
 .hidden_text_media {
@@ -36,13 +18,20 @@ height: 20px;
     padding: 5px 8px;
     border-radius: 4px;
     font-size: 8pt;
-    white-space: nowrap;
+    /* white-space: nowrap; */
+    max-width: 100px;
 
     pointer-events: none;       /* prevents flicker */
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.15s ease;
     z-index: 10000;
+}
+
+.play_icon{
+    /* position: relative; */
+    width: 20px;
+    height: 20px;
 }
 
 .pause_icon{
@@ -100,6 +89,18 @@ align-items: center;
 cursor: pointer;
 }
 
+.arrow_down_cont:hover{
+    transform: translateY(-2px);
+}
+
+.arrow_up_cont:hover{
+    transform: translateY(-2px);
+}
+
+.media_icons_pause_cont:hover{
+    transform: translateY(-2px);
+}
+
 .arrow_up{
 cursor: pointer;
 width: 15px;
@@ -111,3 +112,12 @@ height: 15px;
     width: 15px;
     height: 15px;
 }
+
+.page_indicator {
+    font-size: 12px;
+    opacity: 0.6;
+    user-select: none;
+    pointer-events: none;
+    margin: 0 8px;
+    color: #9E9E9E;
+  }

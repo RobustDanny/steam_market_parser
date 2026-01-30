@@ -3,15 +3,55 @@
 // =======================
 
 import { sticky_tooltip } from "./shared_fns.js";
-import { sendChatMessage, closeStoreChatWS, sendWS } from "./store_websocket.js";
+import { 
+  sendChatMessage, 
+  closeStoreChatWS, 
+  sendWS, 
+  acceptOffer, 
+  paidOffer, 
+  markOfferDirty, 
+  markOfferSent, 
+  refreshStoreButtons,
+  updateStoreButtonsWrapper,
+  getSelectedCount,
+  getOfferId,
+  clearOfferId 
+} from "./store_websocket.js";
+import { startBtcPay } from "./payments/bitcoin.js";
+
+let offer_id = null;
+
+function getBuyerSteamid() {
+  return (document.getElementById("main_steam_id")?.value || "").trim();
+}
+
+function getStoreOwnerSteamid() {
+  
+  return (window.selectedStoreSteamId || "").trim();
+}
 
 function getChatRole() {
-  const buyerSteamid = document.getElementById("main_steam_id").value;
-  const storeOwnerSteamid = window.selectedStoreSteamId;
+  const buyer = getBuyerSteamid();
+  const store = getStoreOwnerSteamid();
+  return store && store !== buyer ? "buyer" : "trader";
+}
 
-  return storeOwnerSteamid && storeOwnerSteamid !== buyerSteamid
-    ? "buyer"
-    : "trader";
+function renderPayOptions(){
+  const cont = document.querySelector(".store_inventory_area");
+  cont.insertAdjacentHTML("beforeend", `
+    <div class="store_payment_grid">
+      <div class="store_payment_card" id="pay_stripe">
+        <img src="/front/svg/payments/stripe.svg" alt="Stripe">
+      </div>
+      <div class="store_payment_card" id="pay_btc">
+        <img src="/front/svg/payments/bitcoin.svg" alt="Bitcoin">
+      </div>
+    </div>
+
+    <div id="btc_pay_panel" style="margin-top:12px;"></div>
+  `);
+
+  document.getElementById("pay_btc").addEventListener("click", startBtcPay);
 }
 
 export function renderActionButtons() {
@@ -42,7 +82,13 @@ export function renderActionButtons() {
     sticky_tooltip(pay_btn);
 
     document.getElementById("send_btn").onclick = sendItems;
-    document.getElementById("pay_btn").onclick = payForItems;
+    document.getElementById("pay_btn")?.addEventListener("click", () => {
+      document.querySelector(".store_inventory_area").innerHTML = "";
+      document.querySelector(".selected_items_accept_btn_cont").innerHTML = "";
+      renderPayOptions();
+      paidOffer();
+    });
+    
   } else {
     button_cont.insertAdjacentHTML("beforeend", `
       <div class="selected_items_button_group">
@@ -63,6 +109,9 @@ export function renderActionButtons() {
     sticky_tooltip(accept_btn);
 
     document.getElementById("send_btn").onclick = sendItems;
+    document.getElementById("accept_btn")?.addEventListener("click", () => {
+      acceptOffer();
+    });
  
   }
 
@@ -77,41 +126,82 @@ export function renderActionButtons() {
 const load_store = document.getElementById("reload_store");
 sticky_tooltip(load_store);
 
-document.getElementById("send_btn")?.addEventListener("click", () => {
-  sendItems();
-});
-
-document.getElementById("pay_btn")?.addEventListener("click", () => {
-  payForItems();
-});
-
-function sendItems() {
+async function sendItems() {
   const container = document.querySelector(".store_selected_items_list");
   if (!container || container.childElementCount === 0) return;
 
-  const items = [...container.querySelectorAll(".selected_item_card_cont")]
-    .map(el => ({
+  const items = [...container.querySelectorAll(".selected_item_card_cont")].map(el => {
+    const priceValue = el.querySelector(".selected_item_price_input")?.value || "0";
+    return {
       key: el.dataset.key,
       image: el.querySelector("img")?.src,
-      price: el.querySelector(".selected_item_price_input")?.value || ""
-    }));
+      price: Number(priceValue) || 0
+    };
+  });
+
+  const totalPrice = items.reduce((sum, item) => sum + item.price, 0);
+  const countItems = getSelectedCount();
+
+  if(!getOfferId()){
+    const offer_id = setOfferID();
+  }
+  else{
+    console.log("Offer_id is EXIST!", getOfferId());
+  }
+
+  sendWS({ type: "offer_items", items, totalPrice });
 
   sendWS({
-    type: "offer_items",
-    items
+    type: "chat",
+    text: `Offer price: $${totalPrice}\nCount: ${countItems}`
   });
+
+  markOfferSent();
 }
 
-function payForItems() {
-  sendWS({ type: "pay" });
+async function setOfferID(){
+  const store_id = getStoreOwnerSteamid();
+  const buyer_id = getBuyerSteamid();
+
+  console.log("make_offer payload", { store_id, buyer_id });
+
+  if (!store_id) {
+    console.error("store_id is empty. Did you set window.selectedStoreSteamId when opening the store?");
+    return;
+  }
+  if (!buyer_id) {
+    console.error("buyer_id is empty (main_steam_id input missing?)");
+    return;
+  }
+
+  const res = await fetch("/api/offer/make_offer", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ store_id, buyer_id })
+  });
+
+  // if (!res.ok) {
+  //   const text = await res.text().catch(() => "");
+  //   console.error("make_offer failed", res.status, text);
+  //   return;
+  // }
+
+  // backend returns UUID as plain string
+  const data = await res.json();        // ✅
+  offer_id = (data.offer_id || "").trim();
+
+  sendWS({ type: "set_offer_id", offer_id});
+
+  return offer_id;
 }
-
-
 
 const quitIcon = document.getElementById("quit_store_icon");
 sticky_tooltip(quitIcon);
 
 quitIcon.addEventListener("click", () => {
+  clearOfferId();
+  sendWS({ type: "clear_offer_id" });
+
   const role = getChatRole();
 
   sendWS({
@@ -122,11 +212,26 @@ quitIcon.addEventListener("click", () => {
   closeStoreChatWS();
 
   // UI cleanup
+  const inv_cont = document.querySelector(".store_inventory_area");
+  inv_cont.innerHTML = "";
+  inv_cont.insertAdjacentHTML("beforeend", `
+    <div id="inventory_input_group" class="inventory_input_group">
+        <input class="store_input" type="text" id="store_inventoryFilter" placeholder="Search items...">
+    </div>
+    <div id="store_inventory" class="store_inventory_list">
+        <span class="store_no_items_span">No items yet</span>
+    </div>
+  `);
+
+  const inv_selected_cont = document.querySelector(".store_selected_items_list");
+  inv_selected_cont.innerHTML = "";
+
   document.getElementById("chat_messages").innerHTML = "";
   document.getElementById("user_storeBackdrop").style.display = "none";
   document.getElementById("user_store").style.display = "none";
 
   console.log("Store closed, WS disconnected");
+  updateStoreButtonsWrapper();
 });
 
 
@@ -182,6 +287,7 @@ function renderStoreInventory(inventory) {
 
     const card = `
   <div class="card_hover-container inventory-select"
+
        data-appid="${desc.appid}"
        data-classid="${asset.classid}"
        data-instanceid="${asset.instanceid}"
@@ -276,7 +382,6 @@ function makeSelectedCard(item) {
 }
 
 inventoryContainer.addEventListener("click", (e) => {
-  // ADD TO OFFER
   const addBtn = e.target.closest(".store_inventory_add_to_offer_btn");
   if (addBtn) {
     const card = e.target.closest(".card_hover-container");
@@ -286,34 +391,47 @@ inventoryContainer.addEventListener("click", (e) => {
     const name = decode(card.dataset.name);
     const image = decode(card.dataset.image);
 
-    // prevent duplicates
-    if (selectedContainer.querySelector(`[data-key="${CSS.escape(key)}"]`)) {
-      return;
-    }
+    if (selectedContainer.querySelector(`[data-key="${CSS.escape(key)}"]`)) return;
+
     selectedContainer.insertAdjacentHTML("beforeend", makeSelectedCard({ key, name, image }));
-    checkSelectedItemsCount(selectedContainer);
+    markOfferDirty(); // ✅
+    refreshStoreButtons(); 
     return;
   }
 
-  // (Optional) REMOVE FROM OFFER button in inventory (if you want it to remove from selected)
   const removeBtn = e.target.closest(".store_inventory_remove_from_offer_btn");
   if (removeBtn) {
     const card = e.target.closest(".card_hover-container");
     if (!card || !selectedContainer) return;
+
     const key = `${card.dataset.appid}:${card.dataset.contextid}:${card.dataset.assetid}`;
     const selected = selectedContainer.querySelector(`[data-key="${CSS.escape(key)}"]`);
     if (selected) selected.remove();
-    checkSelectedItemsCount(selectedContainer);
+
+    markOfferDirty(); // ✅
+    refreshStoreButtons(); 
     return;
   }
 });
 
-function checkSelectedItemsCount(element) {
-  document.querySelectorAll(".selected_items_accept_btn").forEach(btn => {
-    btn.style.background =
-      element.childElementCount !== 0 ? "#28a4c6" : "#909192";
-  });
-}
+// Remove from selected list (✕)
+selectedContainer?.addEventListener("click", (e) => {
+  const rm = e.target.closest(".selected_item_remove_btn");
+  if (!rm) return;
+
+  const selectedCard = e.target.closest(".selected_item_card_cont");
+  if (selectedCard) selectedCard.remove();
+
+  markOfferDirty(); // ✅
+  refreshStoreButtons();
+});
+
+// Price edit
+selectedContainer?.addEventListener("input", (e) => {
+  if (!e.target.classList.contains("selected_item_price_input")) return;
+  markOfferDirty(); // ✅
+  refreshStoreButtons();
+});
 
 // Remove from selected list
 selectedContainer?.addEventListener("click", (e) => {
@@ -321,9 +439,13 @@ selectedContainer?.addEventListener("click", (e) => {
   if (!rm) return;
   const selectedCard = e.target.closest(".selected_item_card_cont");
   if (selectedCard) selectedCard.remove();
-  checkSelectedItemsCount(selectedContainer);
+  markOfferDirty();
 });
 
+selectedContainer?.addEventListener("input", (e) => {
+  if (!e.target.classList.contains("selected_item_price_input")) return;
+  markOfferDirty();
+});
 
   });
 }

@@ -1,5 +1,6 @@
 use std::{collections::{HashMap, VecDeque}, time::Duration};
 use tokio::sync::{mpsc, Mutex};
+use actix_web::{Responder, HttpResponse, HttpRequest, body::BoxBody, http::header::ContentType};
 
 use serde::{Deserialize, Serialize, Deserializer};
 
@@ -21,6 +22,30 @@ pub enum SortDirection{
     Asc,
     Desc,
 }
+//----------------------------------
+//----------------------------------
+//HTTP Playloads
+#[derive(Deserialize, Serialize, Debug)]
+pub struct OfferMakingPlayload{
+    pub offer_id: String,
+}
+
+impl Responder for OfferMakingPlayload{
+    type Body = BoxBody;
+
+    fn respond_to(self, _req: &HttpRequest) -> HttpResponse<Self::Body> {
+        let body = serde_json::to_string(&self).unwrap();
+
+        // Create response and set content type
+        HttpResponse::Ok()
+            .content_type(ContentType::json())
+            .body(body)
+    }
+}
+
+//----------------------------------
+//----------------------------------
+
 //----------------------------------
 //----------------------------------
 //Steam user
@@ -556,7 +581,7 @@ impl MostRecentItems{
                 }
             };
 
-            tokio::time::sleep(Duration::from_secs(1)).await;
+            tokio::time::sleep(Duration::from_secs(4)).await;
         }
     }
 }

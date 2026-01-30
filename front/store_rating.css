@@ -1,0 +1,31 @@
+body{
+  background-color: #141414;
+  overflow-x: hidden;
+  display: grid;
+  grid-template-columns: 3% 95% 2%;
+}
+
+hr {
+  border: none;
+  height: 1px;
+  background: #2e2e2e;
+  margin: 10px 0;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 3px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}

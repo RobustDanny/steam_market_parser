@@ -1,5 +1,5 @@
 // =======================
-// FIRST (ws + ws_ad code)
+// WS setup
 // =======================
 
 window.ws = new WebSocket("ws://127.0.0.1:8080/ws");
@@ -7,6 +7,114 @@ window.ws_ad = new WebSocket("ws://127.0.0.1:8080/ws/ads");
 
 // Selected store steamid (set when user clicks an ad card)
 window.selectedStoreSteamId = null;
+
+// =======================
+// Pagination state
+// =======================
+
+const PAGE_SIZE = 200;
+let cards = [];              // newest first (index 0 is newest)
+let currentPage = 0;         // 0 = newest page
+let isPaused = false;
+
+const container = document.getElementById("items-container");
+
+// Optional: buffer incoming cards while paused (so you don't lose them)
+let pausedBuffer = [];
+
+// -----------------------
+// Helpers
+// -----------------------
+
+const pageIndicator = document.getElementById("page_indicator");
+
+function updatePageIndicator() {
+  if (!pageIndicator) return;
+
+  const total = totalPages();
+  const current = total === 0 ? 0 : currentPage + 1;
+
+  pageIndicator.textContent = `${current} / ${total}`;
+}
+
+function totalPages() {
+  return Math.max(1, Math.ceil(cards.length / PAGE_SIZE));
+}
+
+function clampPage() {
+  const tp = totalPages();
+  if (currentPage < 0) currentPage = 0;
+  if (currentPage > tp - 1) currentPage = tp - 1;
+}
+
+function renderPage() {
+  clampPage();
+
+  const start = currentPage * PAGE_SIZE;
+  const end = start + PAGE_SIZE;
+
+  container.innerHTML = cards.slice(start, end).join("");
+
+  updatePageIndicator();
+}
+
+function addCard(html) {
+  // store newest first
+  cards.unshift(html);
+
+  // If currently browsing older pages, keep the "same items" visible:
+  // when a new card arrives at the front, shift the view by 1 (only if not on newest page)
+  if (currentPage > 0) currentPage += 1;
+
+  renderPage();
+}
+
+// =======================
+// Media buttons (pagination controls)
+// =======================
+
+const btnUp = document.getElementById("arrow_up");     // "Next event" (newer)
+const btnDown = document.getElementById("arrow_down"); // "Previous event" (older)
+const btnPause = document.getElementById("pause_icon");
+
+if (btnUp) {
+  btnUp.addEventListener("click", () => {
+    // go toward newer pages (lower page index)
+    currentPage -= 1;
+    renderPage();
+  });
+}
+
+if (btnDown) {
+  btnDown.addEventListener("click", () => {
+    // go toward older pages (higher page index)
+    currentPage += 1;
+    renderPage();
+  });
+}
+
+if (btnPause) {
+  btnPause.addEventListener("click", () => {
+    isPaused = !isPaused;
+
+    btnPause.src = isPaused ? "/front/svg/play_icon.svg" : "/front/svg/pause_icon.svg";
+    // If unpausing, flush buffered cards in correct order (newest first)
+    if (!isPaused && pausedBuffer.length) {
+      // pausedBuffer was collected newest-first via unshift below,
+      // so we can prepend them back to cards in order:
+      cards = pausedBuffer.concat(cards);
+      pausedBuffer = [];
+      renderPage();
+    }
+
+    // Optional UI feedback via CSS class
+    btnPause.classList.toggle("is_paused", isPaused);
+  });
+}
+
+// =======================
+// WS_AD (ads feed)
+// =======================
 
 ws_ad.onopen = () => console.log("WS_AD CONNECTED");
 ws_ad.onclose = () => console.log("WS_AD CLOSED");
@@ -23,15 +131,12 @@ ws_ad.onmessage = (event) => {
   // Get only the FIRST ad
   const user_ad = data.user_ads[0];
 
-  const container = document.getElementById("items-container");
-
   const img1 = user_ad.first_item_image  || "/front/svg/default_item_icon.svg";
   const img2 = user_ad.second_item_image || "/front/svg/default_item_icon.svg";
   const img3 = user_ad.third_item_image  || "/front/svg/default_item_icon.svg";
   const img4 = user_ad.fourth_item_image || "/front/svg/default_item_icon.svg";
 
-  // IMPORTANT: no duplicate IDs inside repeated cards
-  container.insertAdjacentHTML("afterbegin", `
+  const adHtml = `
     <div class="ad_card_from_feed" data-steamid="${user_ad.steamid}">
       <div class="card_hover-container">
         <div class="ad_card">
@@ -44,43 +149,55 @@ ws_ad.onmessage = (event) => {
         </div>
       </div>
     </div>
-  `);
+  `;
+
+  if (isPaused) {
+    pausedBuffer.unshift(adHtml);
+    return;
+  }
+  addCard(adHtml);
 };
+
+// =======================
+// WS (items feed)
+// =======================
 
 ws.onopen = () => console.log("WS CONNECTED");
 ws.onclose = () => console.log("WS CLOSED");
 ws.onerror = (err) => console.log("WS ERROR", err);
 
 ws.onmessage = (event) => {
-  const items = JSON.parse(event.data);
+  const payload = JSON.parse(event.data);
 
-  console.log("Received update:", items);
+  // console.log("Received update:", payload);
 
-  const container = document.getElementById("items-container");
+  const arr = payload.items || [];
+  if (!arr.length) return;
 
-  (items.items || []).forEach(item => {
-    const card = `
+  // Build cards first (so we preserve order consistently)
+  const newCards = arr.map((item) => {
+    return `
       <div class="card_hover-container">
         <div class="card">
           <div class="card-details">
             <img class="game_icon" src="${item.game_icon}">
             <div>
 
-            <div class="card_tooltip-container">
-              <img class="more_icon" src="/front/svg/more_icon.svg">
-              <span class="tooltip_actions">
-                <a href="https://steamcommunity.com/market/listings/${item.appid}/${item.market_hash_name}"
-                   target="_blank" rel="noopener noreferrer">
-                  <img class="tooltip_icon" src="/front/svg/grab_icon.svg">
-                </a>
-                <img class="tooltip_icon" src="/front/svg/info_icon.svg">
-              </span>
-            </div>
+              <div class="card_tooltip-container">
+                <img class="more_icon" src="/front/svg/more_icon.svg">
+                <span class="tooltip_actions">
+                  <a href="https://steamcommunity.com/market/listings/${item.appid}/${item.market_hash_name}"
+                     target="_blank" rel="noopener noreferrer">
+                    <img class="tooltip_icon" src="/front/svg/grab_icon.svg">
+                  </a>
+                  <img class="tooltip_icon" src="/front/svg/info_icon.svg">
+                </span>
+              </div>
 
-            <div style="overflow: hidden;">
-              <img src="https://steamcommunity.com/economy/image/${item.icon}"
-                   alt="${item.name}" class="item_icon">
-            </div>
+              <div style="overflow: hidden;">
+                <img src="https://steamcommunity.com/economy/image/${item.icon}"
+                     alt="${item.name}" class="item_icon">
+              </div>
 
             </div>
             <span class="hidden-text">${item.name}</span>
@@ -89,7 +206,21 @@ ws.onmessage = (event) => {
         </div>
       </div>
     `;
-
-    container.insertAdjacentHTML("afterbegin", card);
   });
+
+  if (isPaused) {
+    // newest first, so put newest at the beginning
+    for (let i = newCards.length - 1; i >= 0; i--) {
+      pausedBuffer.unshift(newCards[i]);
+    }
+    return;
+  }
+
+  // Add each as newest-first
+  for (let i = newCards.length - 1; i >= 0; i--) {
+    addCard(newCards[i]);
+  }
 };
+
+// Initial render (empty)
+renderPage();

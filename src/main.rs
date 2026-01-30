@@ -38,6 +38,7 @@ use steam_login::{
 mod routes;
 use routes::{
     tera_update_data, 
+    store_rating,
     steam_logout, 
     load_inventory, 
     post_most_recent_item_filters, 
@@ -45,7 +46,8 @@ use routes::{
     get_ad_cards_history,
     add_to_store_queue,
     remove_from_store_queue,
-    get_inventory_games
+    get_inventory_games,
+    offer_make_offer
 };
 
 mod background_tasks;
@@ -176,19 +178,26 @@ async fn main()-> std::io::Result<()> {
             .app_data(websocket_list_state.clone())
             .service(Files::new("/front", "./front"))
             .route("/", web::get().to(tera_update_data))
+            .service(web::scope("/api")
+                .route("/logout", web::get().to(steam_logout)) 
+                .route("/get_inventory_items", web::post().to(load_inventory))
+                .route("/get_inventory_games", web::post().to(get_inventory_games))
+                .route("/get_ad_cards_history", web::post().to(get_ad_cards_history)) 
+                .route("/filters", web::get().to(post_most_recent_item_filters))
+                .route("/add_to_ad_queue", web::post().to(add_ad_steam_user_to_db))
+                .route("/add_to_store_queue", web::post().to(add_to_store_queue))
+                .route("/remove_from_store_queue", web::post().to(remove_from_store_queue))
+                .route("/auth/steam", web::get().to(steam_login))
+                .route("/auth/steam/return", web::get().to(steam_return))
+                .service(web::scope("/offer")
+                    .route("/make_offer", web::post().to(offer_make_offer))
+                )
+            )
+            .route("/store_rating", web::get().to(store_rating))
             .route("/ws", web::get().to(ws_handler)) 
             .route("/ws/ads", web::get().to(ws_ad_handler)) 
             .route("/ws/chat", web::get().to(ws_chat_handler)) 
-            .route("/api/logout", web::get().to(steam_logout)) 
-            .route("/api/get_inventory_items", web::post().to(load_inventory))
-            .route("/api/get_inventory_games", web::post().to(get_inventory_games))
-            .route("/api/get_ad_cards_history", web::post().to(get_ad_cards_history)) 
-            .route("/api/filters", web::get().to(post_most_recent_item_filters))
-            .route("/api/add_to_ad_queue", web::post().to(add_ad_steam_user_to_db))
-            .route("/api/add_to_store_queue", web::post().to(add_to_store_queue))
-            .route("/api/remove_from_store_queue", web::post().to(remove_from_store_queue))
-            .route("/api/auth/steam", web::get().to(steam_login))
-            .route("/api/auth/steam/return", web::get().to(steam_return))
+            
     })
     .bind(("127.0.0.1", 8080))?
     .run()

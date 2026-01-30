@@ -13,3 +13,12 @@ import "./js/offer_list.js";
 
 import "./js/websocket_handler.js";
 import "./js/store_websocket.js";
+
+import "./js/media_panel.js";
+
+//Widget
+import "./js/troopack_widget.js";
+
+//Payments
+import "./js/payments/bitcoin.js";
+import "./js/payments/stripe.js";

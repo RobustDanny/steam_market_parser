@@ -12,7 +12,7 @@ pub trait SteamRequest{}
 pub trait ProcessSteamRequest{
 
     async fn process_request<T: SteamRequest + Debug + DeserializeOwned>(url: String) -> Result<T, Box<dyn std::error::Error + Send + Sync>>{
-        println!("{url}");
+        // println!("{url}");
         let json_response = send_request(url).await?;
 
         // println!("{:#?}", json_response);
@@ -25,7 +25,7 @@ pub trait ProcessSteamRequest{
         let url = format!("https://steamcommunity.com/market/search/render/
         ?appid={}&start={}&query={}&sort={}&sort_dir={}&search_descriptions={}&price_min={}&price_max={}&norender=1",
         request.game, request.page, request.query, request.sort, request.sort_dir, request.search_descriptions, request.price_min, request.price_max);
-        println!("{url}");
+        // println!("{url}");
         url
     }
 

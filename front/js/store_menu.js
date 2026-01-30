@@ -28,11 +28,13 @@ document.addEventListener("click", (e) => {
     const store_steamid = window.selectedStoreSteamId; // <-- use selected, NOT getElementById
     const buyer_steamid = document.getElementById("main_steam_id").value;
   
+    //Need change. Bc store card with no steamID will not exist
     if (!store_steamid) {
       console.warn("No store selected. Click an ad card first.");
       return;
     }
-  
+
+    //If trader click on his store card
     if (store_steamid === buyer_steamid) {
       console.log("Equal");
       return;
@@ -76,3 +78,14 @@ document.addEventListener("click", (e) => {
       .catch(err => console.error("add_to_store_queue error:", err));
   }
   
+  const card = document.getElementById("store_rating");
+if (card) {
+    card.addEventListener("click", go_to_store_rating_page);
+}
+
+
+
+function go_to_store_rating_page() {
+  window.location.href = "http://127.0.0.1:8080/store_rating";
+}
+

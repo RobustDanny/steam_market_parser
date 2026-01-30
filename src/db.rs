@@ -1,6 +1,7 @@
 use rusqlite::Connection;
 use tokio::sync::Mutex;
-use std::collections::VecDeque;
+use chrono::Utc;
+use std::{collections::VecDeque, time::{self, SystemTime, UNIX_EPOCH}};
 use steam_market_parser::{
     AdCardHistoryVec, 
     MostRecent, 
@@ -9,6 +10,8 @@ use steam_market_parser::{
     StoreQueueHashmap, 
     UserProfileAds
 };
+
+use uuid::Uuid;
 
 pub struct DataBase{
     connection: Connection,
@@ -246,6 +249,57 @@ impl DataBase{
         Ok(store_hashmap)
     }
 
+    pub fn db_offer_make_offer(&self, buyer: String, trader: String) -> String{
+        let time = Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+
+        let mut generated_uuid = Uuid::new_v4().to_string();
+        loop{
+
+            let mut query = self.connection.prepare("
+             SELECT offer_id
+             FROM offer
+             WHERE offer_id = ?1"
+            ).expect("Can't get uuid while db retrival");
+
+            let result: Result<Vec<_>, _> = query.query_map([&generated_uuid], |row| {
+                Ok(row.get::<_, String>(0).expect("Cant get offer_id from DB"))
+            }).map(|iter| iter.collect());
+            
+            if let Ok(rows) = result {
+                if rows.is_empty() {
+                    break;
+                }
+            } else {
+                break;
+            }
+            
+            generated_uuid = Uuid::new_v4().to_string();
+        }
+
+        self.connection.execute(
+            "INSERT INTO offer (
+                offer_id, buyer_steamid, trader_steamid, price, accepted,
+                paid, status, created, last_update
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
+            ON CONFLICT(offer_id) DO NOTHING
+            ",
+
+            [
+                &generated_uuid,
+                &buyer,
+                &trader,
+                &"0".to_string(),
+                &false.to_string(),
+                &false.to_string(),
+                &"IN PROCESS".to_string(),
+                &time,
+                &time,
+            ],
+        ).expect("Can't upsert offer data");
+
+        generated_uuid.to_string()
+    }
+
     fn create_tables(&self) {
         self.connection.execute_batch("
             CREATE TABLE IF NOT EXISTS item_feed (
@@ -286,6 +340,27 @@ impl DataBase{
                 message_type TEXT,
                 message TEXT,
                 data TEXT
+            );
+            CREATE TABLE IF NOT EXISTS offer (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                offer_id TEXT UNIQUE,
+                buyer_steamid TEXT,
+                trader_steamid TEXT,
+                price TEXT,
+                accepted BOOLEAN,
+                paid BOOLEAN,
+                status TEXT,
+                created TEXT,
+                last_update TEXT
+            );
+
+            CREATE TABLE IF NOT EXISTS offer_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                offer_id TEXT,
+                round INTEGER,
+                item_name TEXT,
+                items_price TEXT,
+                FOREIGN KEY (offer_id) REFERENCES offer(id) ON DELETE CASCADE
             );
 
         ").expect("Failed to create tables");
