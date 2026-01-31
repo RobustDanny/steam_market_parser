@@ -107,11 +107,12 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsSession {
                 self.hub.do_send(OfferState {
                     room: self.room.clone(),
                     offer_id,
+                    msg_type: "set_offer".to_string(),
                     offer_accepted: false,
                     offer_dirty: true,
                     offer_paid: false,
                     offer_send: true,
-                    text: parsed.to_string(),
+                    text: "set_offer".to_string(),
                 });
 
                 self.hub.do_send(Broadcast {
@@ -127,11 +128,12 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsSession {
                 self.hub.do_send(OfferState {
                     room: self.room.clone(),
                     offer_id: self.offer_id.clone(),
+                    msg_type: "send_offer".to_string(),
                     offer_accepted: false,
-                    offer_dirty: true,
+                    offer_dirty: false,
                     offer_paid: false,
                     offer_send: true,
-                    text: parsed.to_string(),
+                    text: "send_offer".to_string(),
                 });
             }
 
@@ -140,6 +142,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsSession {
                 self.hub.do_send(OfferState {
                     room: self.room.clone(),
                     offer_id: self.offer_id.clone(),
+                    msg_type: "accept_offer".to_string(),
                     offer_accepted: true,
                     offer_dirty: false,
                     offer_paid: false,
@@ -153,6 +156,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsSession {
                 self.hub.do_send(OfferState {
                     room: self.room.clone(),
                     offer_id: self.offer_id.clone(),
+                    msg_type: "paid_offer".to_string(),
                     offer_accepted: true,
                     offer_dirty: false,
                     offer_paid: true,
@@ -167,6 +171,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsSession {
                 self.hub.do_send(OfferState {
                     room: self.room.clone(),
                     offer_id: None,
+                    msg_type: "clear_offer".to_string(),
                     offer_accepted: false,
                     offer_dirty: false,
                     offer_paid: false,
@@ -316,6 +321,7 @@ impl Handler<Broadcast> for ChatHub {
 #[rtype(result = "()")]
 struct OfferState {
     room: RoomId,
+    msg_type: String,
     offer_id: Option<String>,
     offer_accepted: bool,
     offer_dirty: bool,
@@ -328,17 +334,24 @@ impl Handler<OfferState> for ChatHub {
     type Result = ();
 
     fn handle(&mut self, msg: OfferState, _: &mut Context<Self>) {
-        let room_id = msg.room.clone();
+        let Some(state) = self.rooms.get_mut(&msg.room) else { return };
 
-        let state = self.rooms.entry(msg.room).or_insert(RoomState {
-            clients: HashMap::new(),
-            offer_id: None,
-        });
+        state.offer_id = msg.offer_id.clone();
 
-        state.offer_id = msg.offer_id;
+        let payload = serde_json::json!({
+            "type": msg.msg_type,
+            "offer_id": msg.offer_id,
+            "offer_dirty": msg.offer_dirty,
+            "offer_send": msg.offer_send,
+            "offer_accepted": msg.offer_accepted,
+            "offer_paid": msg.offer_paid,
+            "text": msg.text,
+        })
+        .to_string();
 
-        // notify everyone immediately
-        self.broadcast_presence(&room_id);
+        for addr in state.clients.keys() {
+            addr.do_send(WsText(payload.clone()));
+        }
     }
 }
 
