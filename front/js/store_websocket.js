@@ -13,6 +13,20 @@ let offerPaid = false;      // buyer paid (or received pay_offer)
 let offerDirty = false;
 
 
+function OfferConfig(dirty, sent, accepted, paid){
+  console.log("Hey");
+  offerSent = sent;
+  offerAccepted = accepted;
+  offerPaid = paid;
+  offerDirty = dirty;
+  console.log({
+    offerAccepted,
+    offerDirty,
+    offerPaid,
+    offerSent
+  });
+}
+
 export function getOfferId() {
   return currentOfferId;
 }
@@ -20,7 +34,7 @@ export function getOfferId() {
 export function clearOfferId() {
   currentOfferId = null;
   console.log("Offer_id cleared" , currentOfferId);
-  window.dispatchEvent(new CustomEvent("offer_id_changed", { detail: { offer_id: null } }));
+  // window.dispatchEvent(new CustomEvent("offer_id_changed", { detail: { offer_id: null } }));
 }
 
 function setOfferId(id) {
@@ -40,23 +54,23 @@ export function refreshStoreButtons() {
   updateStoreButtons();
 }
 
-export function markOfferDirty() {
-  // only trader changes should call this, but extra safety:
-  if (myRole !== "trader") return;
+// export function markOfferDirty() {
+//   // only trader changes should call this, but extra safety:
+//   if (myRole !== "trader") return;
 
-  offerDirty = true;
-  offerAccepted = false;
-  updateStoreButtons();
-}
+//   offerDirty = true;
+//   offerAccepted = false;
+//   updateStoreButtons();
+// }
 
-export function markOfferSent() {
-  if (myRole !== "buyer") return;
-  offerSent = true;
-  offerDirty = false;
-  offerAccepted = false;
-  offerPaid = false;
-  updateStoreButtons();
-}
+// export function markOfferSent() {
+//   if (myRole !== "buyer") return;
+//   offerSent = true;
+//   offerDirty = false;
+//   offerAccepted = false;
+//   offerPaid = false;
+//   updateStoreButtons();
+// }
 
 
 function bothInRoom() {
@@ -163,15 +177,14 @@ export function connectStoreChatWS(buyerId, traderId, role) {
         appendChatMessage(msg);
         return;
       }
-    
       // 3) Buyer sent offer items -> mark offerSent on both sides
       if (msg.type === "offer_items") {
         // If I received an offer from the other role, that means "offerSent = true"
         // If I sent it myself, server will also echo it back => also set true.
-        offerSent = true;
-        offerAccepted = false;
-        offerPaid = false;
-        offerDirty = false;
+        // offerSent = true;
+        // offerAccepted = false;
+        // offerPaid = false;
+        // offerDirty = false;
     
         // Your existing logic: ignore rendering if it’s my own offer
         if (msg.from_role === myRole) {
@@ -209,10 +222,23 @@ export function connectStoreChatWS(buyerId, traderId, role) {
         updateStoreButtons();
         return;
       }
+
+      if (msg.type === "set_offer") {
+        console.log(msg);
+        appendChatMessage(msg);
+        updateStoreButtons();
+      }
+
+      if (msg.type === "send_offer") {
+        console.log("msg.offer_send", msg.offer_send);
+        OfferConfig(msg.offer_dirty, msg.offer_send, msg.offer_accepted, msg.offer_paid);
+        
+        updateStoreButtons();
+      }
     
       // 4) Trader accepted -> enable Pay for buyer
-      if (msg.type === "accept_items") {
-        offerAccepted = true;
+      if (msg.type === "accept_offer") {
+        OfferConfig(msg.offer_dirty, msg.offer_send, msg.offer_accepted, msg.offer_paid);
         updateStoreButtons();
         // optionally append as system/chat message if you want
         return;
@@ -220,7 +246,7 @@ export function connectStoreChatWS(buyerId, traderId, role) {
     
       // 5) Buyer paid -> lock pay / maybe lock accept/send
       if (msg.type === "pay_offer") {
-        offerPaid = true;
+        OfferConfig(msg.offer_dirty, msg.offer_send, msg.offer_accepted, msg.offer_paid);
         updateStoreButtons();
         return;
       }
@@ -255,7 +281,7 @@ export function sendChatMessage() {
 
 export function acceptOffer() {
   if (!storeChatWS || storeChatWS.readyState !== WebSocket.OPEN) return;
-  storeChatWS.send(JSON.stringify({ type: "accept_items", text: "Trader accept offer"}));
+  storeChatWS.send(JSON.stringify({ type: "accept_offer", text: "Trader accept offer"}));
   storeChatWS.send(JSON.stringify({ type: "system", text: "Trader's accepted offer" }));
   // optimistic UI lock (server will confirm anyway)
   offerAccepted = true;

@@ -95,54 +95,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsSession {
                 });
             }
 
-            "accept_items" => {
-
-                let body = parsed
-                    .get("text")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("")
-                    .trim()
-                    .to_string();
-
-                self.hub.do_send(Broadcast {
-                    room: self.room.clone(),
-                    msg_type: "accept_items".to_string(),
-                    from_role: self.role.clone(),
-                    text: parsed
-                    .get("text")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("")
-                    .trim()
-                    .to_string(),
-                });
-
-                println!("{body}");
-            }
-
-            "paid_offer" => {
-
-                let body = parsed
-                    .get("text")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("")
-                    .trim()
-                    .to_string();
-
-                self.hub.do_send(Broadcast {
-                    room: self.room.clone(),
-                    msg_type: "pay_offer".to_string(),
-                    from_role: self.role.clone(),
-                    text: parsed
-                    .get("text")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("")
-                    .trim()
-                    .to_string(),
-                });
-                println!("{body}");
-            }
-
-            "set_offer_id" => {
+            "set_offer" => {
                 let offer_id = parsed
                     .get("offer_id")
                     .and_then(|v| v.as_str())
@@ -151,18 +104,74 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsSession {
 
                 self.offer_id = offer_id.clone();
 
-                self.hub.do_send(SetOfferId {
+                self.hub.do_send(OfferState {
                     room: self.room.clone(),
                     offer_id,
+                    offer_accepted: false,
+                    offer_dirty: true,
+                    offer_paid: false,
+                    offer_send: true,
+                    text: parsed.to_string(),
+                });
+
+                self.hub.do_send(Broadcast {
+                    room: self.room.clone(),
+                    msg_type: "system".to_string(),
+                    from_role: self.role.clone(),
+                    text: self.offer_id.clone().unwrap() + " is created",
                 });
             }
 
-            "clear_offer_id" => {
+            "send_offer" => {
+                
+                self.hub.do_send(OfferState {
+                    room: self.room.clone(),
+                    offer_id: self.offer_id.clone(),
+                    offer_accepted: false,
+                    offer_dirty: true,
+                    offer_paid: false,
+                    offer_send: true,
+                    text: parsed.to_string(),
+                });
+            }
+
+            "accept_offer" => {
+
+                self.hub.do_send(OfferState {
+                    room: self.room.clone(),
+                    offer_id: self.offer_id.clone(),
+                    offer_accepted: true,
+                    offer_dirty: false,
+                    offer_paid: false,
+                    offer_send: true,
+                    text: parsed.to_string(),
+                });
+            }
+
+            "paid_offer" => {
+
+                self.hub.do_send(OfferState {
+                    room: self.room.clone(),
+                    offer_id: self.offer_id.clone(),
+                    offer_accepted: true,
+                    offer_dirty: false,
+                    offer_paid: true,
+                    offer_send: true,
+                    text: parsed.to_string(),
+                });
+            }
+
+            "clear_offer" => {
                 self.offer_id = None;
 
-                self.hub.do_send(SetOfferId {
+                self.hub.do_send(OfferState {
                     room: self.room.clone(),
                     offer_id: None,
+                    offer_accepted: false,
+                    offer_dirty: false,
+                    offer_paid: false,
+                    offer_send: false,
+                    text: parsed.to_string(),
                 });
             }
 
@@ -305,15 +314,20 @@ impl Handler<Broadcast> for ChatHub {
 
 #[derive(Message)]
 #[rtype(result = "()")]
-struct SetOfferId {
+struct OfferState {
     room: RoomId,
     offer_id: Option<String>,
+    offer_accepted: bool,
+    offer_dirty: bool,
+    offer_paid: bool,
+    offer_send: bool,
+    text: String,
 }
 
-impl Handler<SetOfferId> for ChatHub {
+impl Handler<OfferState> for ChatHub {
     type Result = ();
 
-    fn handle(&mut self, msg: SetOfferId, _: &mut Context<Self>) {
+    fn handle(&mut self, msg: OfferState, _: &mut Context<Self>) {
         let room_id = msg.room.clone();
 
         let state = self.rooms.entry(msg.room).or_insert(RoomState {

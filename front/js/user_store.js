@@ -9,8 +9,8 @@ import {
   sendWS, 
   acceptOffer, 
   paidOffer, 
-  markOfferDirty, 
-  markOfferSent, 
+  // markOfferDirty, 
+  // markOfferSent, 
   refreshStoreButtons,
   updateStoreButtonsWrapper,
   getSelectedCount,
@@ -156,7 +156,9 @@ async function sendItems() {
     text: `Offer price: $${totalPrice}\nCount: ${countItems}`
   });
 
-  markOfferSent();
+  sendWS({ type: "send_offer"});
+
+  // markOfferSent();
 }
 
 async function setOfferID(){
@@ -190,7 +192,7 @@ async function setOfferID(){
   const data = await res.json();        // ✅
   offer_id = (data.offer_id || "").trim();
 
-  sendWS({ type: "set_offer_id", offer_id});
+  sendWS({ type: "set_offer", offer_id});
 
   return offer_id;
 }
@@ -200,7 +202,7 @@ sticky_tooltip(quitIcon);
 
 quitIcon.addEventListener("click", () => {
   clearOfferId();
-  sendWS({ type: "clear_offer_id" });
+  sendWS({ type: "clear_offer" });
 
   const role = getChatRole();
 
@@ -394,7 +396,7 @@ inventoryContainer.addEventListener("click", (e) => {
     if (selectedContainer.querySelector(`[data-key="${CSS.escape(key)}"]`)) return;
 
     selectedContainer.insertAdjacentHTML("beforeend", makeSelectedCard({ key, name, image }));
-    markOfferDirty(); // ✅
+    // markOfferDirty(); // ✅
     refreshStoreButtons(); 
     return;
   }
@@ -408,7 +410,7 @@ inventoryContainer.addEventListener("click", (e) => {
     const selected = selectedContainer.querySelector(`[data-key="${CSS.escape(key)}"]`);
     if (selected) selected.remove();
 
-    markOfferDirty(); // ✅
+    // markOfferDirty(); // ✅
     refreshStoreButtons(); 
     return;
   }
@@ -422,14 +424,14 @@ selectedContainer?.addEventListener("click", (e) => {
   const selectedCard = e.target.closest(".selected_item_card_cont");
   if (selectedCard) selectedCard.remove();
 
-  markOfferDirty(); // ✅
+  // markOfferDirty(); // ✅
   refreshStoreButtons();
 });
 
 // Price edit
 selectedContainer?.addEventListener("input", (e) => {
   if (!e.target.classList.contains("selected_item_price_input")) return;
-  markOfferDirty(); // ✅
+  // markOfferDirty(); // ✅
   refreshStoreButtons();
 });
 
@@ -439,12 +441,12 @@ selectedContainer?.addEventListener("click", (e) => {
   if (!rm) return;
   const selectedCard = e.target.closest(".selected_item_card_cont");
   if (selectedCard) selectedCard.remove();
-  markOfferDirty();
+  // markOfferDirty();
 });
 
 selectedContainer?.addEventListener("input", (e) => {
   if (!e.target.classList.contains("selected_item_price_input")) return;
-  markOfferDirty();
+  // markOfferDirty();
 });
 
   });
