@@ -114,7 +114,7 @@ pub async fn get_ad_cards_history(form: web::Form<HistoryForm>) -> impl Responde
 
 pub async fn add_to_store_queue(state: web::Data<StoreHashMapState>, buyer_and_store_steamid: web::Json<BuyerAndStoreIDS>)->impl Responder{
 
-    let store = &*buyer_and_store_steamid.store_id;
+    let store = &*buyer_and_store_steamid.trader_id;
     let buyer = &*buyer_and_store_steamid.buyer_id;
 
     if store == buyer {
@@ -145,7 +145,7 @@ pub async fn add_to_store_queue(state: web::Data<StoreHashMapState>, buyer_and_s
 
 pub async fn remove_from_store_queue(state: web::Data<StoreHashMapState>, store_steamid: web::Json<StoreID>, websocket_list_state: web::Data<StoreWebsocketListState>)->impl Responder{
 
-    let store_id = &*store_steamid.store_id;
+    let store_id = &*store_steamid.trader_id;
 
     let mut hashmap = state.store_hashmap_state.hashmap.get(store_id).unwrap().lock().await;
 
@@ -233,16 +233,16 @@ pub async fn offer_make_offer(ids: web::Json<BuyerAndStoreIDS>) -> OfferMakingPl
     let db = DataBase::connect_to_db();
 
     // Consume the JSON payload to move out the owned strings
-    let BuyerAndStoreIDS { buyer_id, store_id } = ids.into_inner();
+    let BuyerAndStoreIDS { buyer_id, trader_id } = ids.into_inner();
 
-    let offer_id = db.db_offer_make_offer(buyer_id, store_id);
+    let offer_id = db.db_offer_make_offer(buyer_id, trader_id);
 
     drop(db);
+    println!("offer_id: {offer_id}");
     
     let playload  = OfferMakingPlayload {
         offer_id
     };
-
     playload
 }
 

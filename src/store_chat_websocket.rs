@@ -104,6 +104,13 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsSession {
 
                 self.offer_id = offer_id.clone();
 
+                self.hub.do_send(Broadcast {
+                    room: self.room.clone(),
+                    msg_type: "system".to_string(),
+                    from_role: self.role.clone(),
+                    text: self.offer_id.clone().unwrap() + " is created",
+                });
+
                 self.hub.do_send(OfferState {
                     room: self.room.clone(),
                     offer_id,
@@ -112,15 +119,10 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsSession {
                     offer_dirty: true,
                     offer_paid: false,
                     offer_send: true,
-                    text: "set_offer".to_string(),
+                    // text: "set_offer".to_string(),
                 });
 
-                self.hub.do_send(Broadcast {
-                    room: self.room.clone(),
-                    msg_type: "system".to_string(),
-                    from_role: self.role.clone(),
-                    text: self.offer_id.clone().unwrap() + " is created",
-                });
+                
             }
 
             "send_offer" => {
@@ -133,7 +135,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsSession {
                     offer_dirty: false,
                     offer_paid: false,
                     offer_send: true,
-                    text: "send_offer".to_string(),
+                    // text: "send_offer".to_string(),
                 });
             }
 
@@ -147,7 +149,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsSession {
                     offer_dirty: false,
                     offer_paid: false,
                     offer_send: true,
-                    text: parsed.to_string(),
+                    // text: parsed.to_string(),
                 });
             }
 
@@ -161,7 +163,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsSession {
                     offer_dirty: false,
                     offer_paid: true,
                     offer_send: true,
-                    text: parsed.to_string(),
+                    // text: parsed.to_string(),
                 });
             }
 
@@ -176,7 +178,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsSession {
                     offer_dirty: false,
                     offer_paid: false,
                     offer_send: false,
-                    text: parsed.to_string(),
+                    // text: parsed.to_string(),
                 });
             }
 
@@ -262,7 +264,21 @@ impl Handler<Join> for ChatHub {
             offer_id: None,
         });
 
-        state.clients.insert(msg.addr, msg.role);
+        state.clients.insert(msg.addr.clone(), msg.role);
+
+
+        // ✅ send offer_id to ONLY the newly joined client as a system message
+        if let Some(ref offer_id) = state.offer_id {
+            let payload = serde_json::json!({
+                "type": "system",
+                "from_role": "system",
+                "offer_id": offer_id,
+                "text": format!("{offer_id} is created")
+            })
+            .to_string();
+
+            msg.addr.do_send(WsText(payload));
+        }
 
         self.broadcast_presence(&msg.room);
     }
@@ -327,7 +343,7 @@ struct OfferState {
     offer_dirty: bool,
     offer_paid: bool,
     offer_send: bool,
-    text: String,
+    // text: String,
 }
 
 impl Handler<OfferState> for ChatHub {
@@ -345,7 +361,7 @@ impl Handler<OfferState> for ChatHub {
             "offer_send": msg.offer_send,
             "offer_accepted": msg.offer_accepted,
             "offer_paid": msg.offer_paid,
-            "text": msg.text,
+            // "text": msg.text,
         })
         .to_string();
 

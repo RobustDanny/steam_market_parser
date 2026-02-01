@@ -24,7 +24,6 @@ document.addEventListener("click", (e) => {
   });
   
   document.getElementById("enter_store").addEventListener("click", async () => {
-    renderActionButtons();
     const store_steamid = window.selectedStoreSteamId; // <-- use selected, NOT getElementById
     const buyer_steamid = document.getElementById("main_steam_id").value;
   
@@ -60,9 +59,11 @@ document.addEventListener("click", (e) => {
   
     // Connect chat here (REMOVES need for a second enter_store listener)
     connectStoreChatWS(buyer_steamid, store_steamid, "buyer");
+    renderActionButtons();
+
   });
   
-  function add_buyser_to_queue(store_id, buyer_id) {
+  function add_buyser_to_queue(trader_id, buyer_id) {
     fetch("/api/add_to_store_queue", {
       method: "POST",
         headers: {
@@ -70,7 +71,7 @@ document.addEventListener("click", (e) => {
         },
         body: JSON.stringify({
             buyer_id: buyer_id,
-            store_id: store_id,
+            trader_id: trader_id,
         }),
     })
       .then(res => res.json())

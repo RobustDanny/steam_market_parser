@@ -15,25 +15,30 @@ import {
   updateStoreButtonsWrapper,
   getSelectedCount,
   getOfferId,
-  clearOfferId 
+  clearOfferId,
+  checkIDs,
 } from "./store_websocket.js";
 import { startBtcPay } from "./payments/bitcoin.js";
 
-let offer_id = null;
+// let offer_id = null;
 
-function getBuyerSteamid() {
-  return (document.getElementById("main_steam_id")?.value || "").trim();
-}
+// function getBuyerSteamid() {
+//   return (document.getElementById("main_steam_id")?.value || "").trim();
+// }
 
-function getStoreOwnerSteamid() {
+// function getStoreOwnerSteamid() {
   
-  return (window.selectedStoreSteamId || "").trim();
-}
+//   return (window.selectedStoreSteamId || "").trim();
+// }
 
 function getChatRole() {
-  const buyer = getBuyerSteamid();
-  const store = getStoreOwnerSteamid();
-  return store && store !== buyer ? "buyer" : "trader";
+  const mainID = (document.getElementById("main_steam_id")?.value || "").trim();
+  const { buyer_id, trader_id } = checkIDs();
+
+  // trader_id should be the store owner steamid
+  if (!mainID || !trader_id) return "buyer"; // safe fallback
+
+  return mainID === trader_id ? "trader" : "buyer";
 }
 
 function renderPayOptions(){
@@ -55,6 +60,7 @@ function renderPayOptions(){
 }
 
 export function renderActionButtons() {
+  const mainID = document.getElementById("main_steam_id").value;
   const button_cont = document.querySelector(".selected_items_accept_btn_cont");
   if (!button_cont) return;
 
@@ -117,7 +123,7 @@ export function renderActionButtons() {
 
   console.log("ROLE DEBUG", {
     main: document.getElementById("main_steam_id").value,
-    selected: window.selectedStoreSteamId,
+    selected: checkIDs().trader_id,
     role: getChatRole()
   });
   
@@ -142,12 +148,12 @@ async function sendItems() {
   const totalPrice = items.reduce((sum, item) => sum + item.price, 0);
   const countItems = getSelectedCount();
 
-  if(!getOfferId()){
-    const offer_id = setOfferID();
-  }
-  else{
-    console.log("Offer_id is EXIST!", getOfferId());
-  }
+  // if(!getOfferId){
+  //   setOfferID();
+  // }
+  // else{
+  //   console.log("Offer_id is EXIST!", getOfferId());
+  // }
 
   sendWS({ type: "offer_items", items, totalPrice });
 
@@ -161,41 +167,14 @@ async function sendItems() {
   // markOfferSent();
 }
 
-async function setOfferID(){
-  const store_id = getStoreOwnerSteamid();
-  const buyer_id = getBuyerSteamid();
 
-  console.log("make_offer payload", { store_id, buyer_id });
 
-  if (!store_id) {
-    console.error("store_id is empty. Did you set window.selectedStoreSteamId when opening the store?");
-    return;
-  }
-  if (!buyer_id) {
-    console.error("buyer_id is empty (main_steam_id input missing?)");
-    return;
-  }
+// async function setOfferID(){
+  
+//   offer_id = await getOfferID();
 
-  const res = await fetch("/api/offer/make_offer", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ store_id, buyer_id })
-  });
-
-  // if (!res.ok) {
-  //   const text = await res.text().catch(() => "");
-  //   console.error("make_offer failed", res.status, text);
-  //   return;
-  // }
-
-  // backend returns UUID as plain string
-  const data = await res.json();        // ✅
-  offer_id = (data.offer_id || "").trim();
-
-  sendWS({ type: "set_offer", offer_id});
-
-  return offer_id;
-}
+//   sendWS({ type: "set_offer", offer_id});
+// }
 
 const quitIcon = document.getElementById("quit_store_icon");
 sticky_tooltip(quitIcon);
@@ -244,8 +223,10 @@ document.getElementById("store_filters_form").addEventListener("submit", async (
   const form = e.target;
 
   // If user opened someone’s store, use selectedStoreSteamId, else fallback to main user steamid
-  const buyerSteamid = document.getElementById("main_steam_id").value;
-  const steamid = window.selectedStoreSteamId || buyerSteamid;
+  const buyerSteamid = checkIDs().buyer_id;
+  const steamid = checkIDs().trader_id || buyerSteamid;
+
+  // const {buyerSteamid, steamid || buyerSteamid} = checkIDs();
 
   const steamIdInput = document.getElementById("store_steamid");
   if (steamIdInput) steamIdInput.value = steamid;

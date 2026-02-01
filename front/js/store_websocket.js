@@ -2,6 +2,14 @@ let storeChatWS = null;
 let myRole = null; // "buyer" | "trader"
 let openPromise = null;
 
+let buyer_id = null;
+let trader_id = null;
+
+export function checkIDs() {
+  console.log("checkIDs", {buyer_id, trader_id});
+  return {buyer_id, trader_id};
+}
+
 let currentOfferId = null;
 
 let presence = { count: 0, buyer_present: false, trader_present: false };
@@ -14,12 +22,11 @@ let offerDirty = false;
 
 
 function OfferConfig(dirty, sent, accepted, paid){
-  console.log("Hey");
   offerSent = sent;
   offerAccepted = accepted;
   offerPaid = paid;
   offerDirty = dirty;
-  console.log({
+  console.log("Config Offer", {
     offerAccepted,
     offerDirty,
     offerPaid,
@@ -48,7 +55,6 @@ function setOfferId(id) {
     window.dispatchEvent(new CustomEvent("offer_id_changed", { detail: { offer_id: currentOfferId } }));
   }
 }
-
 
 export function refreshStoreButtons() {
   updateStoreButtons();
@@ -120,8 +126,52 @@ function updateStoreButtons() {
 }
 
 
+function setIDs(buyer, trader){
+  if(!buyer || !trader) {
+    console.error("buyer or trader is empty");
+    return;
+  }
+
+  buyer_id = buyer;
+  trader_id = trader;
+  console.log("setIDs", { buyer_id, trader_id });
+  }
+
+function clearIDs(){
+  buyer_id = null;
+  trader_id = null;
+}
+
+async function getOfferID(){
+  const {buyer_id, trader_id} = checkIDs();
+
+  console.log("make_offer payload", { buyer_id, trader_id });
+
+  if (!trader_id) {
+    console.error("trader_id is empty. Did you set window.selectedStoreSteamId when opening the store?");
+    return;
+  }
+  if (!buyer_id) {
+    console.error("buyer_id is empty (main_steam_id input missing?)");
+    return;
+  }
+
+  const res = await fetch("/api/offer/make_offer", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ trader_id, buyer_id })
+  });
+
+  const data = await res.json();
+  currentOfferId = data.offer_id;
+
+  storeChatWS.send(JSON.stringify({ type: "set_offer", offer_id: currentOfferId }));
+}
+
 export function connectStoreChatWS(buyerId, traderId, role) {
     myRole = role;
+
+    setIDs(buyerId, traderId);
   
     // Already open -> resolve immediately
     if (storeChatWS && storeChatWS.readyState === WebSocket.OPEN) {
@@ -139,6 +189,11 @@ export function connectStoreChatWS(buyerId, traderId, role) {
     openPromise = new Promise((resolve, reject) => {
       storeChatWS.onopen = () => {
         console.log("STORE CHAT WS CONNECTED");
+
+        if(!currentOfferId && role === "buyer"){
+          getOfferID();
+        }
+
         updateStoreButtons();
         resolve();
       };
@@ -162,11 +217,8 @@ export function connectStoreChatWS(buyerId, traderId, role) {
           offer_id: msg.offer_id ?? null
         };
         
-        if (msg.offer_id) {
-          setOfferId(msg.offer_id);
-        } else {
-          clearOfferId(); // ✅ this will run on BOTH clients when server broadcasts null
-        }
+        if (msg.offer_id) setOfferId(msg.offer_id);
+        else clearOfferId();
 
         updateStoreButtons();
         return;
@@ -225,14 +277,14 @@ export function connectStoreChatWS(buyerId, traderId, role) {
 
       if (msg.type === "set_offer") {
         console.log(msg);
-        appendChatMessage(msg);
-        updateStoreButtons();
+        if (msg.offer_id) setOfferId(msg.offer_id);
+        // appendChatMessage(msg);
+        // updateStoreButtons();
       }
 
       if (msg.type === "send_offer") {
-        console.log("msg.offer_send", msg.offer_send);
+        console.log("offf", currentOfferId);
         OfferConfig(msg.offer_dirty, msg.offer_send, msg.offer_accepted, msg.offer_paid);
-        
         updateStoreButtons();
       }
     
@@ -255,6 +307,7 @@ export function connectStoreChatWS(buyerId, traderId, role) {
     storeChatWS.onclose = () => {
       console.log("STORE CHAT WS CLOSED");
       clearOfferId();
+      clearIDs();
       storeChatWS = null;
       openPromise = null;
     };
