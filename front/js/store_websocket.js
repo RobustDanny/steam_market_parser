@@ -5,7 +5,7 @@ let buyer_id = null;
 let trader_id = null;
 
 export function checkIDs() {
-  console.log("checkIDs", {buyer_id, trader_id});
+  // console.log("checkIDs", {buyer_id, trader_id});
   return {buyer_id, trader_id};
 }
 
@@ -17,7 +17,7 @@ function setIDs(buyer, trader){
 
   buyer_id = buyer;
   trader_id = trader;
-  console.log("setIDs", { buyer_id, trader_id });
+  // console.log("setIDs", { buyer_id, trader_id });
   }
 
 function clearIDs(){
@@ -32,10 +32,14 @@ function clearIDs(){
 //Offer
 let currentOfferId = null;
 
+export function checkOfferId(){
+  return currentOfferId;
+}
+
 async function getOfferID(){
   const {buyer_id, trader_id} = checkIDs();
 
-  console.log("make_offer payload", { buyer_id, trader_id });
+  // console.log("make_offer payload", { buyer_id, trader_id });
 
   if (!trader_id) {
     console.error("trader_id is empty. Did you set window.selectedStoreSteamId when opening the store?");
@@ -72,7 +76,7 @@ function setOfferId(id) {
   if (currentOfferId !== s) {
     currentOfferId = s;
     console.log("offer_id updated:", currentOfferId);
-    window.dispatchEvent(new CustomEvent("offer_id_changed", { detail: { offer_id: currentOfferId } }));
+    // window.dispatchEvent(new CustomEvent("offer_id_changed", { detail: { offer_id: currentOfferId } }));
   }
 }
 
@@ -191,8 +195,15 @@ export function connectStoreChatWS(buyerId, traderId, role) {
         if (!container) return;
     
         container.innerHTML = "";
+
+        const lines = msg.items.map(item => {
+          console.log("item", item);
+          const price = item.price ?? "";
+          return `${item.name}: ${price}`;
+        });
     
         msg.items.forEach(item => {
+
           container.insertAdjacentHTML("beforeend", `
             <div class="selected_item_card_cont" data-key="${item.key}">
               <div class="selected_item_card" >
@@ -213,6 +224,7 @@ export function connectStoreChatWS(buyerId, traderId, role) {
           `);
         });
     
+        appendChatMessage({ type: "chat", from_role: "system", text: lines.join("\n") });
         // NOTE: you don't have selected_items_accept_btn id anymore (you render send/accept/pay)
         updateStoreButtons();
         return;
@@ -226,7 +238,7 @@ export function connectStoreChatWS(buyerId, traderId, role) {
       }
 
       if (msg.type === "send_offer") {
-        console.log("offf", currentOfferId);
+        console.log("offer_id in send message", currentOfferId);
         OfferConfig(msg.offer_dirty, msg.offer_send, msg.offer_accepted, msg.offer_paid);
         updateStoreButtons();
       }

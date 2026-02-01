@@ -1,14 +1,16 @@
 use rusqlite::Connection;
 use tokio::sync::Mutex;
 use chrono::Utc;
-use std::{collections::VecDeque, time::{self, SystemTime, UNIX_EPOCH}};
+use std::{collections::{HashMap, VecDeque}, time::{self, SystemTime, UNIX_EPOCH}};
 use steam_market_parser::{
     AdCardHistoryVec, 
     MostRecent, 
     SteamMostRecentResponse, 
     SteamUser, 
     StoreQueueHashmap, 
-    UserProfileAds
+    UserProfileAds,
+    OfferItems,
+    OfferContentUpdated
 };
 
 use uuid::Uuid;
@@ -17,14 +19,26 @@ pub struct DataBase{
     connection: Connection,
 }
 
+/// One row from offer_log (id, offer_id, round, item_asset_id, item_name, items_price, item_link, time).
+pub struct OfferLogRow {
+    pub id: i64,
+    pub offer_id: String,
+    pub round: i64,
+    pub item_asset_id: String,
+    pub item_name: String,
+    pub items_price: String,
+    pub item_link: String,
+    pub time: String,
+}
+
 impl DataBase{
     pub fn connect_to_db()-> DataBase{
         
         let db = DataBase{
-            connection: Connection::open("steam_items.db").expect("Cant connect to database"),
+            connection: Connection::open("steam_items.db").expect("DB: Cant connect to database"),
         };
         // Set the busy timeout to wait for 5 seconds before throwing the DatabaseBusy error
-        db.connection.execute_batch("PRAGMA busy_timeout = 5000;").expect("Failed to set busy timeout");
+        db.connection.execute_batch("PRAGMA busy_timeout = 5000;").expect("DB: Failed to set busy timeout");
         db.create_tables();
         db
         
@@ -36,7 +50,7 @@ impl DataBase{
         let mut start_id = self.connection.last_insert_rowid();
 
         if start_id == 0 {
-            start_id = self.connection.query_one("SELECT MAX(id) FROM item_feed", [], |row|{row.get(0)}).expect("Can't get max id from DB");
+            start_id = self.connection.query_one("SELECT MAX(id) FROM item_feed", [], |row|{row.get(0)}).expect("DB: Can't get max id from DB");
         }
     
         for listing in data.listinginfo.values() {
@@ -50,14 +64,14 @@ impl DataBase{
                 .get(&contextid).unwrap()
                 .get(&assetid).unwrap();
     
-            let icon = listing_asset.icon_url.as_ref().expect("No icon_url").to_string();
+            let icon = listing_asset.icon_url.as_ref().expect("DB: No icon_url").to_string();
             let converted_price = match listing.converted_price {
                 Some(conv_price) => conv_price.to_string(),
                 None => format!("{:.2}", listing.price * 0.100),
             };
             let game = data.app_data.get(&appid).unwrap().name.to_owned();
             let game_icon = data.app_data.get(&appid).unwrap().icon.to_owned();
-            let tradable = listing_asset.tradable.as_ref().expect("No tradable").to_string();
+            let tradable = listing_asset.tradable.as_ref().expect("DB: No tradable").to_string();
             let name = listing_asset.market_name.as_ref().unwrap().trim().to_string();
             let market_hash_name = listing_asset.market_hash_name.as_ref().unwrap().trim().to_string();
     
@@ -69,7 +83,7 @@ impl DataBase{
                     listinginfo_id, name, converted_price, game, appid, icon,
                     game_icon, market_hash_name, tradable,
                 ],
-            ).expect("Can't insert listing data into DB");
+            ).expect("DB: Can't insert listing data into DB");
         }
     
         // ID AFTER inserts
@@ -96,16 +110,16 @@ impl DataBase{
 
         let result = query.query_map([start_id, end_id], |row| {
             Ok(MostRecent{
-                id: row.get(0).expect("Cant get id from DB"),
-                listinginfo_id: row.get(1).expect("Cant get listinginfo_id from DB"),
-                name: row.get(2).expect("Cant get name from DB"),
-                converted_price: row.get(3).expect("Cant get converted_price from DB"),
-                game: row.get(4).expect("Cant get game from DB"),
-                appid: row.get(5).expect("Cant get appid from DB"),
-                market_hash_name: row.get(6).expect("Cant get market_hash_name from DB"),
-                tradable: row.get(7).expect("Cant get icon from DB"),
-                icon: row.get(8).expect("Cant get icon from DB"),
-                game_icon: row.get(9).expect("Cant get game_icon from DB"),
+                id: row.get(0).expect("DB: Cant get id from DB"),
+                listinginfo_id: row.get(1).expect("DB: Cant get listinginfo_id from DB"),
+                name: row.get(2).expect("DB: Cant get name from DB"),
+                converted_price: row.get(3).expect("DB: Cant get converted_price from DB"),
+                game: row.get(4).expect("DB: Cant get game from DB"),
+                appid: row.get(5).expect("DB: Cant get appid from DB"),
+                market_hash_name: row.get(6).expect("DB: Cant get market_hash_name from DB"),
+                tradable: row.get(7).expect("DB: Cant get icon from DB"),
+                icon: row.get(8).expect("DB: Cant get icon from DB"),
+                game_icon: row.get(9).expect("DB: Cant get game_icon from DB"),
             })
         })?.collect();
 
@@ -132,7 +146,7 @@ impl DataBase{
                 &steam_user.steamid, &steam_user.nickname, &steam_user.avatar_url_small, &steam_user.avatar_url_full,
                 &steam_user.status
             ],
-        ).expect("Can't insert steam_user data into DB");
+        ).expect("DB: Can't insert steam_user data into DB");
     }
     
     pub fn db_add_ad_steam_user(&self, steam_user: &UserProfileAds){
@@ -159,25 +173,25 @@ impl DataBase{
                 &steam_user.third_item_image,
                 &steam_user.fourth_item_image,
             ],
-        ).expect("Can't upsert ad_steam_user data");
+        ).expect("DB: Can't upsert ad_steam_user data");
         
     }
 
     pub fn db_get_ad_steam_user(&self)-> VecDeque<UserProfileAds>{
         let mut row_users = self.connection.prepare("SELECT * FROM ad_steam_user")
-        .expect("Can't get data from ad_steam_user");
+        .expect("DB: Can't get data from ad_steam_user");
 
         let vec_ad_users = row_users.query_map([], |row|{
             Ok(UserProfileAds{
-                steamid: row.get(1).expect("Can't get steamid from ad_steam_user"),
-                nickname: row.get(2).expect("Can't get nickname from ad_steam_user"),
-                avatar: row.get(3).expect("Can't get avatar_url_full from ad_steam_user"),
-                first_item_image: row.get(4).expect("Can't get first_item_image from ad_steam_user"),
-                second_item_image: row.get(5).expect("Can't get second_item_image from ad_steam_user"),
-                third_item_image: row.get(6).expect("Can't get third_item_image from ad_steam_user"),
-                fourth_item_image: row.get(7).expect("Can't get fourth_item_image from ad_steam_user"),
+                steamid: row.get(1).expect("DB: Can't get steamid from ad_steam_user"),
+                nickname: row.get(2).expect("DB: Can't get nickname from ad_steam_user"),
+                avatar: row.get(3).expect("DB: Can't get avatar_url_full from ad_steam_user"),
+                first_item_image: row.get(4).expect("DB: Can't get first_item_image from ad_steam_user"),
+                second_item_image: row.get(5).expect("DB: Can't get second_item_image from ad_steam_user"),
+                third_item_image: row.get(6).expect("DB: Can't get third_item_image from ad_steam_user"),
+                fourth_item_image: row.get(7).expect("DB: Can't get fourth_item_image from ad_steam_user"),
             })
-        }).expect("Query_map on row_users is NOT successful");
+        }).expect("DB: Query_map on row_users is NOT successful");
 
         let mut queue = VecDeque::new();
 
@@ -195,13 +209,13 @@ impl DataBase{
 
         let rows = query.query_map([steamid], |row| {
             Ok(UserProfileAds{
-                steamid: row.get(1).expect("Cant get steamid from DB"),
-                nickname: row.get(2).expect("Cant get nickname from DB"),
-                avatar: row.get(3).expect("Cant get avatar from DB"),
-                first_item_image: row.get(4).expect("Cant get first_item_image from DB"),
-                second_item_image: row.get(5).expect("Cant get second_item_image from DB"),
-                third_item_image: row.get(6).expect("Cant get third_item_image from DB"),
-                fourth_item_image: row.get(7).expect("Cant get fourth_item_image from DB"),
+                steamid: row.get(1).expect("DB: Cant get steamid from DB"),
+                nickname: row.get(2).expect("DB: Cant get nickname from DB"),
+                avatar: row.get(3).expect("DB: Cant get avatar from DB"),
+                first_item_image: row.get(4).expect("DB: Cant get first_item_image from DB"),
+                second_item_image: row.get(5).expect("DB: Cant get second_item_image from DB"),
+                third_item_image: row.get(6).expect("DB: Cant get third_item_image from DB"),
+                fourth_item_image: row.get(7).expect("DB: Cant get fourth_item_image from DB"),
             })
         })?;
 
@@ -226,17 +240,17 @@ impl DataBase{
              SET status = ?1
              WHERE steamid = ?2",
             ("offline".to_string(), steamid),
-        ).expect("Cant update steam_user status");
+        ).expect("DB: Cant update steam_user status");
 
     }
 
     pub fn db_fill_store_hashmap(&self, mut store_hashmap: StoreQueueHashmap)->Result<StoreQueueHashmap, rusqlite::Error>{
         let mut query = self.connection.prepare("
             SELECT * FROM steam_user
-        ").expect("Cant get all steam_userS");
+        ").expect("DB: Cant get all steam_userS");
 
         let rows = query.query_map([], |row|{
-            let steamid: String = row.get(1).expect("Can't get steamid from steam_user");
+            let steamid: String = row.get(1).expect("DB: Can't get steamid from steam_user");
             store_hashmap.hashmap.entry(steamid).or_insert_with(|| Mutex::new(VecDeque::new()));
             Ok(())
         })?;
@@ -259,10 +273,10 @@ impl DataBase{
              SELECT offer_id
              FROM offer
              WHERE offer_id = ?1"
-            ).expect("Can't get uuid while db retrival");
+            ).expect("DB: Can't get uuid while db retrival");
 
             let result: Result<Vec<_>, _> = query.query_map([&generated_uuid], |row| {
-                Ok(row.get::<_, String>(0).expect("Cant get offer_id from DB"))
+                Ok(row.get::<_, String>(0).expect("DB: Cant get offer_id from DB"))
             }).map(|iter| iter.collect());
             
             if let Ok(rows) = result {
@@ -278,9 +292,9 @@ impl DataBase{
 
         self.connection.execute(
             "INSERT INTO offer (
-                offer_id, buyer_steamid, trader_steamid, price, accepted,
+                offer_id, buyer_steamid, trader_steamid, count, price, accepted,
                 paid, status, created, last_update
-            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
             ON CONFLICT(offer_id) DO NOTHING
             ",
 
@@ -289,15 +303,150 @@ impl DataBase{
                 &buyer,
                 &trader,
                 &"0".to_string(),
+                &"0".to_string(),
                 &false.to_string(),
                 &false.to_string(),
                 &"IN PROCESS".to_string(),
                 &time,
                 &time,
             ],
-        ).expect("Can't upsert offer data");
+        ).expect("DB: Can't upsert offer data");
+
+        self.connection.execute(
+            "INSERT INTO offer_log (
+                offer_id, round, item_asset_id, item_name, items_price, item_link, time
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+            ",
+
+            [
+                &generated_uuid,
+                &"0".to_string(),
+                &"Nope".to_string(),
+                &"Nope".to_string(),
+                &"Nope".to_string(),
+                &"Nope".to_string(),
+                &time,
+            ],
+        ).expect("DB: Can't upsert offer data");
 
         generated_uuid.to_string()
+    }
+
+    pub fn db_offer_update_offer(&self, offer_id: String, items: Vec<OfferItems>) -> OfferContentUpdated{
+
+        let mut result = OfferContentUpdated {
+            offer_id: offer_id.clone(),
+            new_items:  Vec::new(),
+            added_items:  Vec::new(),
+            removed_items:  Vec::new(),
+            updated_items:  Vec::new(),
+        }; 
+
+        let time = Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        
+        let round: i64 = self.connection.query_row(
+            "SELECT COALESCE(MAX(round), 0) FROM offer_log WHERE offer_id = ?1",
+            [&offer_id],
+            |row| row.get(0),
+        ).expect("DB: Can't get round from offer_log");        
+
+        //Get previous offer
+        let mut previous_offer_hashmap: HashMap<String, bool> = HashMap::new();
+        let mut previous_offer_stmt = self.connection.prepare("
+        SELECT * FROM offer_log WHERE offer_id = ?1 AND round = ?2
+        ").expect("DB: tried to get previous_offer from offer_log");
+
+        let previous_offer: Vec<OfferItems> = previous_offer_stmt.query_map([&offer_id, &round.to_string()], |row|{
+            Ok(OfferItems {
+                item_asset_id: row.get(3)?,
+                item_name: row.get(4)?,
+                item_price: row.get(5)?,
+                item_link: row.get(6)?,
+            }
+        )
+        }).expect("DB: query_map previous_offer").collect::<Result<Vec<_>, _>>().expect("DB: failed to collect previous_offer from offer_log");
+
+        //------------------
+
+        //add removed items into result
+
+        let mut this_offer_hashmap: HashMap<String, bool> = HashMap::new();
+
+        for item in &items{
+            this_offer_hashmap.insert(item.item_asset_id.clone(), true);
+        }
+
+        for item in &previous_offer{
+            match this_offer_hashmap.get(&item.item_asset_id){
+                None if item.item_price != "Nope" => result.removed_items.push(item.clone()),
+                Some(_) => {}
+                None => {}
+            }
+        }
+
+        //------------------
+
+        let mut total_price: f64 = 0.0;
+        let mut total_count = 0;
+  
+        
+        for item in items{
+            total_count = total_count + 1;
+            total_price = total_price + item.item_price.parse::<f64>().unwrap_or(0.0);
+
+            result = self.db_offer_checking_offer_item(result, &item, &round.to_string(), &offer_id);
+
+            self.connection.execute(
+                "INSERT INTO offer_log (
+                    offer_id, round, item_asset_id, item_name, items_price, item_link, time
+                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+                ",
+    
+                [
+                    &offer_id,
+                    &(round + 1).to_string(),
+                    &item.item_asset_id,
+                    &item.item_name,
+                    &item.item_price,
+                    &item.item_link,
+                    &time,
+                ],
+            ).expect("DB: Can't upsert offer data");
+        }
+
+        result
+    }
+
+    fn db_offer_checking_offer_item(&self, mut result: OfferContentUpdated, item: &OfferItems, round: &String, offer_id: &String)-> OfferContentUpdated{
+
+        result.new_items.push(item.clone());
+
+        let item_quary = self.connection.query_one("
+        SELECT * FROM offer_log WHERE item_asset_id = ?1 AND round = ?2 AND offer_id = ?3
+        ", [
+            item.item_asset_id.clone(), 
+            round.clone(), 
+            offer_id.clone()],
+         |row| -> Result<OfferLogRow, rusqlite::Error> {
+            Ok(OfferLogRow {
+                id: row.get(0)?,
+                offer_id: row.get(1)?,
+                round: row.get(2)?,
+                item_asset_id: row.get(3)?,
+                item_name: row.get(4)?,
+                items_price: row.get(5)?,
+                item_link: row.get(6)?,
+                time: row.get(7)?,
+            })
+         });
+
+        match item_quary {
+            Err(_) => result.added_items.push(item.clone()),
+            Ok(row) if row.items_price != item.item_price => result.updated_items.push(item.clone()),
+            Ok(_) => {}
+        }
+
+        result
     }
 
     fn create_tables(&self) {
@@ -346,6 +495,7 @@ impl DataBase{
                 offer_id TEXT UNIQUE,
                 buyer_steamid TEXT,
                 trader_steamid TEXT,
+                count TEXT,
                 price TEXT,
                 accepted BOOLEAN,
                 paid BOOLEAN,
@@ -358,11 +508,14 @@ impl DataBase{
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 offer_id TEXT,
                 round INTEGER,
+                item_asset_id TEXT,
                 item_name TEXT,
                 items_price TEXT,
-                FOREIGN KEY (offer_id) REFERENCES offer(id) ON DELETE CASCADE
+                item_link TEXT,
+                time TEXT,
+                FOREIGN KEY (offer_id) REFERENCES offer(offer_id) ON DELETE CASCADE
             );
 
-        ").expect("Failed to create tables");
+        ").expect("DB: Failed to create tables");
     }
 }

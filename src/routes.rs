@@ -18,6 +18,9 @@ use steam_market_parser::{
     AdCardHistoryVec, 
     AppContext, 
     BuyerAndStoreIDS, 
+    OfferContent,
+    OfferItems,
+    OfferContentUpdated,
     FilterInput, 
     HistoryForm, 
     Inventory, 
@@ -244,6 +247,21 @@ pub async fn offer_make_offer(ids: web::Json<BuyerAndStoreIDS>) -> OfferMakingPl
         offer_id
     };
     playload
+}
+
+pub async fn offer_update_offer(offer_content: web::Json<OfferContent>) -> OfferContentUpdated{
+    
+    let db = DataBase::connect_to_db();
+
+    // Consume the JSON payload to move out the owned strings
+    let OfferContent { offer_id, special_for_update_offer} = offer_content.into_inner();
+
+    let result = db.db_offer_update_offer(offer_id, special_for_update_offer);
+
+    drop(db);
+    
+    println!("{result:#?}");
+    result
 }
 
 pub async fn tera_update_data(session: Session, state: web::Data<AppState>, feed_state: web::Data<FeedItemsState>, _user_inventory: web::Data<UserInventoryState>) -> impl Responder {

@@ -119,7 +119,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsSession {
                     offer_dirty: true,
                     offer_paid: false,
                     offer_send: false,
-                    // text: "set_offer".to_string(),
+                    text: "set_offer".to_string(),
                 });
 
             }
@@ -134,7 +134,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsSession {
                     offer_dirty: false,
                     offer_paid: false,
                     offer_send: true,
-                    // text: "send_offer".to_string(),
+                    text: parsed.to_string(),
                 });
             }
 
@@ -148,7 +148,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsSession {
                     offer_dirty: false,
                     offer_paid: false,
                     offer_send: true,
-                    // text: parsed.to_string(),
+                    text: parsed.to_string(),
                 });
             }
 
@@ -162,7 +162,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsSession {
                     offer_dirty: false,
                     offer_paid: true,
                     offer_send: true,
-                    // text: parsed.to_string(),
+                    text: parsed.to_string(),
                 });
             }
 
@@ -177,7 +177,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsSession {
                     offer_dirty: false,
                     offer_paid: false,
                     offer_send: false,
-                    // text: parsed.to_string(),
+                    text: parsed.to_string(),
                 });
             }
 
@@ -313,7 +313,7 @@ impl Handler<Broadcast> for ChatHub {
                 "type": "offer_items",
                 "from_role": msg.from_role,
                 "offer_id": state.offer_id, // <-- now available here
-                "items": v.get("items").unwrap()
+                "items": v.get("items").expect("Handler <Broadcast>: no items in the offer!")
             })
         } else {
             serde_json::json!({
@@ -342,7 +342,7 @@ struct OfferState {
     offer_dirty: bool,
     offer_paid: bool,
     offer_send: bool,
-    // text: String,
+    text: String,
 }
 
 impl Handler<OfferState> for ChatHub {

@@ -47,7 +47,8 @@ use routes::{
     add_to_store_queue,
     remove_from_store_queue,
     get_inventory_games,
-    offer_make_offer
+    offer_make_offer,
+    offer_update_offer
 };
 
 mod background_tasks;
@@ -191,6 +192,7 @@ async fn main()-> std::io::Result<()> {
                 .route("/auth/steam/return", web::get().to(steam_return))
                 .service(web::scope("/offer")
                     .route("/make_offer", web::post().to(offer_make_offer))
+                    .route("/update_offer", web::post().to(offer_update_offer))
                 )
             )
             .route("/store_rating", web::get().to(store_rating))

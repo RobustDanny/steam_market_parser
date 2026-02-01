@@ -8,6 +8,7 @@ import {
   updateStoreButtonsWrapper,
   getSelectedCount,
   checkStoreChatWS,
+  checkOfferId,
 } from "./store_websocket.js";
 import { startBtcPay } from "./payments/bitcoin.js";
 
@@ -132,15 +133,45 @@ async function sendItems() {
 
   const items = [...container.querySelectorAll(".selected_item_card_cont")].map(el => {
     const priceValue = el.querySelector(".selected_item_price_input")?.value || "0";
+  
+    const name = (() => { try { return decodeURIComponent(el.dataset.name || ""); } catch { return el.dataset.name || ""; }})();
+    const link = (() => { try { return decodeURIComponent(el.dataset.itemLink || ""); } catch { return el.dataset.itemLink || ""; }})();
+  
     return {
       key: el.dataset.key,
       image: el.querySelector("img")?.src,
-      price: Number(priceValue) || 0
+      price: Number(priceValue) || 0,
+      name,
+      link,
     };
   });
 
+  const special_for_update_offer = [...container.querySelectorAll(".selected_item_card_cont")].map(el => {
+    const priceValue = el.querySelector(".selected_item_price_input")?.value || "0";
+  
+    return {
+      item_asset_id: el.dataset.key,
+      item_name: decodeURIComponent(el.dataset.name || ""),
+      item_price: priceValue.toString(),
+      item_link: decodeURIComponent(el.dataset.itemLink || "")
+    };
+  });
+  
   const totalPrice = items.reduce((sum, item) => sum + item.price, 0);
   const countItems = getSelectedCount();
+  const offer_id = checkOfferId();
+  const res = await fetch("/api/offer/update_offer", {
+    method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+    body: JSON.stringify({
+      offer_id,
+      special_for_update_offer
+    })
+  });
+
+  console.log("result from /update_offer", res);
 
   sendWS({ type: "offer_items", items, totalPrice });
 
@@ -253,8 +284,9 @@ function renderStoreInventory(inventory) {
     const icon = `https://steamcommunity.com/economy/image/${desc.icon_url}`;
     const name = desc.name || "Unknown item";
 
-    const card = `
-  <div class="card_hover-container inventory-select"
+    const card = 
+    `
+      <div class="card_hover-container inventory-select"
           data-appid="${desc.appid}"
           data-classid="${asset.classid}"
           data-instanceid="${asset.instanceid}"
@@ -262,7 +294,9 @@ function renderStoreInventory(inventory) {
           data-contextid="${asset.contextid}"
           data-name="${encodeURIComponent(name)}"
           data-image="${encodeURIComponent(icon)}"
-          data-market_hash_name="${encodeURIComponent(desc.market_hash_name || "")}">
+          data-market_hash_name="${encodeURIComponent(desc.market_hash_name || "")}"
+          data-item_link="https://steamcommunity.com/market/listings/${desc.appid}/${desc.market_hash_name}"
+          >
         <div class="inventory_card">
           <div class="inventory_card_details">
             <div>
@@ -326,22 +360,24 @@ function renderStoreInventory(inventory) {
 
   function makeSelectedCard(item) {
     return `
-    <div class="selected_item_card_cont" data-key="${item.key}">
-      <div class="selected_item_card" >
-
-        <button type="button" class="selected_item_remove_btn" title="Remove">
-          ✕
-        </button>
-
-        <div style="height: 100%; display: grid; place-content: center;">
-          <img class="selected_item_icon" src="${item.image}" alt="${item.name}">
+      <div class="selected_item_card_cont"
+        data-key="${item.key}"
+        data-name="${encodeURIComponent(item.name || "")}"
+        data-item-link="${encodeURIComponent(item.link || "")}"
+      >
+        <div class="selected_item_card">
+          <button type="button" class="selected_item_remove_btn" title="Remove">✕</button>
+  
+          <div style="height: 100%; display: grid; place-content: center;">
+            <img class="selected_item_icon" src="${item.image}" alt="${item.name || ""}">
+          </div>
         </div>
-      </div>
-
-          <input class="selected_item_price_input" placeholder="$">
+  
+        <input class="selected_item_price_input" placeholder="$">
       </div>
     `;
   }
+  
 
   inventoryContainer.addEventListener("click", (e) => {
     const addBtn = e.target.closest(".store_inventory_add_to_offer_btn");
@@ -352,10 +388,11 @@ function renderStoreInventory(inventory) {
       const key = `${card.dataset.appid}:${card.dataset.contextid}:${card.dataset.assetid}`;
       const name = decode(card.dataset.name);
       const image = decode(card.dataset.image);
+      const link = card.dataset.item_link || ""; 
 
       if (selectedContainer.querySelector(`[data-key="${CSS.escape(key)}"]`)) return;
 
-      selectedContainer.insertAdjacentHTML("beforeend", makeSelectedCard({ key, name, image }));
+      selectedContainer.insertAdjacentHTML("beforeend", makeSelectedCard({ key, name, image, link }));
       updateStoreButtonsWrapper(); 
       return;
     }

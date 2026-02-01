@@ -43,6 +43,28 @@ impl Responder for OfferMakingPlayload{
     }
 }
 
+#[derive(Deserialize, Serialize, Debug)]
+pub struct OfferContentUpdated{
+    pub offer_id: String,
+    pub new_items: Vec<OfferItems>,
+    pub removed_items: Vec<OfferItems>,
+    pub updated_items: Vec<OfferItems>,
+    pub added_items: Vec<OfferItems>
+}
+
+impl Responder for OfferContentUpdated{
+    type Body = BoxBody;
+
+    fn respond_to(self, _req: &HttpRequest) -> HttpResponse<Self::Body> {
+        let body = serde_json::to_string(&self).unwrap();
+
+        // Create response and set content type
+        HttpResponse::Ok()
+            .content_type(ContentType::json())
+            .body(body)
+    }
+}
+
 //----------------------------------
 //----------------------------------
 
@@ -113,6 +135,20 @@ pub struct BuyerAndStoreIDS{
 #[derive(Deserialize)]
 pub struct StoreID{
     pub trader_id: String,
+}
+
+#[derive(Deserialize)]
+pub struct OfferContent{
+    pub offer_id: String,
+    pub special_for_update_offer: Vec<OfferItems>,
+}
+
+#[derive(Clone, Deserialize, Serialize, Debug)]
+pub struct OfferItems{
+    pub item_asset_id: String,
+    pub item_name: String,
+    pub item_price: String,
+    pub item_link: String,
 }
 
 //----------------------------------
