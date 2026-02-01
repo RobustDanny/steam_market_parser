@@ -1,6 +1,6 @@
 import { connectStoreChatWS, sendWS } from "./store_websocket.js";
-import { get_inventory_games } from "./shared_fns.js";
-import { renderActionButtons } from "./user_store.js";
+import { get_inventory_games } from "./misc_shared_fns.js";
+import { renderActionButtons } from "./store.js";
 
 document.getElementById("offerList")?.addEventListener("click", () => {
     document.getElementById("offer_listBackdrop").style.display = "flex";

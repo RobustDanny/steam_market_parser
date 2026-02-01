@@ -3,8 +3,8 @@
 // =======================
 
 import { connectStoreChatWS } from "./store_websocket.js";
-import { get_inventory_games } from "./shared_fns.js";
-import { renderActionButtons } from "./user_store.js";
+import { get_inventory_games } from "./misc_shared_fns.js";
+import { renderActionButtons } from "./store.js";
 
 document.addEventListener("click", (e) => {
     const card = e.target.closest(".ad_card_from_feed");

@@ -1,41 +1,38 @@
-// =======================
-// SECOND (store + chat code)
-// =======================
-
-import { sticky_tooltip } from "./shared_fns.js";
+import { sticky_tooltip } from "./misc_shared_fns.js";
 import { 
   sendChatMessage, 
   closeStoreChatWS, 
   sendWS, 
-  acceptOffer, 
-  paidOffer, 
-  // markOfferDirty, 
-  // markOfferSent, 
-  refreshStoreButtons,
-  updateStoreButtonsWrapper,
-  getSelectedCount,
-  getOfferId,
   clearOfferId,
   checkIDs,
+  updateStoreButtonsWrapper,
+  getSelectedCount,
+  checkStoreChatWS,
 } from "./store_websocket.js";
 import { startBtcPay } from "./payments/bitcoin.js";
 
-// let offer_id = null;
+//--------------------
+//--------------------
+//Tooltips
 
-// function getBuyerSteamid() {
-//   return (document.getElementById("main_steam_id")?.value || "").trim();
-// }
+const load_store = document.getElementById("reload_store");
+const quitIcon = document.getElementById("quit_store_icon");
+sticky_tooltip(load_store);
+sticky_tooltip(quitIcon);
 
-// function getStoreOwnerSteamid() {
-  
-//   return (window.selectedStoreSteamId || "").trim();
-// }
+//--------------------
+//--------------------
+
+
+
+//--------------------
+//--------------------
+//Chat and btns
 
 function getChatRole() {
   const mainID = (document.getElementById("main_steam_id")?.value || "").trim();
   const { buyer_id, trader_id } = checkIDs();
 
-  // trader_id should be the store owner steamid
   if (!mainID || !trader_id) return "buyer"; // safe fallback
 
   return mainID === trader_id ? "trader" : "buyer";
@@ -129,9 +126,6 @@ export function renderActionButtons() {
   
 }
 
-const load_store = document.getElementById("reload_store");
-sticky_tooltip(load_store);
-
 async function sendItems() {
   const container = document.querySelector(".store_selected_items_list");
   if (!container || container.childElementCount === 0) return;
@@ -148,13 +142,6 @@ async function sendItems() {
   const totalPrice = items.reduce((sum, item) => sum + item.price, 0);
   const countItems = getSelectedCount();
 
-  // if(!getOfferId){
-  //   setOfferID();
-  // }
-  // else{
-  //   console.log("Offer_id is EXIST!", getOfferId());
-  // }
-
   sendWS({ type: "offer_items", items, totalPrice });
 
   sendWS({
@@ -163,21 +150,15 @@ async function sendItems() {
   });
 
   sendWS({ type: "send_offer"});
-
-  // markOfferSent();
 }
+//--------------------
+//--------------------
 
 
 
-// async function setOfferID(){
-  
-//   offer_id = await getOfferID();
-
-//   sendWS({ type: "set_offer", offer_id});
-// }
-
-const quitIcon = document.getElementById("quit_store_icon");
-sticky_tooltip(quitIcon);
+//--------------------
+//--------------------
+//Quit
 
 quitIcon.addEventListener("click", () => {
   clearOfferId();
@@ -215,18 +196,22 @@ quitIcon.addEventListener("click", () => {
   updateStoreButtonsWrapper();
 });
 
+//--------------------
+//--------------------
 
 
+
+//--------------------
+//--------------------
+//Render Incentory
 document.getElementById("store_filters_form").addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const form = e.target;
 
-  // If user opened someone’s store, use selectedStoreSteamId, else fallback to main user steamid
   const buyerSteamid = checkIDs().buyer_id;
   const steamid = checkIDs().trader_id || buyerSteamid;
 
-  // const {buyerSteamid, steamid || buyerSteamid} = checkIDs();
 
   const steamIdInput = document.getElementById("store_steamid");
   if (steamIdInput) steamIdInput.value = steamid;
@@ -270,170 +255,165 @@ function renderStoreInventory(inventory) {
 
     const card = `
   <div class="card_hover-container inventory-select"
+          data-appid="${desc.appid}"
+          data-classid="${asset.classid}"
+          data-instanceid="${asset.instanceid}"
+          data-assetid="${asset.assetid}"
+          data-contextid="${asset.contextid}"
+          data-name="${encodeURIComponent(name)}"
+          data-image="${encodeURIComponent(icon)}"
+          data-market_hash_name="${encodeURIComponent(desc.market_hash_name || "")}">
+        <div class="inventory_card">
+          <div class="inventory_card_details">
+            <div>
+              <img class="inventory_item_icon" src="${icon}" alt="${name}">
+            </div>
+            <span class="hidden-text">${name}</span>
 
-       data-appid="${desc.appid}"
-       data-classid="${asset.classid}"
-       data-instanceid="${asset.instanceid}"
-       data-assetid="${asset.assetid}"
-       data-contextid="${asset.contextid}"
-       data-name="${encodeURIComponent(name)}"
-       data-image="${encodeURIComponent(icon)}"
-       data-market_hash_name="${encodeURIComponent(desc.market_hash_name || "")}">
-    <div class="inventory_card">
-      <div class="inventory_card_details">
-        <div>
-          <img class="inventory_item_icon" src="${icon}" alt="${name}">
-        </div>
-        <span class="hidden-text">${name}</span>
+            <div class="store_inventory_hidden_buttons">
+              <div class="store_inventory_card_backdrop">
+                <div class="store_inventory_buttons_column">
+                  <div class="store_inventory_buttons_row">
+                    <div class="store_inventory_remove_from_offer">
+                      <img class="store_inventory_button store_inventory_remove_from_offer_btn"
+                          src="/front/svg/remove_icon.svg">
+                      <span class="store_inventory_hidden_button_text">Remove from offer</span>
+                    </div>
 
-        <div class="store_inventory_hidden_buttons">
-          <div class="store_inventory_card_backdrop">
-            <div class="store_inventory_buttons_column">
-              <div class="store_inventory_buttons_row">
-                <div class="store_inventory_remove_from_offer">
-                  <img class="store_inventory_button store_inventory_remove_from_offer_btn"
-                       src="/front/svg/remove_icon.svg">
-                  <span class="store_inventory_hidden_button_text">Remove from offer</span>
-                </div>
+                    <div class="store_inventory_check_steam">
+                      <a href="https://steamcommunity.com/market/listings/${desc.appid}/${desc.market_hash_name}"
+                        target="_blank" rel="noopener noreferrer">
+                        <img class="store_inventory_button"
+                            src="/front/svg/info_icon.svg">
+                      </a>
+                      <span class="store_inventory_hidden_button_text">Check price</span>
+                    </div>
+                  </div>
 
-                <div class="store_inventory_check_steam">
-                  <a href="https://steamcommunity.com/market/listings/${desc.appid}/${desc.market_hash_name}"
-                     target="_blank" rel="noopener noreferrer">
-                    <img class="store_inventory_button"
-                         src="/front/svg/info_icon.svg">
-                  </a>
-                  <span class="store_inventory_hidden_button_text">Check price</span>
-                </div>
-              </div>
+                  <div class="store_inventory_buttons_row">
+                    <div class="store_inventory_add_to_offer">
+                      <img class="store_inventory_button store_inventory_add_to_offer_btn"
+                          src="/front/svg/add_to_offer_icon.svg">
+                      <span class="store_inventory_hidden_button_text">Add to offer</span>
+                    </div>
 
-              <div class="store_inventory_buttons_row">
-                <div class="store_inventory_add_to_offer">
-                  <img class="store_inventory_button store_inventory_add_to_offer_btn"
-                       src="/front/svg/add_to_offer_icon.svg">
-                  <span class="store_inventory_hidden_button_text">Add to offer</span>
-                </div>
-
-                <div class="store_inventory_sent_to_chat">
-                  <img class="store_inventory_button"
-                       src="/front/svg/ask_tader_icon.svg">
-                  <span class="store_inventory_hidden_button_text">Ask trader</span>
+                    <div class="store_inventory_sent_to_chat">
+                      <img class="store_inventory_button"
+                          src="/front/svg/ask_tader_icon.svg">
+                      <span class="store_inventory_hidden_button_text">Ask trader</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
+
           </div>
         </div>
-
       </div>
-    </div>
-  </div>
-`;
+    `;
 
 
     container.insertAdjacentHTML("beforeend", card);
-
-    // container.querySelectorAll(".store_inventory_button").forEach(btn => {
-    //   sticky_tooltip(btn);
-    // });
     
     const inventoryContainer = document.getElementById("store_inventory");
     const selectedContainer =
       document.getElementById("store_selected_items_list") ||
       document.querySelector(".store_selected_items_list");
 
-function decode(s) {
-  try { return decodeURIComponent(s || ""); } catch { return s || ""; }
-}
+  function decode(s) {
+    try { return decodeURIComponent(s || ""); } catch { return s || ""; }
+  }
 
-function makeSelectedCard(item) {
-  // item: { key, name, image }
-  return `
-  <div class="selected_item_card_cont" data-key="${item.key}">
-    <div class="selected_item_card" >
+  function makeSelectedCard(item) {
+    return `
+    <div class="selected_item_card_cont" data-key="${item.key}">
+      <div class="selected_item_card" >
 
-      <button type="button" class="selected_item_remove_btn" title="Remove">
-        ✕
-      </button>
+        <button type="button" class="selected_item_remove_btn" title="Remove">
+          ✕
+        </button>
 
-      <div style="height: 100%; display: grid; place-content: center;">
-        <img class="selected_item_icon" src="${item.image}" alt="${item.name}">
+        <div style="height: 100%; display: grid; place-content: center;">
+          <img class="selected_item_icon" src="${item.image}" alt="${item.name}">
+        </div>
       </div>
-    </div>
 
-        <input class="selected_item_price_input" placeholder="$">
-    </div>
-  `;
-}
-
-inventoryContainer.addEventListener("click", (e) => {
-  const addBtn = e.target.closest(".store_inventory_add_to_offer_btn");
-  if (addBtn) {
-    const card = e.target.closest(".card_hover-container");
-    if (!card || !selectedContainer) return;
-
-    const key = `${card.dataset.appid}:${card.dataset.contextid}:${card.dataset.assetid}`;
-    const name = decode(card.dataset.name);
-    const image = decode(card.dataset.image);
-
-    if (selectedContainer.querySelector(`[data-key="${CSS.escape(key)}"]`)) return;
-
-    selectedContainer.insertAdjacentHTML("beforeend", makeSelectedCard({ key, name, image }));
-    // markOfferDirty(); // ✅
-    refreshStoreButtons(); 
-    return;
+          <input class="selected_item_price_input" placeholder="$">
+      </div>
+    `;
   }
 
-  const removeBtn = e.target.closest(".store_inventory_remove_from_offer_btn");
-  if (removeBtn) {
-    const card = e.target.closest(".card_hover-container");
-    if (!card || !selectedContainer) return;
+  inventoryContainer.addEventListener("click", (e) => {
+    const addBtn = e.target.closest(".store_inventory_add_to_offer_btn");
+    if (addBtn) {
+      const card = e.target.closest(".card_hover-container");
+      if (!card || !selectedContainer) return;
 
-    const key = `${card.dataset.appid}:${card.dataset.contextid}:${card.dataset.assetid}`;
-    const selected = selectedContainer.querySelector(`[data-key="${CSS.escape(key)}"]`);
-    if (selected) selected.remove();
+      const key = `${card.dataset.appid}:${card.dataset.contextid}:${card.dataset.assetid}`;
+      const name = decode(card.dataset.name);
+      const image = decode(card.dataset.image);
 
-    // markOfferDirty(); // ✅
-    refreshStoreButtons(); 
-    return;
-  }
-});
+      if (selectedContainer.querySelector(`[data-key="${CSS.escape(key)}"]`)) return;
 
-// Remove from selected list (✕)
-selectedContainer?.addEventListener("click", (e) => {
-  const rm = e.target.closest(".selected_item_remove_btn");
-  if (!rm) return;
+      selectedContainer.insertAdjacentHTML("beforeend", makeSelectedCard({ key, name, image }));
+      updateStoreButtonsWrapper(); 
+      return;
+    }
 
-  const selectedCard = e.target.closest(".selected_item_card_cont");
-  if (selectedCard) selectedCard.remove();
+    const removeBtn = e.target.closest(".store_inventory_remove_from_offer_btn");
+    if (removeBtn) {
+      const card = e.target.closest(".card_hover-container");
+      if (!card || !selectedContainer) return;
 
-  // markOfferDirty(); // ✅
-  refreshStoreButtons();
-});
+      const key = `${card.dataset.appid}:${card.dataset.contextid}:${card.dataset.assetid}`;
+      const selected = selectedContainer.querySelector(`[data-key="${CSS.escape(key)}"]`);
+      if (selected) selected.remove();
 
-// Price edit
-selectedContainer?.addEventListener("input", (e) => {
-  if (!e.target.classList.contains("selected_item_price_input")) return;
-  // markOfferDirty(); // ✅
-  refreshStoreButtons();
-});
+      updateStoreButtonsWrapper(); 
+      return;
+    }
+  });
 
-// Remove from selected list
-selectedContainer?.addEventListener("click", (e) => {
-  const rm = e.target.closest(".selected_item_remove_btn");
-  if (!rm) return;
-  const selectedCard = e.target.closest(".selected_item_card_cont");
-  if (selectedCard) selectedCard.remove();
-  // markOfferDirty();
-});
+  // Remove from selected list (✕)
+  selectedContainer?.addEventListener("click", (e) => {
+    const rm = e.target.closest(".selected_item_remove_btn");
+    if (!rm) return;
 
-selectedContainer?.addEventListener("input", (e) => {
-  if (!e.target.classList.contains("selected_item_price_input")) return;
-  // markOfferDirty();
-});
+    const selectedCard = e.target.closest(".selected_item_card_cont");
+    if (selectedCard) selectedCard.remove();
+
+    updateStoreButtonsWrapper();
+  });
+
+  // Price edit
+  selectedContainer?.addEventListener("input", (e) => {
+    if (!e.target.classList.contains("selected_item_price_input")) return;
+    updateStoreButtonsWrapper();
+  });
+
+  // Remove from selected list
+  selectedContainer?.addEventListener("click", (e) => {
+    const rm = e.target.closest(".selected_item_remove_btn");
+    if (!rm) return;
+    const selectedCard = e.target.closest(".selected_item_card_cont");
+    if (selectedCard) selectedCard.remove();
+  });
+
+  selectedContainer?.addEventListener("input", (e) => {
+    if (!e.target.classList.contains("selected_item_price_input")) return;
+  });
 
   });
 }
+//--------------------
+//--------------------
 
-// filter inventory
+
+
+//--------------------
+//--------------------
+//Filter inventory
+
 document.getElementById("store_inventoryFilter").addEventListener("input", function () {
   const query = this.value.trim().toLowerCase();
   const items = document.querySelectorAll("#store_inventory .card_hover-container");
@@ -453,3 +433,28 @@ document.getElementById("chat_input").addEventListener("keydown", (e) => {
         sendChatMessage();
     }
 });
+
+//--------------------
+//--------------------
+
+
+
+//--------------------
+//--------------------
+//Offer action btns
+
+function acceptOffer() {
+  if (!checkStoreChatWS() || checkStoreChatWS().readyState !== WebSocket.OPEN) return;
+  sendWS({ type: "accept_offer", text: "Trader accept offer"});
+  sendWS({ type: "system", text: "Trader's accepted offer" });
+  updateStoreButtonsWrapper();
+}
+
+function paidOffer() {
+  if (!checkStoreChatWS() || checkStoreChatWS().readyState !== WebSocket.OPEN) return;
+  sendWS({ type: "paid_offer", text: "Buyer paid offer" });
+  updateStoreButtonsWrapper();
+}
+
+//--------------------
+//--------------------

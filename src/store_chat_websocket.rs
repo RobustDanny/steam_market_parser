@@ -118,11 +118,10 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsSession {
                     offer_accepted: false,
                     offer_dirty: true,
                     offer_paid: false,
-                    offer_send: true,
+                    offer_send: false,
                     // text: "set_offer".to_string(),
                 });
 
-                
             }
 
             "send_offer" => {

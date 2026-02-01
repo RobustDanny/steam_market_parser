@@ -1,7 +1,6 @@
-let storeChatWS = null;
-let myRole = null; // "buyer" | "trader"
-let openPromise = null;
-
+//--------------------
+//--------------------
+//Buyer and Trader IDs
 let buyer_id = null;
 let trader_id = null;
 
@@ -9,122 +8,6 @@ export function checkIDs() {
   console.log("checkIDs", {buyer_id, trader_id});
   return {buyer_id, trader_id};
 }
-
-let currentOfferId = null;
-
-let presence = { count: 0, buyer_present: false, trader_present: false };
-
-// simple workflow flags (client-side gating)
-let offerSent = false;      // buyer clicked Send (or received offer_items)
-let offerAccepted = false;  // trader accepted (or received accept_items)
-let offerPaid = false;      // buyer paid (or received pay_offer)
-let offerDirty = false;
-
-
-function OfferConfig(dirty, sent, accepted, paid){
-  offerSent = sent;
-  offerAccepted = accepted;
-  offerPaid = paid;
-  offerDirty = dirty;
-  console.log("Config Offer", {
-    offerAccepted,
-    offerDirty,
-    offerPaid,
-    offerSent
-  });
-}
-
-export function getOfferId() {
-  return currentOfferId;
-}
-
-export function clearOfferId() {
-  currentOfferId = null;
-  console.log("Offer_id cleared" , currentOfferId);
-  // window.dispatchEvent(new CustomEvent("offer_id_changed", { detail: { offer_id: null } }));
-}
-
-function setOfferId(id) {
-  if (id == null) return;
-  const s = String(id).trim();
-  if (!s) return;
-
-  if (currentOfferId !== s) {
-    currentOfferId = s;
-    console.log("offer_id updated:", currentOfferId);
-    window.dispatchEvent(new CustomEvent("offer_id_changed", { detail: { offer_id: currentOfferId } }));
-  }
-}
-
-export function refreshStoreButtons() {
-  updateStoreButtons();
-}
-
-// export function markOfferDirty() {
-//   // only trader changes should call this, but extra safety:
-//   if (myRole !== "trader") return;
-
-//   offerDirty = true;
-//   offerAccepted = false;
-//   updateStoreButtons();
-// }
-
-// export function markOfferSent() {
-//   if (myRole !== "buyer") return;
-//   offerSent = true;
-//   offerDirty = false;
-//   offerAccepted = false;
-//   offerPaid = false;
-//   updateStoreButtons();
-// }
-
-
-function bothInRoom() {
-  return presence.buyer_present && presence.trader_present;
-}
-
-function setBtnEnabled(id, enabled) {
-  const btn = document.getElementById(id);
-  if (!btn) return;
-
-  btn.disabled = !enabled;
-  btn.classList.toggle("is_active", enabled);
-}
-
-
-export function getSelectedCount() {
-  const cont = document.querySelector(".store_selected_items_list");
-  return cont ? cont.querySelectorAll(".selected_item_card_cont").length : 0;
-}
-
-export function updateStoreButtonsWrapper(){
-  updateStoreButtons();
-}
-
-// Main rule engine
-function updateStoreButtons() {
-  const both = bothInRoom();
-  const hasItems = getSelectedCount() > 0;
-
-  // SEND
-  setBtnEnabled("send_btn", both && hasItems);
-
-  if (myRole === "buyer") {
-    setBtnEnabled("pay_btn", both && offerAccepted && !offerPaid);
-  }
-
-  if (myRole === "trader") {
-    // 🚨 Accept only if:
-    // - both in room
-    // - buyer sent offer
-    // - trader did NOT change anything
-    setBtnEnabled(
-      "accept_btn",
-      both && offerSent && !offerDirty && !offerAccepted
-    );
-  }
-}
-
 
 function setIDs(buyer, trader){
   if(!buyer || !trader) {
@@ -141,6 +24,13 @@ function clearIDs(){
   buyer_id = null;
   trader_id = null;
 }
+//--------------------
+//--------------------
+
+//--------------------
+//--------------------
+//Offer
+let currentOfferId = null;
 
 async function getOfferID(){
   const {buyer_id, trader_id} = checkIDs();
@@ -166,6 +56,65 @@ async function getOfferID(){
   currentOfferId = data.offer_id;
 
   storeChatWS.send(JSON.stringify({ type: "set_offer", offer_id: currentOfferId }));
+}
+
+export function clearOfferId() {
+  currentOfferId = null;
+  console.log("Offer_id cleared" , currentOfferId);
+  // window.dispatchEvent(new CustomEvent("offer_id_changed", { detail: { offer_id: null } }));
+}
+
+function setOfferId(id) {
+  if (id == null) return;
+  const s = String(id).trim();
+  if (!s) return;
+
+  if (currentOfferId !== s) {
+    currentOfferId = s;
+    console.log("offer_id updated:", currentOfferId);
+    window.dispatchEvent(new CustomEvent("offer_id_changed", { detail: { offer_id: currentOfferId } }));
+  }
+}
+
+// simple workflow flags (client-side gating)
+let offerSent = false;      // buyer clicked Send (or received offer_items)
+let offerAccepted = false;  // trader accepted (or received accept_items)
+let offerPaid = false;      // buyer paid (or received pay_offer)
+let offerDirty = false;
+
+function OfferConfig(dirty, sent, accepted, paid){
+  offerSent = sent;
+  offerAccepted = accepted;
+  offerPaid = paid;
+  offerDirty = dirty;
+  console.log("Config Offer", 
+  {
+    offerAccepted,
+    offerDirty,
+    offerPaid,
+    offerSent
+  });
+}
+
+//--------------------
+//--------------------
+
+
+//--------------------
+//--------------------
+//WS
+
+let presence = { count: 0, buyer_present: false, trader_present: false };
+let storeChatWS = null;
+let myRole = null; // "buyer" | "trader"
+let openPromise = null;
+
+export function checkStoreChatWS(){
+  return storeChatWS;
+}
+
+function bothInRoom() {
+  return presence.buyer_present && presence.trader_present;
 }
 
 export function connectStoreChatWS(buyerId, traderId, role) {
@@ -231,13 +180,7 @@ export function connectStoreChatWS(buyerId, traderId, role) {
       }
       // 3) Buyer sent offer items -> mark offerSent on both sides
       if (msg.type === "offer_items") {
-        // If I received an offer from the other role, that means "offerSent = true"
-        // If I sent it myself, server will also echo it back => also set true.
-        // offerSent = true;
-        // offerAccepted = false;
-        // offerPaid = false;
-        // offerDirty = false;
-    
+
         // Your existing logic: ignore rendering if it’s my own offer
         if (msg.from_role === myRole) {
           updateStoreButtons();
@@ -332,24 +275,6 @@ export function sendChatMessage() {
   // appendChatMessage({type:"chat", from_role: myRole, text});
 }
 
-export function acceptOffer() {
-  if (!storeChatWS || storeChatWS.readyState !== WebSocket.OPEN) return;
-  storeChatWS.send(JSON.stringify({ type: "accept_offer", text: "Trader accept offer"}));
-  storeChatWS.send(JSON.stringify({ type: "system", text: "Trader's accepted offer" }));
-  // optimistic UI lock (server will confirm anyway)
-  offerAccepted = true;
-  updateStoreButtons();
-}
-
-export function paidOffer() {
-  if (!storeChatWS || storeChatWS.readyState !== WebSocket.OPEN) return;
-  storeChatWS.send(JSON.stringify({ type: "paid_offer", text: "Buyer paid offer" }));
-
-  offerPaid = true;
-  updateStoreButtons();
-}
-
-
 export function appendChatMessage(msg) {
   const container = document.getElementById("chat_messages");
 
@@ -400,3 +325,52 @@ export function closeStoreChatWS() {
   openPromise = null;
   myRole = null;
 }
+
+//--------------------
+//--------------------
+
+//--------------------
+//--------------------
+//Buttons update
+export function updateStoreButtonsWrapper(){
+  updateStoreButtons();
+}
+
+function setBtnEnabled(id, enabled) {
+  const btn = document.getElementById(id);
+  if (!btn) return;
+
+  btn.disabled = !enabled;
+  btn.classList.toggle("is_active", enabled);
+}
+
+export function getSelectedCount() {
+  const cont = document.querySelector(".store_selected_items_list");
+  return cont ? cont.querySelectorAll(".selected_item_card_cont").length : 0;
+}
+
+function updateStoreButtons() {
+  const both = bothInRoom();
+  const hasItems = getSelectedCount() > 0;
+
+  // SEND
+  setBtnEnabled("send_btn", both && hasItems);
+
+  if (myRole === "buyer") {
+    setBtnEnabled("pay_btn", both && offerAccepted && !offerPaid);
+  }
+
+  if (myRole === "trader") {
+    // 🚨 Accept only if:
+    // - both in room
+    // - buyer sent offer
+    // - trader did NOT change anything
+    setBtnEnabled(
+      "accept_btn",
+      both && offerSent && !offerDirty && !offerAccepted
+    );
+  }
+}
+
+//--------------------
+//--------------------

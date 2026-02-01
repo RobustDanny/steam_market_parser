@@ -1,4 +1,4 @@
-import { sticky_tooltip } from "./shared_fns.js";
+import { sticky_tooltip } from "./misc_shared_fns.js";
 
 const arrowUp = document.querySelector(".arrow_up");
 sticky_tooltip(arrowUp);
