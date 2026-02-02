@@ -57,12 +57,18 @@ export async function get_inventory_games(store_steamid, element) {
     if (!element) return;
     const response = await fetch("/api/get_inventory_games", {
       method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({ store_steamid }),
     });
-  
+
+    if (!response.ok) {
+      const text = await response.text();
+      console.error("Backend error:", text);
+      return;
+    }
+
     const data = await response.json();
   
     // Clear old options

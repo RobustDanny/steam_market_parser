@@ -46,6 +46,8 @@ impl Responder for OfferMakingPlayload{
 #[derive(Deserialize, Serialize, Debug)]
 pub struct OfferContentUpdated{
     pub offer_id: String,
+    pub total_price: f64,
+    pub total_count: i32,
     pub new_items: Vec<OfferItems>,
     pub removed_items: Vec<OfferItems>,
     pub updated_items: Vec<OfferItems>,
@@ -149,6 +151,7 @@ pub struct OfferItems{
     pub item_name: String,
     pub item_price: String,
     pub item_link: String,
+    pub item_image: String,
 }
 
 //----------------------------------

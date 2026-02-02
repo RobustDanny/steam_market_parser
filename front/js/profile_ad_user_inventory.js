@@ -1,4 +1,5 @@
 const DEFAULT_ICON = "/front/svg/default_item_icon.svg";
+const BROKEN_ICON = "/front/svg/broken_img.svg"
 
 document.getElementById("SettingsFormInventory").addEventListener("submit", async (e) => {
 e.preventDefault();
@@ -41,7 +42,7 @@ assets.forEach(asset => {
 
     if (!desc) return;
 
-    const icon = `https://steamcommunity.com/economy/image/${desc.icon_url}`;
+    const icon = `//steamcommunity.com/economy/image/${desc.icon_url}`;
     const name = desc.name || "Unknown item";
 
     const card = `
@@ -50,7 +51,7 @@ assets.forEach(asset => {
                 <div class="inventory_card_details">
 
                     <div>
-                        <img class="inventory_item_icon" src="${icon}" alt="${name}">
+                        <img class="inventory_item_icon" src="${icon}" alt="${name} onerror="this.src='${DEFAULT_ICON}'">
                     </div>
 
                     <span class="hidden-text">${name}</span>

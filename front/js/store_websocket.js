@@ -1,3 +1,5 @@
+import { sticky_tooltip } from "./misc_shared_fns.js";
+
 //--------------------
 //--------------------
 //Buyer and Trader IDs
@@ -195,17 +197,16 @@ export function connectStoreChatWS(buyerId, traderId, role) {
         if (!container) return;
     
         container.innerHTML = "";
-
-        const lines = msg.items.map(item => {
-          console.log("item", item);
-          const price = item.price ?? "";
-          return `${item.name}: ${price}`;
-        });
-    
+        console.log("selected items data", msg.items);
         msg.items.forEach(item => {
 
           container.insertAdjacentHTML("beforeend", `
-            <div class="selected_item_card_cont" data-key="${item.key}">
+            <div class="selected_item_card_cont" 
+              data-key="${item.key}"
+              data-name="${item.name}"
+              data-image="${item.image}"
+              data-item-link="${item.link}"
+              >
               <div class="selected_item_card" >
     
                 <button type="button" class="selected_item_remove_btn" title="Remove">
@@ -216,25 +217,44 @@ export function connectStoreChatWS(buyerId, traderId, role) {
                   <img class="selected_item_icon" src="${item.image}" alt="${item.name}">
                 </div>
               </div>
-    
-              <div>
-                  <input class="selected_item_price_input" value="${item.price || ""}" placeholder="$">
+
+              <div class="price_input_wrapper">
+                <span class="dollar_sign">$</span>
+                <input class="selected_item_price_input" value="${item.price || ""}" placeholder="0">
               </div>
             </div>
           `);
+
+          document.addEventListener("input", function(e) {
+            if (e.target.classList.contains("selected_item_price_input")) {
+              let value = e.target.value;
+          
+              // Only allow numbers like 5, 5.5, 12, 0.5 is invalid
+              if (!/^\d*\.?\d*$/.test(value)) {
+                // Remove last typed invalid character
+                e.target.value = value.slice(0, -1);
+              }
+            }
+        
+          updateStoreButtonsWrapper();
+        
+          });
         });
-    
-        appendChatMessage({ type: "chat", from_role: "system", text: lines.join("\n") });
+
         // NOTE: you don't have selected_items_accept_btn id anymore (you render send/accept/pay)
         updateStoreButtons();
         return;
       }
 
       if (msg.type === "set_offer") {
-        console.log(msg);
+        // console.log(msg);
         if (msg.offer_id) setOfferId(msg.offer_id);
         // appendChatMessage(msg);
         // updateStoreButtons();
+      }
+
+      if (msg.type === "offer_log"){
+        appendChatMessage(msg);
       }
 
       if (msg.type === "send_offer") {
@@ -300,6 +320,108 @@ export function appendChatMessage(msg) {
     container.scrollTop = container.scrollHeight;
     return;
   }
+
+  if (msg.type === "offer_log") {
+    function formatOfferLog(msg) {
+      console.log("kwk log", msg);
+
+      if (!msg.text) return "";
+
+      // Parse JSON string safely
+      let data;
+      try {
+          data = JSON.parse(msg.text);
+      } catch (e) {
+          console.error("Failed to parse offer_log JSON", e, msg.text);
+          return "";
+      }
+      console.log("offer", data);
+
+      const { new_items, removed_items, updated_items, added_items, total_price, total_count } = data.json;
+
+      function renderItems(items) {
+        if (!items || !items.length) return "";
+    
+        return items
+            .map(item => `
+                <div class="item_link_wrapper" style="display: inline-block; position: relative;">
+                    • <a href="${item.item_link}" target="_blank">${item.item_name} ($${item.item_price})</a>
+                    <div class="item_tooltip">
+                        <img src="${item.item_image}" alt="${item.item_name}" style="max-width: 100px; max-height: 100px;">
+                    </div>
+                </div>
+            `).join("<br>");
+    }
+    
+
+      let html = `<b>$${total_price || 0}</b><br>${total_count || 0} items<br><br>`;
+
+      // Only include sections if they have items
+      if (new_items && new_items.length) {
+          html += `${renderItems(new_items)}<br><br>`;
+      }
+      if (removed_items && removed_items.length) {
+          html += `<b>Removed:</b><br>${renderItems(removed_items)}<br><br>`;
+      }
+      if (updated_items && updated_items.length) {
+          html += `<b>Updated:</b><br>${renderItems(updated_items)}<br><br>`;
+      }
+      if (added_items && added_items.length) {
+          html += `<b>Added:</b><br>${renderItems(added_items)}`;
+      }
+
+      return html;
+  }
+    
+    
+    
+
+    const container = document.getElementById("chat_messages");
+  
+    container.insertAdjacentHTML("beforeend", `
+      <div class="chat_message chat_message_offer">
+        <div class="offer_log_header">
+          <span class="offer_badge">OFFER SENT</span>
+          <button class="offer_toggle_btn">Show</button>
+        </div>
+  
+        <div class="offer_log_body">
+          ${formatOfferLog(msg)}
+        </div>
+      </div>
+    `);
+  
+    const offerEl = container.lastElementChild;
+  
+    initOfferLog(offerEl);
+
+    offerEl.querySelectorAll(".item_link_wrapper > a").forEach(el => sticky_tooltip(el));
+
+    function initOfferLog(el, limit = 140) {
+      const body = el.querySelector(".offer_log_body");
+      const toggle = el.querySelector(".offer_toggle_btn");
+      const text = body.innerText.trim();
+    
+      if (text.length <= limit) {
+        toggle.style.display = "none";
+        body.classList.remove("is_collapsed");
+        body.classList.add("is_expanded");
+        return;
+      }
+    
+      body.classList.add("is_collapsed");
+    
+      toggle.addEventListener("click", () => {
+        const collapsed = body.classList.toggle("is_collapsed");
+        body.classList.toggle("is_expanded", !collapsed);
+        toggle.textContent = collapsed ? "Show" : "Hide";
+      });
+    }
+  
+    container.scrollTop = container.scrollHeight;
+    return;
+  }
+  
 
   // Chat message: decide if it's mine
   const fromRole = msg.from_role; // "buyer" | "trader"

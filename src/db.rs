@@ -314,13 +314,14 @@ impl DataBase{
 
         self.connection.execute(
             "INSERT INTO offer_log (
-                offer_id, round, item_asset_id, item_name, items_price, item_link, time
-            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+                offer_id, round, item_asset_id, item_name, items_price, item_link, item_image, time
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
             ",
 
             [
                 &generated_uuid,
                 &"0".to_string(),
+                &"Nope".to_string(),
                 &"Nope".to_string(),
                 &"Nope".to_string(),
                 &"Nope".to_string(),
@@ -336,6 +337,8 @@ impl DataBase{
 
         let mut result = OfferContentUpdated {
             offer_id: offer_id.clone(),
+            total_price: 0.0,
+            total_count: 0,
             new_items:  Vec::new(),
             added_items:  Vec::new(),
             removed_items:  Vec::new(),
@@ -351,7 +354,6 @@ impl DataBase{
         ).expect("DB: Can't get round from offer_log");        
 
         //Get previous offer
-        let mut previous_offer_hashmap: HashMap<String, bool> = HashMap::new();
         let mut previous_offer_stmt = self.connection.prepare("
         SELECT * FROM offer_log WHERE offer_id = ?1 AND round = ?2
         ").expect("DB: tried to get previous_offer from offer_log");
@@ -362,6 +364,7 @@ impl DataBase{
                 item_name: row.get(4)?,
                 item_price: row.get(5)?,
                 item_link: row.get(6)?,
+                item_image: row.get(7)?,
             }
         )
         }).expect("DB: query_map previous_offer").collect::<Result<Vec<_>, _>>().expect("DB: failed to collect previous_offer from offer_log");
@@ -398,8 +401,8 @@ impl DataBase{
 
             self.connection.execute(
                 "INSERT INTO offer_log (
-                    offer_id, round, item_asset_id, item_name, items_price, item_link, time
-                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+                    offer_id, round, item_asset_id, item_name, items_price, item_link, item_image, time
+                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
                 ",
     
                 [
@@ -409,11 +412,15 @@ impl DataBase{
                     &item.item_name,
                     &item.item_price,
                     &item.item_link,
+                    &item.item_image,
                     &time,
                 ],
             ).expect("DB: Can't upsert offer data");
         }
-
+        
+        result.total_price = total_price;
+        result.total_count = total_count;
+        println!("{result:#?}");
         result
     }
 
@@ -512,6 +519,7 @@ impl DataBase{
                 item_name TEXT,
                 items_price TEXT,
                 item_link TEXT,
+                item_image TEXT,
                 time TEXT,
                 FOREIGN KEY (offer_id) REFERENCES offer(offer_id) ON DELETE CASCADE
             );

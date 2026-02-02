@@ -95,6 +95,15 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsSession {
                 });
             }
 
+            "offer_log" => {
+                self.hub.do_send(Broadcast {
+                    room: self.room.clone(),
+                    msg_type: "offer_log".to_string(),
+                    from_role: self.role.clone(),
+                    text: parsed.to_string(), // full JSON
+                });
+            }
+
             "set_offer" => {
                 let offer_id = parsed
                     .get("offer_id")

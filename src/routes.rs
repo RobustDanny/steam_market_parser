@@ -39,7 +39,12 @@ pub async fn load_inventory(_user_inventory: web::Data<UserInventoryState>, para
 
     let inventory = &*params;
 
-    let url = format!("https://steamcommunity.com/inventory/{}/{}/2", inventory.settings_steamid, inventory.settings_appid);   
+    let context = match inventory.settings_appid.as_str() {
+        "753" => "6".to_string(),
+        _ => "2".to_string(),
+    };
+
+    let url = format!("https://steamcommunity.com/inventory/{}/{}/{}", inventory.settings_steamid, inventory.settings_appid, context);   
 
     println!("{url}");
     
@@ -55,7 +60,7 @@ pub async fn load_inventory(_user_inventory: web::Data<UserInventoryState>, para
             .await
             .unwrap();
 
-        // println!("{respond:#?}");
+        println!("{respond:#?}");
 
         let respond: Inventory = serde_json::from_str(&respond).unwrap();
 
@@ -169,11 +174,17 @@ pub async fn get_inventory_games(params: web::Json<LoadGameInventory>) -> Result
 
     let url = format!("https://steamcommunity.com/profiles/{}/inventory/", steamid);
 
-    let client = reqwest::Client::new();
+    let client = reqwest::Client::builder()
+        .gzip(true)
+        .build()
+        .unwrap();
+
 
         let respond = client
             .get(url)
             .header("Accept", "application/json")
+            .header("User-Agent", "Mozilla/5.0")
+            .header("Accept-Language", "en-US,en;q=0.9")
             .send()
             .await
             .unwrap()
@@ -260,7 +271,6 @@ pub async fn offer_update_offer(offer_content: web::Json<OfferContent>) -> Offer
 
     drop(db);
     
-    println!("{result:#?}");
     result
 }
 

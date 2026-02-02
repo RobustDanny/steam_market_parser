@@ -264,41 +264,156 @@
 }
 
 .chat_message_me {
-    align-self: flex-start;
-    background: linear-gradient(135deg, #23343f, #1b2a33);
-    color: #e5e7eb;
-    border: 1px solid rgba(148, 163, 184, 0.18);
+    align-self: flex-start; /* left side */
+    background: linear-gradient(135deg, #23343f, #1b2a33); /* dark bluish */
+    color: #e5e7eb; /* light gray text */
+    border: 1px solid rgba(148, 163, 184, 0.18); /* subtle border */
     border-radius: 12px;
-    border-bottom-left-radius: 3px;
+    border-bottom-left-radius: 3px; /* slight asymmetry */
     padding: 10px 14px;
+    max-width: 75%; /* prevents huge messages */
+    font-size: 13px;
+    line-height: 1.4;
+    word-wrap: break-word;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    position: relative;
+    transition: transform 0.15s ease;
 }
 
+
 .chat_message_other {
-    align-self: flex-end;
-    background: linear-gradient(135deg, #16232c, #0f1b22);
-    color: #d1d5db;
-    border: 1px solid rgba(148, 163, 184, 0.12);
+    align-self: flex-end; /* right side */
+    background: linear-gradient(135deg, #16232c, #0f1b22); /* darker bluish */
+    color: #d1d5db; /* soft gray text */
+    border: 1px solid rgba(148, 163, 184, 0.12); /* lighter border */
     border-radius: 12px;
-    border-bottom-right-radius: 3px;
+    border-bottom-right-radius: 3px; /* slight asymmetry */
     padding: 10px 14px;
+    max-width: 75%; 
+    font-size: 13px;
+    line-height: 1.4;
+    word-wrap: break-word;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    position: relative;
+    transition: transform 0.15s ease;
+}
+
+
+/* Optional: subtle animations for both */
+.chat_message_me,
+.chat_message_other {
+    animation: fadeIn 0.15s ease-out;
 }
 
 .chat_message_system {
     align-self: center;
-    background: linear-gradient(135deg, #3a3318, #2e2a14);
-    color: #facc15; /* soft amber */
-    border: 1px solid rgba(250, 204, 21, 0.25);
-    border-radius: 999px;
+    background: linear-gradient(135deg, #1f2937, #111827); /* dark slate gradient */
+    color: #38bdf8; /* cyan/sky blue */
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    border-radius: 999px; /* pill shape */
     font-size: 12px;
     padding: 6px 14px;
     letter-spacing: 0.3px;
     text-transform: uppercase;
     opacity: 0.9;
+    text-align: center;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.25);
 }
 
 .chat_message_me,
 .chat_message_other {
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+}
+
+/* OFFER LOG MESSAGE */
+.chat_message_offer {
+    align-self: center;
+    width: 100%;
+    max-width: 95%;
+    background: linear-gradient(135deg, #1c2b36, #16232c);
+    border: 1px solid rgba(20,107,173,0.35);
+    border-radius: 10px;
+    padding: 10px 12px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+}
+
+.chat_message_offer a {
+    color: #7dd3fc; /* cyan/light blue for visibility */
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 12.5px;
+    transition: color 0.2s ease, transform 0.15s ease;
+}
+
+.chat_message_offer a:hover {
+    color: #38bdf8; /* brighter cyan on hover */
+    text-decoration: underline;
+    transform: translateY(-1px); /* subtle lift effect */
+}
+
+.chat_message_offer a:active {
+    color: #0ea5e9; /* darker blue when clicked */
+    transform: translateY(0px); /* press effect */
+}
+
+
+/* Header */
+.offer_log_header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.offer_badge {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    color: #7dd3fc;
+    background: rgba(125, 211, 252, 0.12);
+    padding: 4px 8px;
+    border-radius: 999px;
+}
+
+/* Toggle button */
+.offer_toggle_btn {
+    background: transparent;
+    border: 0;
+    color: #9ca3af;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.offer_toggle_btn:hover {
+    color: #e5e7eb;
+}
+
+/* Body */
+.offer_log_body {
+    overflow: hidden;
+    transition: max-height 0.25s ease, opacity 0.2s ease;
+}
+
+.offer_log_body pre {
+    margin: 0;
+    font-size: 12px;
+    color: #e5e7eb;
+    line-height: 1.4;
+    white-space: pre-wrap;
+}
+
+/* Collapsed state */
+.offer_log_body.is_collapsed {
+    max-height: 48px;
+    opacity: 0.85;
+    mask-image: linear-gradient(to bottom, black 60%, transparent);
+}
+
+/* Expanded state */
+.offer_log_body.is_expanded {
+    max-height: 600px;
+    opacity: 1;
+    mask-image: none;
 }
 
 
@@ -563,3 +678,42 @@ align-self: center;
 .store_payment_card.active img {
     opacity: 1;
 }
+
+/* Tooltip for websocket chat messages*/
+.item_tooltip{
+    position: fixed;            /* important */
+    background-color: #333;
+    color: white;
+    padding: 5px 8px;
+    border-radius: 4px;
+    font-size: 8pt;
+    white-space: nowrap;
+
+    pointer-events: none;       /* prevents flicker */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s ease;
+    z-index: 10000;
+}
+
+/* Selected item price input*/
+.price_input_wrapper {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .price_input_wrapper .dollar_sign {
+    color: #8b8b8b;
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none; /* so typing works in input */
+    font-weight:100;
+    font-size: 14px;
+  }
+  
+  .selected_item_price_input {
+    padding-left: 20px; /* space for the $ sign */
+  }
+  

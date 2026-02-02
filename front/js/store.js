@@ -153,13 +153,13 @@ async function sendItems() {
       item_asset_id: el.dataset.key,
       item_name: decodeURIComponent(el.dataset.name || ""),
       item_price: priceValue.toString(),
-      item_link: decodeURIComponent(el.dataset.itemLink || "")
+      item_link: decodeURIComponent(el.dataset.itemLink || ""),
+      item_image: decodeURIComponent(el.dataset.image || "")
     };
   });
-  
-  const totalPrice = items.reduce((sum, item) => sum + item.price, 0);
-  const countItems = getSelectedCount();
+  console.log("special_for_update_offer", special_for_update_offer);
   const offer_id = checkOfferId();
+
   const res = await fetch("/api/offer/update_offer", {
     method: "POST",
         headers: {
@@ -171,17 +171,18 @@ async function sendItems() {
     })
   });
 
-  console.log("result from /update_offer", res);
-
-  sendWS({ type: "offer_items", items, totalPrice });
-
-  sendWS({
-    type: "chat",
-    text: `Offer price: $${totalPrice}\nCount: ${countItems}`
-  });
-
+  if (!res.ok) {
+    console.error("update_offer failed", await res.text());
+    return;
+  }
+  
+  const json = await res.json();
+  
+  sendWS({ type: "offer_items", items });
+  sendWS({ type: "offer_log", json });
   sendWS({ type: "send_offer"});
 }
+
 //--------------------
 //--------------------
 
@@ -363,6 +364,7 @@ function renderStoreInventory(inventory) {
       <div class="selected_item_card_cont"
         data-key="${item.key}"
         data-name="${encodeURIComponent(item.name || "")}"
+        data-image="${item.image}"
         data-item-link="${encodeURIComponent(item.link || "")}"
       >
         <div class="selected_item_card">
@@ -373,7 +375,10 @@ function renderStoreInventory(inventory) {
           </div>
         </div>
   
-        <input class="selected_item_price_input" placeholder="$">
+        <div class="price_input_wrapper">
+          <span class="dollar_sign">$</span>
+          <input class="selected_item_price_input" placeholder="0">
+        </div>
       </div>
     `;
   }
@@ -423,10 +428,22 @@ function renderStoreInventory(inventory) {
   });
 
   // Price edit
-  selectedContainer?.addEventListener("input", (e) => {
-    if (!e.target.classList.contains("selected_item_price_input")) return;
-    updateStoreButtonsWrapper();
+  document.addEventListener("input", function(e) {
+    if (e.target.classList.contains("selected_item_price_input")) {
+      let value = e.target.value;
+  
+      // Only allow numbers like 5, 5.5, 12, 0.5 is invalid
+      if (!/^\d*\.?\d*$/.test(value)) {
+        // Remove last typed invalid character
+        e.target.value = value.slice(0, -1);
+      }
+    }
+
+  updateStoreButtonsWrapper();
+
   });
+
+
 
   // Remove from selected list
   selectedContainer?.addEventListener("click", (e) => {
