@@ -25,7 +25,10 @@ document.getElementById("enter_my_store").addEventListener("click", async () => 
 
     await connectStoreChatWS(result.buyer_id, traderId, "trader");
     renderActionButtons();
+
+    sendWS({ type: "offer_step_connecting"});
     sendWS({ type: "system", text: "Trader connected" });
+    sendWS({ type: "offer_step_connecting"});
 });
 
 

@@ -10,7 +10,8 @@ use steam_market_parser::{
     StoreQueueHashmap, 
     UserProfileAds,
     OfferItems,
-    OfferContentUpdated
+    OfferContentUpdated,
+    CurrentStatusOffer
 };
 
 use uuid::Uuid;
@@ -344,8 +345,6 @@ impl DataBase{
             removed_items:  Vec::new(),
             updated_items:  Vec::new(),
         }; 
-
-        let time = Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
         
         let round: i64 = self.connection.query_row(
             "SELECT COALESCE(MAX(round), 0) FROM offer_log WHERE offer_id = ?1",
@@ -355,8 +354,8 @@ impl DataBase{
 
         //Get previous offer
         let mut previous_offer_stmt = self.connection.prepare("
-        SELECT * FROM offer_log WHERE offer_id = ?1 AND round = ?2
-        ").expect("DB: tried to get previous_offer from offer_log");
+            SELECT * FROM offer_log WHERE offer_id = ?1 AND round = ?2
+            ").expect("DB: tried to get previous_offer from offer_log");
 
         let previous_offer: Vec<OfferItems> = previous_offer_stmt.query_map([&offer_id, &round.to_string()], |row|{
             Ok(OfferItems {
@@ -391,7 +390,8 @@ impl DataBase{
 
         let mut total_price: f64 = 0.0;
         let mut total_count = 0;
-  
+
+        let time = Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
         
         for item in items{
             total_count = total_count + 1;
@@ -415,8 +415,20 @@ impl DataBase{
                     &item.item_image,
                     &time,
                 ],
-            ).expect("DB: Can't upsert offer data");
+            ).expect("DB: Can't upsert offer_log data");
         }
+
+        self.connection.execute(
+            "UPDATE offer
+             SET price = ?1,
+                 count = ?2
+             WHERE offer_id = ?3",
+            [
+                &total_price.to_string(),
+                &total_count.to_string(),
+                &offer_id,
+            ],
+        ).expect("DB: Can't update offer data");
         
         result.total_price = total_price;
         result.total_count = total_count;
@@ -454,6 +466,37 @@ impl DataBase{
         }
 
         result
+    }
+
+    pub fn db_offer_update_status_offer(&self, status_and_offer_id: CurrentStatusOffer){
+
+        let offer_id = status_and_offer_id.offer_id;
+        let status = status_and_offer_id.status;
+
+        let mut accepted = false;
+        let mut paid = false;
+
+        match status.as_str() {
+            "ACCEPTED" => {
+                accepted = true;
+                paid = false;
+            },
+            "PAY PROCESS" | "SUCCESS" => {
+                accepted = true;
+                paid = true;
+            }
+            _ => {}
+        }
+
+        self.connection.execute(
+            "UPDATE offer
+             SET paid = ?1,
+                 accepted = ?2,
+                 status = ?3
+             WHERE offer_id = ?4",
+            (&paid, &accepted, &status, &offer_id),
+        ).expect("DB: Can't update offer data");
+
     }
 
     fn create_tables(&self) {

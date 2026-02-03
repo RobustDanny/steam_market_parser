@@ -19,7 +19,6 @@ use steam_market_parser::{
     AppContext, 
     BuyerAndStoreIDS, 
     OfferContent,
-    OfferItems,
     OfferContentUpdated,
     FilterInput, 
     HistoryForm, 
@@ -30,7 +29,8 @@ use steam_market_parser::{
     OfferMakingPlayload, 
     SteamUser, 
     StoreID, 
-    UserProfileAds
+    UserProfileAds,
+    CurrentStatusOffer
 };
 
 use crate::db::DataBase;
@@ -38,6 +38,10 @@ use crate::db::DataBase;
 pub async fn load_inventory(_user_inventory: web::Data<UserInventoryState>, params: web::Form<InventoryApp>)-> impl Responder{
 
     let inventory = &*params;
+
+    if inventory.settings_steamid.trim().is_empty() {
+        return HttpResponse::BadRequest().body("steamid is required");
+    }
 
     let context = match inventory.settings_appid.as_str() {
         "753" => "6".to_string(),
@@ -62,7 +66,26 @@ pub async fn load_inventory(_user_inventory: web::Data<UserInventoryState>, para
 
         println!("{respond:#?}");
 
-        let respond: Inventory = serde_json::from_str(&respond).unwrap();
+        if respond.trim() == "null" {
+            return HttpResponse::Ok().json(Inventory {
+                assets: vec![],
+                descriptions: vec![],
+                asset_properties: vec![],
+                total_inventory_count: Some(0),
+                success: Some(0),
+                rwgrsn: Some(0),
+            });
+        }        
+
+        let respond: Inventory = match serde_json::from_str(&respond) {
+            Ok(inv) => inv,
+            Err(e) => {
+                eprintln!("Steam inventory parse error: {e}");
+                return HttpResponse::BadGateway()
+                    .body("Invalid inventory response from Steam");
+            }
+        };
+        
 
         // *user_inventory.inventory.lock().await = respond;
 
@@ -272,6 +295,22 @@ pub async fn offer_update_offer(offer_content: web::Json<OfferContent>) -> Offer
     drop(db);
     
     result
+}
+
+pub async fn offer_update_status_offer(current_status: web::Json<CurrentStatusOffer>)-> impl Responder{
+
+    let status_and_offer_id  = CurrentStatusOffer {
+        offer_id: current_status.offer_id.clone(),
+        status: current_status.status.clone()
+    };
+
+    let db = DataBase::connect_to_db();
+
+    db.db_offer_update_status_offer(status_and_offer_id);
+
+    drop(db);
+
+    HttpResponse::Ok()
 }
 
 pub async fn tera_update_data(session: Session, state: web::Data<AppState>, feed_state: web::Data<FeedItemsState>, _user_inventory: web::Data<UserInventoryState>) -> impl Responder {

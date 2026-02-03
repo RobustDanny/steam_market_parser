@@ -154,6 +154,12 @@ pub struct OfferItems{
     pub item_image: String,
 }
 
+#[derive(Deserialize)]
+pub struct CurrentStatusOffer{
+    pub offer_id: String,
+    pub status: String,
+}
+
 //----------------------------------
 //----------------------------------
 

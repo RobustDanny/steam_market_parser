@@ -184,6 +184,13 @@ export function connectStoreChatWS(buyerId, traderId, role) {
         appendChatMessage(msg);
         return;
       }
+
+      if (msg.type === "offer_system") {
+        appendChatMessage(msg);
+        return;
+      }
+
+
       // 3) Buyer sent offer items -> mark offerSent on both sides
       if (msg.type === "offer_items") {
 
@@ -197,7 +204,7 @@ export function connectStoreChatWS(buyerId, traderId, role) {
         if (!container) return;
     
         container.innerHTML = "";
-        console.log("selected items data", msg.items);
+
         msg.items.forEach(item => {
 
           container.insertAdjacentHTML("beforeend", `
@@ -225,6 +232,19 @@ export function connectStoreChatWS(buyerId, traderId, role) {
             </div>
           `);
 
+          document
+          .querySelectorAll(".card_hover-container.is-selected")
+          .forEach(el => el.classList.remove("is-selected"));
+        
+            // Mark inventory cards that are in the offer
+            msg.items.forEach(item => {
+              const assetId = item.key.split(":")[2];
+              const invCard = document.querySelector(
+                `.card_hover-container[data-assetid="${assetId}"]`
+              );
+              if (invCard) invCard.classList.add("is-selected");
+            });
+
           document.addEventListener("input", function(e) {
             if (e.target.classList.contains("selected_item_price_input")) {
               let value = e.target.value;
@@ -235,7 +255,7 @@ export function connectStoreChatWS(buyerId, traderId, role) {
                 e.target.value = value.slice(0, -1);
               }
             }
-        
+
           updateStoreButtonsWrapper();
         
           });
@@ -244,6 +264,42 @@ export function connectStoreChatWS(buyerId, traderId, role) {
         // NOTE: you don't have selected_items_accept_btn id anymore (you render send/accept/pay)
         updateStoreButtons();
         return;
+      }
+      if(msg.type === "offer_step"){
+
+        const notification_box = document.getElementById("current_offer_data_span");
+
+        if (!bothInRoom()) {
+          notification_box.textContent = "Waiting for both participants in room";
+          return;
+        }
+
+        if (msg.step === "accept") {
+          if (myRole === "buyer") {
+            notification_box.textContent = "Offer accepted. Now you can pay";
+          } else if (myRole === "trader") {
+            notification_box.textContent = "Waiting for buyer to pay";
+          }
+        }
+
+        if(msg.step === "connect"){
+          notification_box.textContent = msg.text;
+        }
+
+        if(msg.step === "pay"){
+          document.querySelector(".selected_items_accept_btn_cont").innerHTML = "";
+
+          document.querySelectorAll(".selected_item_remove_btn").forEach(btn => {
+            btn.style.display = "none"; // or "visibility = hidden"
+          });
+
+          document.querySelectorAll(".selected_item_price_input").forEach(btn => {
+            btn.readOnly = true;
+            btn.classList.add("locked");
+          });
+
+          notification_box.textContent = msg.text;
+        }
       }
 
       if (msg.type === "set_offer") {
@@ -321,9 +377,37 @@ export function appendChatMessage(msg) {
     return;
   }
 
+  if (msg.type === "offer_system") {
+    const offerSpan = document.createElement("span");
+  
+    messageEl.className = "chat_message offer_id_message";
+    messageEl.textContent = msg.text ?? "";
+  
+    offerSpan.textContent = "Copy offer ID";
+    offerSpan.style.visibility = "hidden"; // valid
+    offerSpan.className = "hidden_text_store";
+  
+    container.appendChild(messageEl);
+    container.appendChild(offerSpan);
+
+    messageEl.addEventListener("click", async () => {
+      if (!msg.text) return;
+  
+      try {
+        await navigator.clipboard.writeText(msg.text);
+        offerSpan.textContent = "Copied ✓";
+      } catch {
+        offerSpan.textContent = "Copy failed";
+      }
+    });
+  
+    sticky_tooltip(messageEl);
+    container.scrollTop = container.scrollHeight;
+    return;
+  }
+
   if (msg.type === "offer_log") {
     function formatOfferLog(msg) {
-      console.log("kwk log", msg);
 
       if (!msg.text) return "";
 
@@ -335,7 +419,6 @@ export function appendChatMessage(msg) {
           console.error("Failed to parse offer_log JSON", e, msg.text);
           return "";
       }
-      console.log("offer", data);
 
       const { new_items, removed_items, updated_items, added_items, total_price, total_count } = data.json;
 
@@ -361,13 +444,13 @@ export function appendChatMessage(msg) {
           html += `${renderItems(new_items)}<br><br>`;
       }
       if (removed_items && removed_items.length) {
-          html += `<b>Removed:</b><br>${renderItems(removed_items)}<br><br>`;
+          html += `<b>Removed</b><br>${renderItems(removed_items)}<br><br>`;
       }
       if (updated_items && updated_items.length) {
-          html += `<b>Updated:</b><br>${renderItems(updated_items)}<br><br>`;
+          html += `<b>Updated</b><br>${renderItems(updated_items)}<br><br>`;
       }
       if (added_items && added_items.length) {
-          html += `<b>Added:</b><br>${renderItems(added_items)}`;
+          html += `<b>Added</b><br>${renderItems(added_items)}`;
       }
 
       return html;

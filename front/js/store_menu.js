@@ -2,7 +2,7 @@
 // THIRD (open menu + enter store + queue + games)
 // =======================
 
-import { connectStoreChatWS } from "./store_websocket.js";
+import { connectStoreChatWS, sendWS } from "./store_websocket.js";
 import { get_inventory_games } from "./misc_shared_fns.js";
 import { renderActionButtons } from "./store.js";
 
@@ -52,14 +52,18 @@ document.addEventListener("click", (e) => {
     document.getElementById("store_menu").style.display = "none";
     document.getElementById("store_menuBackdrop").style.display = "none";
   
+    
     // Queue + games
     add_buyser_to_queue(store_steamid, buyer_steamid);
     const element = document.getElementById("settings_appid_select");
+
     await get_inventory_games(store_steamid, element);
-  
+    
     // Connect chat here (REMOVES need for a second enter_store listener)
-    connectStoreChatWS(buyer_steamid, store_steamid, "buyer");
+    await connectStoreChatWS(buyer_steamid, store_steamid, "buyer");
     renderActionButtons();
+    
+    sendWS({ type: "offer_step_connecting"});
 
   });
   

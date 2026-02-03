@@ -72,8 +72,8 @@
     background: #282828;
     padding: 12px;
     border-radius: 8px;
-    justify-items: center;
-    align-items: center;
+    /* justify-items: center; */
+    /* align-items: center; */
     /* height: 1fr; */
 }
 
@@ -171,6 +171,14 @@
     color: transparent;
 }
 
+.current_offer_data_cont {
+    display: flex;
+    justify-content: center;  /* horizontal */
+    /* align-content: space-around;      vertical (optional) */
+    width: 100%;
+    /* height: 100%; */
+}
+
 /* Inventory block: spans row 2 and columns 1-2 */
 .inventory_input_group{
     align-self: center;
@@ -212,21 +220,33 @@
     /* height: 1fr; */
 }
 
+.current_offer_data_span{
+    max-width: 75%;
+    color: #d1d5db; 
+    font-size: 13px;
+    line-height: 1.4;
+    word-wrap: break-word;
+    justify-self: center;
+}
+
 .store_selected_items_list{
     overflow-x: auto;
+    overflow-y: hidden;
     display: flex;
     white-space: nowrap;
     flex-direction: row;
     border-radius: 8px;
+    padding-bottom: 5px;
     gap: 8px;
 }
 
 .store_inventory_list {
-    padding-top: 20px;
+    /* padding-top: 20px; */
     display: flex;
     flex-wrap: wrap;
+    /* box-sizing: border-box; */
     justify-content: center;
-    align-content: center;
+    align-content: flex-start;
 
     flex: 1;                     
     min-height: 0;                
@@ -284,12 +304,12 @@
 .chat_message_other {
     align-self: flex-end; /* right side */
     background: linear-gradient(135deg, #16232c, #0f1b22); /* darker bluish */
-    color: #d1d5db; /* soft gray text */
     border: 1px solid rgba(148, 163, 184, 0.12); /* lighter border */
     border-radius: 12px;
     border-bottom-right-radius: 3px; /* slight asymmetry */
     padding: 10px 14px;
-    max-width: 75%; 
+    max-width: 75%;
+    color: #d1d5db; 
     font-size: 13px;
     line-height: 1.4;
     word-wrap: break-word;
@@ -319,6 +339,29 @@
     text-align: center;
     box-shadow: inset 0 1px 2px rgba(0,0,0,0.25);
 }
+
+.offer_id_message {
+    align-self: center;
+
+    background: linear-gradient(135deg, #1f2937, #111827); /* same base as system */
+    border: 1px solid rgba(56, 189, 248, 0.22);
+
+    border-radius: 10px; /* not pill, matches chat rhythm */
+    padding: 8px 15px;
+
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.25px;
+
+    color: #9bdaf7; /* slightly softer than system */
+    text-align: center;
+
+    opacity: 0.85;
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.03),
+        0 4px 10px rgba(0,0,0,0.25);
+}
+
 
 .chat_message_me,
 .chat_message_other {
@@ -544,7 +587,7 @@ align-self: center;
     border-radius: 5px;
     border: 1px solid #2e2e2e;
     background: #2d2d2d;
-    color: white;
+    color: #8b8b8b;
     font-size: 12px;
     outline: none;
     transition: border 0.2s ease, box-shadow 0.2s ease;
@@ -566,6 +609,14 @@ align-self: center;
     transition: border 0.2s ease, box-shadow 0.2s ease;
     align-self: center;
     justify-self: center;
+  }
+
+  .selected_items_accept_btn_cont{
+    /* justify-content: space-between; */
+    background: #282828;
+    align-content: end;
+    width: 100%;
+
   }
 
   .selected_items_accept_btn {
@@ -609,7 +660,10 @@ align-self: center;
 
 .selected_items_button_group{
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    justify-content: space-around;
+
+    align-self: end;
     padding: 12px;
     gap: 12px;
 }
@@ -618,7 +672,7 @@ align-self: center;
     width: 90px;
     display:flex; 
     flex-direction: column; 
-    padding-bottom: 5px;
+    padding-bottom: 15px;
     gap: 5px; 
     /* overflow-x: hidden; */
 }
@@ -705,9 +759,9 @@ align-self: center;
   .price_input_wrapper .dollar_sign {
     color: #8b8b8b;
     position: absolute;
-    left: 8px;
+    left: 9px;
     top: 50%;
-    transform: translateY(-50%);
+    transform: translateY(-55%);
     pointer-events: none; /* so typing works in input */
     font-weight:100;
     font-size: 14px;
@@ -716,4 +770,29 @@ align-self: center;
   .selected_item_price_input {
     padding-left: 20px; /* space for the $ sign */
   }
+
+  /* Inventory card that is already in selected list */
+  .card_hover-container.is-selected .inventory_card {
+    background: linear-gradient(135deg, #1b2f40, #1e3a52);
+    box-shadow: inset 0 0 0 1px rgba(20,107,173,0.45);
+    border-radius: 10px; /* match your card radius */
+  }
+  
+  /* Optional: also tint the details area if it has its own background */
+  .card_hover-container.is-selected .inventory_card_details {
+    background: transparent; /* or a subtle rgba(...) if you want */
+  }
+  
+  /* (Optional) keep wrapper neutral so it doesn't look highlighted */
+  .card_hover-container.is-selected {
+    background: transparent;
+    box-shadow: none;
+  }
+
+/* Optional: prevent hover overlay when selected */
+.card_hover-container.is-selected .store_inventory_hidden_buttons {
+    opacity: 0 !important;
+    visibility: hidden !important;
+}
+
   

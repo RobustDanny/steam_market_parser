@@ -42,6 +42,24 @@
               />
               <!-- <hr /> -->
               </div>
+
+              <div class="radio-input">
+                <label class="radio-option">
+                  <input name="radio" type="radio" class="input" checked>
+                  <span>ads and steam cards</span>
+                </label>
+              
+                <label class="radio-option">
+                  <input name="radio" type="radio" class="input">
+                  <span>only ads</span>
+                </label>
+              
+                <label class="radio-option">
+                  <input name="radio" type="radio" class="input">
+                  <span>only cards</span>
+                </label>
+              </div>
+              
             </div>
   
         </div>
@@ -50,12 +68,47 @@
               <button class="checkout-btn" onclick="updateFilters()">Apply</button>
             </div>
         </div>
+        
 
         <hr />
-    </div>
-    </div>
+        
+      </div>
 
-    <!-- <img class="side_panel_icon" src="/front/svg/chart_icon.svg">
-    <img class="side_panel_icon" src="/front/svg/budget_icon.svg"> -->
-
+      
+        
+    </div>
+    
+    <div id="most_bottom_footer" class="most_bottom_footer">
+      <div id="menu_bts_cont" class="menu_bts_cont">
+        <img class="footer_icon" src="/front/svg/roll_icon.svg" alt="menu">
+      </div>
+    
+      <div id="text_project" class="text_project">
+        <a href="mailto:support@tastyrock.com"><span class="span_footer">support@tastyrock.com</span></a>
+        <span class="span_footer">&copy; 2026 TastyRock inc.</span>
+      </div>
+    </div>
 </div>
+
+
+<script>
+  function updateFilters() {
+  
+  const msg = {
+      type: "filters",
+      appid: document.getElementById("f_appid").value,
+      price_min: document.getElementById("f_min").value,
+      price_max: document.getElementById("f_max").value,
+      query: document.getElementById("f_query").value,
+  }
+  ws.send(JSON.stringify(msg));
+  
+  const url = `/api/filters?appid=${msg.appid}&price_min=${msg.price_min}&price_max=${msg.price_max}&query=${msg.query}`;
+
+  fetch(url)
+      .then(res => res.json())
+      .then(json => {
+          console.log("Filters updated:", json);
+      });
+}
+</script>

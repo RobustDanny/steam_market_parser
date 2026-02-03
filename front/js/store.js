@@ -69,11 +69,11 @@ export function renderActionButtons() {
   if (role === "buyer") {
     button_cont.insertAdjacentHTML("beforeend", `
       <div class="selected_items_button_group">
-        <div>
+        <div class="selected_items_accept_btn_cont">
         <button id="send_btn" class="selected_items_accept_btn">Send</button>
         <span class="hidden_text_store">Send offer. You can change amount of items and their price</span>
         </div>
-        <div>
+        <div class="selected_items_accept_btn_cont">
         <button id="pay_btn" class="selected_items_accept_btn">Pay</button>
         <span class="hidden_text_store">Pay offer. This action valid only when trader accepted your offer</span>
         </div>
@@ -86,21 +86,21 @@ export function renderActionButtons() {
     sticky_tooltip(pay_btn);
 
     document.getElementById("send_btn").onclick = sendItems;
-    document.getElementById("pay_btn")?.addEventListener("click", () => {
+    document.getElementById("pay_btn")?.addEventListener("click", async () => {
       document.querySelector(".store_inventory_area").innerHTML = "";
-      document.querySelector(".selected_items_accept_btn_cont").innerHTML = "";
+      sendWS({ type: "offer_step_paying"});
       renderPayOptions();
-      paidOffer();
+      await paidOffer();
     });
     
   } else {
     button_cont.insertAdjacentHTML("beforeend", `
       <div class="selected_items_button_group">
-      <div>
+      <div class="selected_items_accept_btn_cont">
         <button id="send_btn" class="selected_items_accept_btn">Send</button>
         <span class="hidden_text_store">Send offer. You can change amount of items and their price</span>
       </div>
-      <div>
+      <div class="selected_items_accept_btn_cont">
         <button id="accept_btn" class="selected_items_accept_btn">Accept</button>
         <span class="hidden_text_store">Accept offer. Buyer will able to pay only after accepting offer</span>
       </div>
@@ -235,7 +235,7 @@ quitIcon.addEventListener("click", () => {
 
 //--------------------
 //--------------------
-//Render Incentory
+//Render Inventory
 document.getElementById("store_filters_form").addEventListener("submit", async (e) => {
   e.preventDefault();
 
@@ -243,7 +243,7 @@ document.getElementById("store_filters_form").addEventListener("submit", async (
 
   const buyerSteamid = checkIDs().buyer_id;
   const steamid = checkIDs().trader_id || buyerSteamid;
-
+  console.log("Render inventory buyer: {} store: {}", buyerSteamid, steamid);
 
   const steamIdInput = document.getElementById("store_steamid");
   if (steamIdInput) steamIdInput.value = steamid;
@@ -258,7 +258,14 @@ document.getElementById("store_filters_form").addEventListener("submit", async (
     body: data
   });
 
+  if (!res.ok) {
+    const text = await res.text();
+    console.error("Inventory load failed:", text);
+    return;
+  }
+  
   const json = await res.json();
+  
   console.log("Store inventory loaded:", json);
 
   renderStoreInventory(json);
@@ -398,6 +405,8 @@ function renderStoreInventory(inventory) {
       if (selectedContainer.querySelector(`[data-key="${CSS.escape(key)}"]`)) return;
 
       selectedContainer.insertAdjacentHTML("beforeend", makeSelectedCard({ key, name, image, link }));
+
+      card.classList.add("is-selected");
       updateStoreButtonsWrapper(); 
       return;
     }
@@ -410,7 +419,7 @@ function renderStoreInventory(inventory) {
       const key = `${card.dataset.appid}:${card.dataset.contextid}:${card.dataset.assetid}`;
       const selected = selectedContainer.querySelector(`[data-key="${CSS.escape(key)}"]`);
       if (selected) selected.remove();
-
+      card.classList.remove("is-selected");
       updateStoreButtonsWrapper(); 
       return;
     }
@@ -423,6 +432,13 @@ function renderStoreInventory(inventory) {
 
     const selectedCard = e.target.closest(".selected_item_card_cont");
     if (selectedCard) selectedCard.remove();
+
+    const key = selectedCard.dataset.key;
+    const assetId = key.split(":")[2];
+    const invCard = document.querySelector(
+      `.card_hover-container[data-assetid="${assetId}"]`
+    );
+    if (invCard) invCard.classList.remove("is-selected");
 
     updateStoreButtonsWrapper();
   });
@@ -459,6 +475,22 @@ function renderStoreInventory(inventory) {
 
   });
 }
+
+
+function markInventorySelected(key) {
+  const inv = document.querySelector(
+    `.card_hover-container[data-assetid="${key.split(":")[2]}"]`
+  );
+  if (inv) inv.classList.add("is-selected");
+}
+
+function unmarkInventorySelected(key) {
+  const inv = document.querySelector(
+    `.card_hover-container[data-assetid="${key.split(":")[2]}"]`
+  );
+  if (inv) inv.classList.remove("is-selected");
+}
+
 //--------------------
 //--------------------
 
@@ -497,15 +529,42 @@ document.getElementById("chat_input").addEventListener("keydown", (e) => {
 //--------------------
 //Offer action btns
 
-function acceptOffer() {
+async function acceptOffer() {
   if (!checkStoreChatWS() || checkStoreChatWS().readyState !== WebSocket.OPEN) return;
+  
+  const offer_id = checkOfferId();
+  await fetch("/api/offer/update_status_offer", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+    offer_id,
+    status: "ACCEPTED",
+    })
+  })
+
   sendWS({ type: "accept_offer", text: "Trader accept offer"});
   sendWS({ type: "system", text: "Trader's accepted offer" });
+  sendWS({ type: "offer_step_accepting"});
   updateStoreButtonsWrapper();
 }
 
-function paidOffer() {
+async function paidOffer() {
   if (!checkStoreChatWS() || checkStoreChatWS().readyState !== WebSocket.OPEN) return;
+
+  const offer_id = checkOfferId();
+  await fetch("/api/offer/update_status_offer", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+    offer_id,
+    status: "PAY PROCESS",
+    })
+  })
+
   sendWS({ type: "paid_offer", text: "Buyer paid offer" });
   updateStoreButtonsWrapper();
 }
