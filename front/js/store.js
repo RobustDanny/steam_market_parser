@@ -40,14 +40,20 @@ function getChatRole() {
 }
 
 function renderPayOptions(){
-  const cont = document.querySelector(".store_inventory_area");
+  const cont = document.querySelector(".store_payment_area");
   cont.insertAdjacentHTML("beforeend", `
     <div class="store_payment_grid">
       <div class="store_payment_card" id="pay_stripe">
+        <img src="/front/svg/payments/cancel_icon.svg" alt="Cancel">
+        <span class="hidden_text">Cancel</span>
+      </div>
+      <div class="store_payment_card" id="pay_stripe">
         <img src="/front/svg/payments/stripe.svg" alt="Stripe">
+        <span class="hidden_text">Stripe</span>
       </div>
       <div class="store_payment_card" id="pay_btc">
         <img src="/front/svg/payments/bitcoin.svg" alt="Bitcoin">
+        <span class="hidden_text">Bitcoin</span>
       </div>
     </div>
 
@@ -87,8 +93,8 @@ export function renderActionButtons() {
 
     document.getElementById("send_btn").onclick = sendItems;
     document.getElementById("pay_btn")?.addEventListener("click", async () => {
-      document.querySelector(".store_inventory_area").innerHTML = "";
-      sendWS({ type: "offer_step_paying"});
+      // document.querySelector(".store_inventory_area").innerHTML = "";
+      await sendWS({ type: "offer_step_paying"});
       renderPayOptions();
       await paidOffer();
     });
@@ -502,7 +508,7 @@ function unmarkInventorySelected(key) {
 
 document.getElementById("store_inventoryFilter").addEventListener("input", function () {
   const query = this.value.trim().toLowerCase();
-  const items = document.querySelectorAll("#store_inventory .card_hover-container");
+  const items = document.querySelectorAll("#store_inventory .card_hover-container .store_payment_card");
 
   items.forEach(item => {
     const nameEl = item.querySelector(".hidden-text");

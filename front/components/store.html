@@ -15,7 +15,7 @@
                         <select class="store_input" name="settings_appid" id="settings_appid_select">
                             <option>Select game</option>
                         </select>
-                        <button class="store_button" type="submit">
+                        <button id="store_button_load_inventory" class="store_button" type="submit">
                             <img id="reload_store" class="reload_store_icon" src="/front/svg/refresh_icon.svg" alt="reload inventory">
                             <span class="hidden_text_store">Load store inventory</span>
                         </button>
@@ -72,6 +72,7 @@
                 <div id="store_inventory" class="store_inventory_list">
                     <span class="store_no_items_span">No items yet</span>
                 </div>
+                <div id="store_payment_area"></div>
             </div>
 
         </div>

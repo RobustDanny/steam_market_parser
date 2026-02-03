@@ -287,7 +287,18 @@ export function connectStoreChatWS(buyerId, traderId, role) {
         }
 
         if(msg.step === "pay"){
-          document.querySelector(".selected_items_accept_btn_cont").innerHTML = "";
+          document.querySelector(".store_inventory_list").innerHTML = "";
+          document.querySelector(".store_inventory_list").style.visibility = "none";
+          document.querySelector(".store_payment_area").style.visibility = "visible";
+          document.getElementById("store_button_load_inventory").style.visibility = "hidden";
+          const notification_box = document.querySelector(".selected_items_accept_btn_cont");
+          
+          notification_box.innerHTML = "";
+          notification_box.insertAdjacentHTML("beforeend", `
+            <div class="loader-container">
+              <div class="loader"></div>
+            </div>
+          `);
 
           document.querySelectorAll(".selected_item_remove_btn").forEach(btn => {
             btn.style.display = "none"; // or "visibility = hidden"
@@ -298,7 +309,7 @@ export function connectStoreChatWS(buyerId, traderId, role) {
             btn.classList.add("locked");
           });
 
-          notification_box.textContent = msg.text;
+          // notification_box.textContent = msg.text;
         }
       }
 
