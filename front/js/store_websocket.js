@@ -1,4 +1,8 @@
-import { sticky_tooltip } from "./misc_shared_fns.js";
+import { 
+  sticky_tooltip,
+  loader,
+  ChangeStyleOfElements,
+} from "./misc_shared_fns.js";
 
 //--------------------
 //--------------------
@@ -220,7 +224,7 @@ export function connectStoreChatWS(buyerId, traderId, role) {
                   ✕
                 </button>
     
-                <div style="height: 100%; display: grid; place-content: center;">
+                <div style="height: 100%; display: grid; place-content: center; box-sizing: border-box;">
                   <img class="selected_item_icon" src="${item.image}" alt="${item.name}">
                 </div>
               </div>
@@ -288,21 +292,17 @@ export function connectStoreChatWS(buyerId, traderId, role) {
 
         if(msg.step === "pay"){
           document.querySelector(".store_inventory_list").innerHTML = "";
-          document.querySelector(".store_inventory_list").style.visibility = "none";
-          document.querySelector(".store_payment_area").style.visibility = "visible";
-          document.getElementById("store_button_load_inventory").style.visibility = "hidden";
-          const notification_box = document.querySelector(".selected_items_accept_btn_cont");
-          
-          notification_box.innerHTML = "";
-          notification_box.insertAdjacentHTML("beforeend", `
-            <div class="loader-container">
-              <div class="loader"></div>
-            </div>
-          `);
+          document.querySelector(".store_payment_area").style.display = "flex";
 
-          document.querySelectorAll(".selected_item_remove_btn").forEach(btn => {
-            btn.style.display = "none"; // or "visibility = hidden"
-          });
+          ChangeStyleOfElements([
+            document.querySelector(".store_inventory_list"),
+            document.querySelectorAll(".selected_item_remove_btn"),
+            document.getElementById("store_button_load_inventory"),
+            document.getElementById("settings_appid_select")
+          ], "display", "none");
+
+          const notification_box = document.querySelector(".selected_items_accept_btn_cont");
+          loader(notification_box);
 
           document.querySelectorAll(".selected_item_price_input").forEach(btn => {
             btn.readOnly = true;

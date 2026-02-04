@@ -20,6 +20,36 @@ export function sticky_tooltip(element) {
   });
 }
 
+export function loader(element){
+  element.innerHTML = "";
+
+  element.insertAdjacentHTML("beforeend", `
+    <div class="loader-container">
+      <div class="loader"></div>
+    </div>
+  `);
+}
+
+export function ChangeStyleOfElements(elArray, property, value) {
+  elArray.forEach(el => {
+    if (!el) return;
+
+    // If it's a NodeList or HTMLCollection
+    if (el instanceof NodeList || el instanceof HTMLCollection) {
+      el.forEach(child => {
+        if (child?.style) {
+          child.style[property] = value;
+        }
+      });
+    }
+    // Single element
+    else if (el.style) {
+      el.style[property] = value;
+    }
+  });
+}
+
+
 export function horizontallScroll(el) {
   if (!el) return;
   if (el.dataset.middleScrollAttached) return;

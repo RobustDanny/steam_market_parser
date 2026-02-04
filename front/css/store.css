@@ -797,9 +797,10 @@ align-self: center;
 
 .store_payment_area{
     display: none;
+    /* visibility: hidden; */
     /* padding-top: 20px; */
-    display: flex;
-    flex-wrap: wrap;
+    /* display: flex; */
+    /* flex-wrap: wrap; */
     /* box-sizing: border-box; */
     justify-content: center;
     align-content: flex-start;
@@ -808,6 +809,10 @@ align-self: center;
     min-height: 0;                
     overflow-y: auto;
     overflow-x: hidden;
+}
+
+.card_img_cont{
+    box-sizing: border-box;
 }
 
   

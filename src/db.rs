@@ -68,7 +68,8 @@ impl DataBase{
             let icon = listing_asset.icon_url.as_ref().expect("DB: No icon_url").to_string();
             let converted_price = match listing.converted_price {
                 Some(conv_price) => conv_price.to_string(),
-                None => format!("{:.2}", listing.price * 0.100),
+                // None => format!("{:.2}", listing.price * 0.100),
+                None => "?".to_string(),
             };
             let game = data.app_data.get(&appid).unwrap().name.to_owned();
             let game_icon = data.app_data.get(&appid).unwrap().icon.to_owned();

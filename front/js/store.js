@@ -12,6 +12,9 @@ import {
 } from "./store_websocket.js";
 import { startBtcPay } from "./payments/bitcoin.js";
 
+let inventoryHandlersAttached = false;
+
+
 //--------------------
 //--------------------
 //Tooltips
@@ -45,15 +48,15 @@ function renderPayOptions(){
     <div class="store_payment_grid">
       <div class="store_payment_card" id="pay_stripe">
         <img src="/front/svg/payments/cancel_icon.svg" alt="Cancel">
-        <span class="hidden_text">Cancel</span>
+        <span class="hidden_text_store">Cancel</span>
       </div>
       <div class="store_payment_card" id="pay_stripe">
         <img src="/front/svg/payments/stripe.svg" alt="Stripe">
-        <span class="hidden_text">Stripe</span>
+        <span class="hidden_text_store">Stripe</span>
       </div>
       <div class="store_payment_card" id="pay_btc">
         <img src="/front/svg/payments/bitcoin.svg" alt="Bitcoin">
-        <span class="hidden_text">Bitcoin</span>
+        <span class="hidden_text_store">Bitcoin</span>
       </div>
     </div>
 
@@ -313,7 +316,7 @@ function renderStoreInventory(inventory) {
           >
         <div class="inventory_card">
           <div class="inventory_card_details">
-            <div>
+            <div class="card_img_cont">
               <img class="inventory_item_icon" src="${icon}" alt="${name}">
             </div>
             <span class="hidden-text">${name}</span>
@@ -346,7 +349,7 @@ function renderStoreInventory(inventory) {
                     </div>
 
                     <div class="store_inventory_sent_to_chat">
-                      <img class="store_inventory_button"
+                      <img class="store_inventory_button store_inventory_sent_to_chat_btn"
                           src="/front/svg/ask_tader_icon.svg">
                       <span class="store_inventory_hidden_button_text">Ask trader</span>
                     </div>
@@ -363,15 +366,17 @@ function renderStoreInventory(inventory) {
 
     container.insertAdjacentHTML("beforeend", card);
     
-    const inventoryContainer = document.getElementById("store_inventory");
-    const selectedContainer =
-      document.getElementById("store_selected_items_list") ||
-      document.querySelector(".store_selected_items_list");
 
-  function decode(s) {
-    try { return decodeURIComponent(s || ""); } catch { return s || ""; }
+  
+
+  });
+
+  if (!inventoryHandlersAttached){
+    inventoryHandlersAttached = true;
+    attachInventoryHandlers();
   }
 
+  
   function makeSelectedCard(item) {
     return `
       <div class="selected_item_card_cont"
@@ -383,7 +388,7 @@ function renderStoreInventory(inventory) {
         <div class="selected_item_card">
           <button type="button" class="selected_item_remove_btn" title="Remove">✕</button>
   
-          <div style="height: 100%; display: grid; place-content: center;">
+          <div style="height: 100%; display: grid; place-content: center; box-sizing: border-box;">
             <img class="selected_item_icon" src="${item.image}" alt="${item.name || ""}">
           </div>
         </div>
@@ -395,59 +400,6 @@ function renderStoreInventory(inventory) {
       </div>
     `;
   }
-  
-
-  inventoryContainer.addEventListener("click", (e) => {
-    const addBtn = e.target.closest(".store_inventory_add_to_offer_btn");
-    if (addBtn) {
-      const card = e.target.closest(".card_hover-container");
-      if (!card || !selectedContainer) return;
-
-      const key = `${card.dataset.appid}:${card.dataset.contextid}:${card.dataset.assetid}`;
-      const name = decode(card.dataset.name);
-      const image = decode(card.dataset.image);
-      const link = card.dataset.item_link || ""; 
-
-      if (selectedContainer.querySelector(`[data-key="${CSS.escape(key)}"]`)) return;
-
-      selectedContainer.insertAdjacentHTML("beforeend", makeSelectedCard({ key, name, image, link }));
-
-      card.classList.add("is-selected");
-      updateStoreButtonsWrapper(); 
-      return;
-    }
-
-    const removeBtn = e.target.closest(".store_inventory_remove_from_offer_btn");
-    if (removeBtn) {
-      const card = e.target.closest(".card_hover-container");
-      if (!card || !selectedContainer) return;
-
-      const key = `${card.dataset.appid}:${card.dataset.contextid}:${card.dataset.assetid}`;
-      const selected = selectedContainer.querySelector(`[data-key="${CSS.escape(key)}"]`);
-      if (selected) selected.remove();
-      card.classList.remove("is-selected");
-      updateStoreButtonsWrapper(); 
-      return;
-    }
-  });
-
-  // Remove from selected list (✕)
-  selectedContainer?.addEventListener("click", (e) => {
-    const rm = e.target.closest(".selected_item_remove_btn");
-    if (!rm) return;
-
-    const selectedCard = e.target.closest(".selected_item_card_cont");
-    if (selectedCard) selectedCard.remove();
-
-    const key = selectedCard.dataset.key;
-    const assetId = key.split(":")[2];
-    const invCard = document.querySelector(
-      `.card_hover-container[data-assetid="${assetId}"]`
-    );
-    if (invCard) invCard.classList.remove("is-selected");
-
-    updateStoreButtonsWrapper();
-  });
 
   // Price edit
   document.addEventListener("input", function(e) {
@@ -465,7 +417,70 @@ function renderStoreInventory(inventory) {
 
   });
 
+  function attachInventoryHandlers() {
+    const inventoryContainer = document.getElementById("store_inventory");
+    const selectedContainer =
+      document.getElementById("store_selected_items_list") ||
+      document.querySelector(".store_selected_items_list");
+  
+    inventoryContainer.addEventListener("click", (e) => {
+      const card = e.target.closest(".card_hover-container");
+      if (!card) return;
+  
+      const key = `${card.dataset.appid}:${card.dataset.contextid}:${card.dataset.assetid}`;
+      const name = decodeURIComponent(card.dataset.name || "");
+      const image = decodeURIComponent(card.dataset.image || "");
+      const link = card.dataset.item_link || "";
+  
+      if (e.target.closest(".store_inventory_add_to_offer_btn")) {
+        if (selectedContainer.querySelector(`[data-key="${CSS.escape(key)}"]`)) return;
+  
+        selectedContainer.insertAdjacentHTML(
+          "beforeend",
+          makeSelectedCard({ key, name, image, link })
+        );
+  
+        card.classList.add("is-selected");
+        updateStoreButtonsWrapper();
+        return;
+      }
+  
+      if (e.target.closest(".store_inventory_remove_from_offer_btn")) {
+        selectedContainer
+          .querySelector(`[data-key="${CSS.escape(key)}"]`)
+          ?.remove();
+  
+        card.classList.remove("is-selected");
+        updateStoreButtonsWrapper();
+        return;
+      }
+  
+      if (e.target.closest(".store_inventory_sent_to_chat_btn")) {
+        sendWS({
+          type: "chat",
+          text: `What's about that?\n${name}\n${link}`
+        });
+      }
+    });
 
+    // Remove from selected list (✕)
+  selectedContainer?.addEventListener("click", (e) => {
+    const rm = e.target.closest(".selected_item_remove_btn");
+    if (!rm) return;
+
+    const selectedCard = e.target.closest(".selected_item_card_cont");
+    if (selectedCard) selectedCard.remove();
+
+    const key = selectedCard.dataset.key;
+    const assetId = key.split(":")[2];
+    const invCard = document.querySelector(
+      `.card_hover-container[data-assetid="${assetId}"]`
+    );
+    if (invCard) invCard.classList.remove("is-selected");
+
+    updateStoreButtonsWrapper();
+  });
+  }
 
   // Remove from selected list
   selectedContainer?.addEventListener("click", (e) => {
@@ -479,7 +494,7 @@ function renderStoreInventory(inventory) {
     if (!e.target.classList.contains("selected_item_price_input")) return;
   });
 
-  });
+
 }
 
 
@@ -508,10 +523,10 @@ function unmarkInventorySelected(key) {
 
 document.getElementById("store_inventoryFilter").addEventListener("input", function () {
   const query = this.value.trim().toLowerCase();
-  const items = document.querySelectorAll("#store_inventory .card_hover-container .store_payment_card");
+  const items = document.querySelectorAll("#store_inventory .card_hover-container .store_payment_grid");
 
   items.forEach(item => {
-    const nameEl = item.querySelector(".hidden-text");
+    const nameEl = item.querySelector(".hidden-text .hidden_text_store");
     const name = nameEl ? nameEl.textContent.toLowerCase() : "";
     item.style.display = name.includes(query) ? "" : "none";
   });
