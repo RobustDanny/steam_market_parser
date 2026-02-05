@@ -31,7 +31,8 @@ use steam_market_parser::{
     StoreID, 
     UserProfileAds,
     CurrentStatusOffer,
-    OfferContentToSave
+    OfferContentToSave,
+    OfferCheckResult
 };
 
 use crate::db::DataBase;
@@ -314,7 +315,7 @@ pub async fn offer_update_status_offer(current_status: web::Json<CurrentStatusOf
     HttpResponse::Ok()
 }
 
-pub async fn offer_success_offer_save(sent_offer: web::Json<OfferContentToSave>)-> impl Responder{
+pub async fn offer_check_offer_to_pay(sent_offer: web::Json<OfferContentToSave>)-> impl Responder{
 
     let status_and_offer_id  = OfferContentToSave {
         offer_id: sent_offer.offer_id.clone(),
@@ -323,9 +324,18 @@ pub async fn offer_success_offer_save(sent_offer: web::Json<OfferContentToSave>)
 
     let db = DataBase::connect_to_db();
 
-    db.db_offer_success_offer_save(status_and_offer_id);
+    let result: OfferCheckResult = db.db_offer_check_offer_to_pay(status_and_offer_id);
 
     drop(db);
+
+    match result.check_result {
+        true => {
+            format!("Offer {} couldn't pass validation, result.offer_id");
+        }
+        false => {
+            format!("Offer {} passed validation!, result.offer_id");
+        }
+    }
 
     HttpResponse::Ok()
 }
