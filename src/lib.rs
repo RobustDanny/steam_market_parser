@@ -146,7 +146,7 @@ pub struct OfferContent{
 }
 
 #[derive(Deserialize)]
-pub struct OfferContentToSave{
+pub struct OfferContentToCheck{
     pub offer_id: String,
     pub special_for_save_offer: Vec<OfferItems>,
 }
