@@ -170,6 +170,7 @@ pub struct CurrentStatusOffer{
 pub struct OfferCheckResult{
     pub offer_id: String,
     pub check_result: bool,
+    pub offer_items: Vec<OfferItems>,
 }
 
 //----------------------------------
