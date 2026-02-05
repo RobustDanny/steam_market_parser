@@ -33,6 +33,11 @@ pub struct OfferLogRow {
     pub time: String,
 }
 
+pub struct OfferCheckResult{
+    pub offer_id: String,
+    pub check_result: bool,
+}
+
 impl DataBase{
     pub fn connect_to_db()-> DataBase{
         
@@ -501,7 +506,7 @@ impl DataBase{
 
     }
 
-    pub fn db_offer_success_offer_save(&self, items_and_offer_id: OfferContentToSave){
+    pub fn db_offer_check_offer_to_pay(&self, items_and_offer_id: OfferContentToSave)-> OfferCheckResult{
 
         let offer_id = items_and_offer_id.offer_id;
         let offer_to_check = items_and_offer_id.special_for_save_offer;
@@ -530,9 +535,17 @@ impl DataBase{
 
         if offer_to_check == last_offer {
             println!("Offers match");
+            OfferCheckResult{
+                offer_id,
+                check_result: true,
+            }
             
         } else {
             println!("Offer changed");
+            OfferCheckResult{
+                offer_id,
+                check_result: false,
+            }
         }
     }
 
