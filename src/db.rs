@@ -484,6 +484,10 @@ impl DataBase{
                 accepted = true;
                 paid = false;
             },
+            "IN PROCESS" => {
+                accepted = false;
+                paid = false;
+            },
             "PAY PROCESS" | "SUCCESS" => {
                 accepted = true;
                 paid = true;
@@ -534,6 +538,7 @@ impl DataBase{
             OfferCheckResult{
                 offer_id,
                 check_result: true,
+                offer_items: offer_to_check,
             }
             
         } else {
@@ -541,6 +546,7 @@ impl DataBase{
             OfferCheckResult{
                 offer_id,
                 check_result: false,
+                offer_items: Vec::new(),
             }
         }
     }
