@@ -12,7 +12,8 @@ use steam_market_parser::{
     OfferItems,
     OfferContentUpdated,
     CurrentStatusOffer,
-    OfferContentToSave
+    OfferContentToSave,
+    OfferCheckResult
 };
 
 use uuid::Uuid;
@@ -31,11 +32,6 @@ pub struct OfferLogRow {
     pub items_price: String,
     pub item_link: String,
     pub time: String,
-}
-
-pub struct OfferCheckResult{
-    pub offer_id: String,
-    pub check_result: bool,
 }
 
 impl DataBase{
