@@ -166,6 +166,12 @@ pub struct CurrentStatusOffer{
     pub status: String,
 }
 
+#[derive(Deserialize)]
+pub struct OfferCheckResult{
+    pub offer_id: String,
+    pub check_result: bool,
+}
+
 //----------------------------------
 //----------------------------------
 
