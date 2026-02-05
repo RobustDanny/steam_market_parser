@@ -30,7 +30,8 @@ use steam_market_parser::{
     SteamUser, 
     StoreID, 
     UserProfileAds,
-    CurrentStatusOffer
+    CurrentStatusOffer,
+    OfferContentToSave
 };
 
 use crate::db::DataBase;
@@ -307,6 +308,22 @@ pub async fn offer_update_status_offer(current_status: web::Json<CurrentStatusOf
     let db = DataBase::connect_to_db();
 
     db.db_offer_update_status_offer(status_and_offer_id);
+
+    drop(db);
+
+    HttpResponse::Ok()
+}
+
+pub async fn offer_success_offer_save(sent_offer: web::Json<OfferContentToSave>)-> impl Responder{
+
+    let status_and_offer_id  = OfferContentToSave {
+        offer_id: sent_offer.offer_id.clone(),
+        special_for_save_offer: sent_offer.special_for_save_offer.clone()
+    };
+
+    let db = DataBase::connect_to_db();
+
+    db.db_offer_success_offer_save(status_and_offer_id);
 
     drop(db);
 

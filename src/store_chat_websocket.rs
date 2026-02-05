@@ -104,6 +104,17 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsSession {
                 });
             }
 
+            "item_asking" => {
+                let kekw = parsed.to_string();
+                println!("{kekw}");
+                self.hub.do_send(Broadcast {
+                    room: self.room.clone(),
+                    msg_type: "item_asking".to_string(),
+                    from_role: self.role.clone(),
+                    text: parsed.to_string(), // full JSON
+                });
+            }
+
             "set_offer" => {
                 let offer_id = parsed
                     .get("offer_id")
@@ -166,12 +177,26 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsSession {
                 self.hub.do_send(OfferState {
                     room: self.room.clone(),
                     offer_id: self.offer_id.clone(),
-                    msg_type: "paid_offer".to_string(),
+                    msg_type: "paid_offer".to_string(), //I dont use this Offerstate on ws
                     offer_accepted: true,
                     offer_dirty: false,
                     offer_paid: true,
                     offer_send: true,
                     // text: parsed.to_string(),
+                });
+
+                self.hub.do_send(Broadcast {
+                    room: self.room.clone(),
+                    msg_type: "system".to_string(),
+                    from_role: self.role.clone(),
+                    text: "Offer successfully paid".to_string(),
+                });
+
+                self.hub.do_send(Broadcast {
+                    room: self.room.clone(),
+                    msg_type: "reveal_send_offer".to_string(),
+                    from_role: self.role.clone(),
+                    text: "Trader is sending offer".to_string(),
                 });
             }
 

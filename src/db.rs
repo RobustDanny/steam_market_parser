@@ -11,7 +11,8 @@ use steam_market_parser::{
     UserProfileAds,
     OfferItems,
     OfferContentUpdated,
-    CurrentStatusOffer
+    CurrentStatusOffer,
+    OfferContentToSave
 };
 
 use uuid::Uuid;
@@ -500,6 +501,41 @@ impl DataBase{
 
     }
 
+    pub fn db_offer_success_offer_save(&self, items_and_offer_id: OfferContentToSave){
+
+        let offer_id = items_and_offer_id.offer_id;
+        let offer_to_check = items_and_offer_id.special_for_save_offer;
+
+        let round: i64 = self.connection.query_row(
+            "SELECT COALESCE(MAX(round), 0) FROM offer_log WHERE offer_id = ?1",
+            [&offer_id],
+            |row| row.get(0),
+        ).expect("DB: Can't get round from offer_log");     
+
+        let mut last_offer = self.connection.prepare("
+            SELECT * FROM offer_log WHERE offer_id = ?1 AND round = ?2
+            ").expect("DB: tried to get previous_offer from offer_log");
+
+        let last_offer: Vec<OfferItems> = last_offer.query_map([&offer_id, &round.to_string()], |row|{
+            Ok(OfferItems {
+                item_asset_id: row.get(3)?,
+                item_name: row.get(4)?,
+                item_price: row.get(5)?,
+                item_link: row.get(6)?,
+                item_image: row.get(7)?,
+            }
+        )
+        }).expect("DB: query_map previous_offer").collect::<Result<Vec<_>, _>>().expect("DB: failed to collect previous_offer from offer_log");
+
+
+        if offer_to_check == last_offer {
+            println!("Offers match");
+            
+        } else {
+            println!("Offer changed");
+        }
+    }
+
     fn create_tables(&self) {
         self.connection.execute_batch("
             CREATE TABLE IF NOT EXISTS item_feed (
@@ -553,6 +589,15 @@ impl DataBase{
                 status TEXT,
                 created TEXT,
                 last_update TEXT
+            );
+
+            CREATE TABLE IF NOT EXISTS offer_success (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                offer_id TEXT,
+                round INTEGER,
+                full_offer TEXT,
+                time TEXT,
+                FOREIGN KEY (offer_id) REFERENCES offer(offer_id) ON DELETE CASCADE
             );
 
             CREATE TABLE IF NOT EXISTS offer_log (

@@ -320,12 +320,73 @@ export function connectStoreChatWS(buyerId, traderId, role) {
         // updateStoreButtons();
       }
 
+      if (msg.type === "reveal_send_offer"){
+        const notification_box = document.getElementById("current_offer_data_span");
+
+        if (myRole === "trader") {
+          notification_box.textContent = "";
+        
+          const btnContainer = document.querySelector(".selected_items_accept_btn_cont");
+          btnContainer.innerHTML = "";
+        
+          btnContainer.insertAdjacentHTML(
+            "beforeend",
+            `
+              <button id="accept_btn" class="selected_items_accept_btn">Send Offer</button>
+              <span class="hidden_text_store">Click to send offer to buyer</span>
+            `
+          );
+        
+          const btn = document.getElementById("accept_btn");
+          btn.disabled = false; // ✅ enable button
+          btn.classList.add("is_active");
+
+          const container = document.querySelector(".store_selected_items_list");
+          if (!container || container.childElementCount === 0) return;
+          const special_for_save_offer = [...container.querySelectorAll(".selected_item_card_cont")].map(el => {
+            const priceValue = el.querySelector(".selected_item_price_input")?.value || "0";
+          
+            return {
+              item_asset_id: el.dataset.key,
+              item_name: decodeURIComponent(el.dataset.name || ""),
+              item_price: priceValue.toString(),
+              item_link: decodeURIComponent(el.dataset.itemLink || ""),
+              item_image: decodeURIComponent(el.dataset.image || "")
+            };
+          });
+          const offer_id = checkOfferId();
+
+          document.querySelector(".selected_items_accept_btn").addEventListener("click", async () => {
+            await fetch("/api/offer/success_offer_save", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                offer_id,
+                special_for_save_offer
+              })
+            })
+          });
+
+          
+
+
+        }
+
+        if(myRole === "buyer"){
+         
+          notification_box.textContent = msg.text;
+        }
+      }
+
       if (msg.type === "offer_log"){
         appendChatMessage(msg);
       }
 
+      if (msg.type === "item_asking"){
+        appendChatMessage(msg);
+      }
+
       if (msg.type === "send_offer") {
-        console.log("offer_id in send message", currentOfferId);
         OfferConfig(msg.offer_dirty, msg.offer_send, msg.offer_accepted, msg.offer_paid);
         updateStoreButtons();
       }
@@ -417,6 +478,60 @@ export function appendChatMessage(msg) {
     return;
   }
 
+  function getItemAskingRoleClass(msg) {
+    if (msg.from_role === "system") return "chat_item_asking_system";
+    if (msg.from_role === myRole) return "chat_item_asking_me";
+    return "chat_item_asking_other";
+  }
+  
+
+  if (msg.type === "item_asking") {
+    let data;
+    try {
+      data = JSON.parse(msg.text);
+    } catch {
+      return;
+    }
+  
+    messageEl.className =
+      "chat_message chat_item_asking " +
+      getRoleClass(
+        msg,
+        "chat_item_asking_me",
+        "chat_item_asking_other",
+        "chat_item_asking_system"
+      );
+  
+    const img = document.createElement("img");
+    img.src = data.image ?? "";
+    img.alt = data.name ?? "";
+  
+    const content = document.createElement("div");
+    content.className = "chat_item_asking_content";
+  
+    const text = document.createElement("span");
+    text.className = "chat_item_asking_text";
+    text.textContent = data.text ?? "";
+  
+    const link = document.createElement("a");
+    link.href = data.link ?? "#";
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+  
+    const name = document.createElement("span");
+    name.className = "chat_item_asking_name";
+    name.textContent = data.name ?? "";
+  
+    link.appendChild(name);
+    content.append(text, link);
+  
+    messageEl.append(img, content);
+  
+    container.appendChild(messageEl);
+    container.scrollTop = container.scrollHeight;
+    return;
+  }  
+
   if (msg.type === "offer_log") {
     function formatOfferLog(msg) {
 
@@ -467,9 +582,6 @@ export function appendChatMessage(msg) {
       return html;
   }
     
-    
-    
-
     const container = document.getElementById("chat_messages");
   
     container.insertAdjacentHTML("beforeend", `
@@ -518,12 +630,10 @@ export function appendChatMessage(msg) {
   
 
   // Chat message: decide if it's mine
-  const fromRole = msg.from_role; // "buyer" | "trader"
-  const isMine = myRole && fromRole === myRole;
+  messageEl.className =
+  "chat_message " +
+  getRoleClass(msg, "chat_message_me", "chat_message_other");
 
-  messageEl.className = isMine
-    ? "chat_message chat_message_me"
-    : "chat_message chat_message_other";
 
   messageEl.textContent = msg.text ?? "";
   container.appendChild(messageEl);
@@ -553,6 +663,18 @@ export function closeStoreChatWS() {
   openPromise = null;
   myRole = null;
 }
+
+function getRoleClass(msg, baseMe, baseOther, baseSystem = null) {
+  const fromRole = msg.from_role;
+
+  if (fromRole === "system" && baseSystem) {
+    return baseSystem;
+  }
+
+  const isMine = myRole && fromRole === myRole;
+  return isMine ? baseMe : baseOther;
+}
+
 
 //--------------------
 //--------------------

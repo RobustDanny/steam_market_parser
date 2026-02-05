@@ -166,7 +166,6 @@ async function sendItems() {
       item_image: decodeURIComponent(el.dataset.image || "")
     };
   });
-  console.log("special_for_update_offer", special_for_update_offer);
   const offer_id = checkOfferId();
 
   const res = await fetch("/api/offer/update_offer", {
@@ -457,8 +456,11 @@ function renderStoreInventory(inventory) {
   
       if (e.target.closest(".store_inventory_sent_to_chat_btn")) {
         sendWS({
-          type: "chat",
-          text: `What's about that?\n${name}\n${link}`
+          type: "item_asking",
+          text: `What's about that?`,
+          name,
+          link,
+          image
         });
       }
     });
@@ -480,7 +482,6 @@ function renderStoreInventory(inventory) {
 
     updateStoreButtonsWrapper();
   });
-  }
 
   // Remove from selected list
   selectedContainer?.addEventListener("click", (e) => {
@@ -493,7 +494,7 @@ function renderStoreInventory(inventory) {
   selectedContainer?.addEventListener("input", (e) => {
     if (!e.target.classList.contains("selected_item_price_input")) return;
   });
-
+  }
 
 }
 

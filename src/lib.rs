@@ -145,7 +145,13 @@ pub struct OfferContent{
     pub special_for_update_offer: Vec<OfferItems>,
 }
 
-#[derive(Clone, Deserialize, Serialize, Debug)]
+#[derive(Deserialize)]
+pub struct OfferContentToSave{
+    pub offer_id: String,
+    pub special_for_save_offer: Vec<OfferItems>,
+}
+
+#[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
 pub struct OfferItems{
     pub item_asset_id: String,
     pub item_name: String,
