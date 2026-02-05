@@ -12,7 +12,7 @@ use steam_market_parser::{
     OfferItems,
     OfferContentUpdated,
     CurrentStatusOffer,
-    OfferContentToSave,
+    OfferContentToCheck,
     OfferCheckResult
 };
 
@@ -506,7 +506,7 @@ impl DataBase{
 
     }
 
-    pub fn db_offer_check_offer_to_pay(&self, items_and_offer_id: OfferContentToSave)-> OfferCheckResult{
+    pub fn db_offer_check_offer_to_pay(&self, items_and_offer_id: OfferContentToCheck)-> OfferCheckResult{
 
         let offer_id = items_and_offer_id.offer_id;
         let offer_to_check = items_and_offer_id.special_for_save_offer;
