@@ -357,7 +357,7 @@ export function connectStoreChatWS(buyerId, traderId, role) {
           const offer_id = checkOfferId();
 
           document.querySelector(".selected_items_accept_btn").addEventListener("click", async () => {
-            await fetch("/api/offer/success_offer_save", {
+            await fetch("/api/offer/check_offer_to_pay", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
