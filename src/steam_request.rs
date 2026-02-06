@@ -5,7 +5,11 @@ use reqwest;
 
 // type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
-use crate::{MarketRequest, MostRecentItemsRequest};
+use crate::{
+    MarketRequest, 
+    MostRecentItemsRequest,
+    TradeOfferRequest,
+};
 
 pub trait SteamRequest{}
 
@@ -33,6 +37,13 @@ pub trait ProcessSteamRequest{
 
         let url = format!("https://steamcommunity.com/market/recent?country={}&language={}&currency={}&norender=1", 
         request.country, request.language, request.currency);
+        url
+    }
+
+    fn url_send_trade_offer(request: TradeOfferRequest) -> String{
+
+        let url = format!("https://steamcommunity.com/tradeoffer/new/?partner={}&token={}",
+        request.partner_steam_id, request.partner_trade_token);
         url
     }
 }
