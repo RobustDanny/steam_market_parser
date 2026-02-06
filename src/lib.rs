@@ -338,6 +338,12 @@ pub struct MostRecentItemsRequest{
     language: String,
     currency: String,
 }
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct TradeOfferRequest{
+    partner_steam_id: String,
+    partner_trade_token: String,
+}
 //----------------------------------
 //----------------------------------
 
