@@ -605,16 +605,6 @@ impl DataBase{
                 created TEXT,
                 last_update TEXT
             );
-
-            CREATE TABLE IF NOT EXISTS offer_success (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                offer_id TEXT,
-                round INTEGER,
-                full_offer TEXT,
-                time TEXT,
-                FOREIGN KEY (offer_id) REFERENCES offer(offer_id) ON DELETE CASCADE
-            );
-
             CREATE TABLE IF NOT EXISTS offer_log (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 offer_id TEXT,
