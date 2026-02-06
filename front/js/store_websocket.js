@@ -354,15 +354,15 @@ export function connectStoreChatWS(buyerId, traderId, role) {
               item_image: decodeURIComponent(el.dataset.image || "")
             };
           });
-          const offer_id = checkOfferId();
 
           document.querySelector(".selected_items_accept_btn").addEventListener("click", async () => {
             await fetch("/api/offer/check_offer_to_pay", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                offer_id,
-                special_for_save_offer
+                offer_id: checkOfferId(),
+                special_for_save_offer,
+                partner_steam_id: checkIDs().buyer_id,
               })
             })
           });

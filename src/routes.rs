@@ -32,7 +32,9 @@ use steam_market_parser::{
     UserProfileAds,
     CurrentStatusOffer,
     OfferContentToCheck,
-    OfferCheckResult
+    OfferCheckResult,
+    ProfileTradeUrl,
+    TradeOfferRequest
 };
 
 use crate::db::DataBase;
@@ -66,7 +68,7 @@ pub async fn load_inventory(_user_inventory: web::Data<UserInventoryState>, para
             .await
             .unwrap();
 
-        println!("{respond:#?}");
+        // println!("{respond:#?}");
 
         if respond.trim() == "null" {
             return HttpResponse::Ok().json(Inventory {
@@ -251,7 +253,7 @@ pub async fn store_rating(session: Session, state: web::Data<AppState>) -> impl 
     
     let steam_user: Option<SteamUser> = session.get("steam_user").unwrap_or(None);
 
-    println!("steam_user: {steam_user:#?}");
+    // println!("steam_user: {steam_user:#?}");
     
     let mut ctx = Context::new();
 
@@ -277,7 +279,7 @@ pub async fn offer_make_offer(ids: web::Json<BuyerAndStoreIDS>) -> OfferMakingPl
     let offer_id = db.db_offer_make_offer(buyer_id, trader_id);
 
     drop(db);
-    println!("offer_id: {offer_id}");
+    // println!("offer_id: {offer_id}");
     
     let playload  = OfferMakingPlayload {
         offer_id
@@ -316,26 +318,46 @@ pub async fn offer_update_status_offer(current_status: web::Json<CurrentStatusOf
 }
 
 pub async fn offer_check_offer_to_pay(sent_offer: web::Json<OfferContentToCheck>)-> impl Responder{
-
     let status_and_offer_id  = OfferContentToCheck {
         offer_id: sent_offer.offer_id.clone(),
-        special_for_save_offer: sent_offer.special_for_save_offer.clone()
+        special_for_save_offer: sent_offer.special_for_save_offer.clone(),
+        partner_steam_id: sent_offer.partner_steam_id.clone(),
     };
 
     let db = DataBase::connect_to_db();
 
     let result: OfferCheckResult = db.db_offer_check_offer_to_pay(status_and_offer_id);
-
     drop(db);
 
+    println!("{result:#?}");
     match result.check_result {
         true => {
-            format!("Offer {} couldn't pass validation, result.offer_id");
+            println!("link: {}", result.partner_trade_url);
+            if let Err(e) = TradeOfferRequest::request_paramenters(result.partner_trade_url.clone()).await {
+                eprintln!("Trade offer request failed: {e}");
+            }
+
+            println!("Offer {} passed validation", result.offer_id)
         }
         false => {
-            format!("Offer {} passed validation!, result.offer_id");
+            println!("Offer {} couldn't pass validation!", result.offer_id)
         }
     }
+
+
+    HttpResponse::Ok()
+}
+
+pub async fn account_post_trade_url(profile_trade_url: web::Json<ProfileTradeUrl>)->impl Responder{
+
+    let steam_id = &profile_trade_url.steam_id;
+    let trade_url = &profile_trade_url.trade_url;
+
+    let db = DataBase::connect_to_db();
+
+    db.db_account_post_trade_url(steam_id, trade_url);
+
+    drop(db);
 
     HttpResponse::Ok()
 }

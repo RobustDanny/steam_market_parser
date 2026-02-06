@@ -50,7 +50,8 @@ use routes::{
     offer_make_offer,
     offer_update_offer,
     offer_update_status_offer,
-    offer_check_offer_to_pay
+    offer_check_offer_to_pay,
+    account_post_trade_url,
 };
 
 mod background_tasks;
@@ -192,6 +193,9 @@ async fn main()-> std::io::Result<()> {
                 .route("/remove_from_store_queue", web::post().to(remove_from_store_queue))
                 .route("/auth/steam", web::get().to(steam_login))
                 .route("/auth/steam/return", web::get().to(steam_return))
+                .service(web::scope("/account")
+                    .route("/post_trade_url", web::post().to(account_post_trade_url))
+                )
                 .service(web::scope("/offer")
                     .route("/make_offer", web::post().to(offer_make_offer))
                     .route("/update_offer", web::post().to(offer_update_offer))

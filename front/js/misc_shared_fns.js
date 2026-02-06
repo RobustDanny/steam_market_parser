@@ -31,7 +31,6 @@ export function loader(element){
 }
 
 export function ChangeStyleOfElements(elArray, property, value) {
-  console.log("hey");
   elArray.forEach(el => {
     if (!el) return;
 

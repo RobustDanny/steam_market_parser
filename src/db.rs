@@ -435,7 +435,7 @@ impl DataBase{
         
         result.total_price = total_price;
         result.total_count = total_count;
-        println!("{result:#?}");
+        // println!("{result:#?}");
         result
     }
 
@@ -507,9 +507,10 @@ impl DataBase{
     }
 
     pub fn db_offer_check_offer_to_pay(&self, items_and_offer_id: OfferContentToCheck)-> OfferCheckResult{
-
+        // println!("items_and_offer_id {items_and_offer_id:#?}");
         let offer_id = items_and_offer_id.offer_id;
         let offer_to_check = items_and_offer_id.special_for_save_offer;
+        let partner_steam_id = items_and_offer_id.partner_steam_id;
 
         let round: i64 = self.connection.query_row(
             "SELECT COALESCE(MAX(round), 0) FROM offer_log WHERE offer_id = ?1",
@@ -534,11 +535,15 @@ impl DataBase{
 
 
         if offer_to_check == last_offer {
+
+            let partner_trade_url= self.db_account_get_trade_url(partner_steam_id);
+
             println!("Offers match");
             OfferCheckResult{
                 offer_id,
                 check_result: true,
                 offer_items: offer_to_check,
+                partner_trade_url,
             }
             
         } else {
@@ -547,8 +552,43 @@ impl DataBase{
                 offer_id,
                 check_result: false,
                 offer_items: Vec::new(),
+                partner_trade_url: String::from(""),
             }
         }
+    }
+
+    pub fn db_account_post_trade_url(&self, steam_id: &String, trade_url: &String){
+
+        self.connection
+        .execute(
+            "UPDATE steam_user
+             SET trade_url = ?1
+             WHERE steamid = ?2",
+            [
+                &trade_url,
+                &steam_id,
+            ],
+        )
+        .expect("DB: Can't add trade_url to steam_user");
+
+    }
+
+    pub fn db_account_get_trade_url(&self, steam_id: String)-> String{
+
+        let trade_url = self.connection
+        .query_one(
+            "
+            SELECT trade_url FROM steam_user
+            WHERE steamid = ?1
+            ",
+            [
+                &steam_id,
+            ],
+            |row| row.get(0),
+        )
+        .expect("DB: Can't get trade_url from steam_user");
+
+    trade_url
     }
 
     fn create_tables(&self) {
@@ -571,6 +611,7 @@ impl DataBase{
                 nickname TEXT,
                 avatar_url_small TEXT,
                 avatar_url_full TEXT,
+                trade_url TEXT,
                 status TEXT
             );
             CREATE TABLE IF NOT EXISTS ad_steam_user (

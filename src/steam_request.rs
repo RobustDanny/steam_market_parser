@@ -8,7 +8,7 @@ use reqwest;
 use crate::{
     MarketRequest, 
     MostRecentItemsRequest,
-    TradeOfferRequest,
+    // TradeOfferRequest,
 };
 
 pub trait SteamRequest{}
@@ -40,12 +40,12 @@ pub trait ProcessSteamRequest{
         url
     }
 
-    fn url_send_trade_offer(request: TradeOfferRequest) -> String{
+    // fn url_send_trade_offer(request: TradeOfferRequest) -> String{
 
-        let url = format!("https://steamcommunity.com/tradeoffer/new/?partner={}&token={}",
-        request.partner_steam_id, request.partner_trade_token);
-        url
-    }
+    //     let url = format!("https://steamcommunity.com/tradeoffer/new/?partner={}&token={}",
+    //     request.partner_steam_id, request.partner_trade_token);
+    //     url
+    // }
 }
 
 async fn send_request<T: SteamRequest + DeserializeOwned>(url: String) -> Result<T, Box<dyn std::error::Error + Send + Sync>>{

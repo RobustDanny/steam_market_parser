@@ -145,10 +145,11 @@ pub struct OfferContent{
     pub special_for_update_offer: Vec<OfferItems>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct OfferContentToCheck{
     pub offer_id: String,
     pub special_for_save_offer: Vec<OfferItems>,
+    pub partner_steam_id: String,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
@@ -166,11 +167,25 @@ pub struct CurrentStatusOffer{
     pub status: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct OfferCheckResult{
     pub offer_id: String,
     pub check_result: bool,
     pub offer_items: Vec<OfferItems>,
+    pub partner_trade_url: String,
+}
+
+//----------------------------------
+//----------------------------------
+
+//----------------------------------
+//----------------------------------
+//Profile settings
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ProfileTradeUrl{
+    pub steam_id: String,
+    pub trade_url: String,
 }
 
 //----------------------------------
@@ -341,8 +356,8 @@ pub struct MostRecentItemsRequest{
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct TradeOfferRequest{
-    partner_steam_id: String,
-    partner_trade_token: String,
+    // partner_steam_id: String,
+    pub partner_trade_url: String,
 }
 //----------------------------------
 //----------------------------------
@@ -568,10 +583,12 @@ pub struct DBFiltersMostRecentItems{
 //Allow to send requests and get access to ProcessSteamRequest methods
 impl SteamRequest for SteamMarketResponse{}
 impl SteamRequest for SteamMostRecentResponse{}
+impl SteamRequest for TradeOfferRequest{}
 
 //Allow to use methods of ProcessSteamRequest trait
 impl ProcessSteamRequest for MarketRequest{}
 impl ProcessSteamRequest for MostRecentItemsRequest{}
+impl ProcessSteamRequest for TradeOfferRequest{}
 //----------------------------------
 //----------------------------------
 
@@ -647,6 +664,22 @@ impl MostRecentItems{
 
             tokio::time::sleep(Duration::from_secs(4)).await;
         }
+    }
+}
+
+impl TradeOfferRequest{
+    pub async fn request_paramenters(trade_url: String)-> Result<Self>{
+
+        let request = TradeOfferRequest{
+            partner_trade_url: trade_url,
+        };
+
+        let response_result = Self::process_request(request.partner_trade_url).await?;
+
+        println!("{response_result:#?}");
+
+        Ok(response_result)
+
     }
 }
 
