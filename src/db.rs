@@ -13,7 +13,9 @@ use steam_market_parser::{
     OfferContentUpdated,
     CurrentStatusOffer,
     OfferContentToCheck,
-    OfferCheckResult
+    OfferCheckResult,
+    DraftItem,
+    OfferDraft
 };
 
 use uuid::Uuid;
@@ -318,13 +320,15 @@ impl DataBase{
 
         self.connection.execute(
             "INSERT INTO offer_log (
-                offer_id, round, item_asset_id, item_name, items_price, item_link, item_image, time
-            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+                offer_id, round, item_asset_id, item_contextid, item_appid, item_name, items_price, item_link, item_image, time
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
             ",
 
             [
                 &generated_uuid,
                 &"0".to_string(),
+                &"Nope".to_string(),
+                &"Nope".to_string(),
                 &"Nope".to_string(),
                 &"Nope".to_string(),
                 &"Nope".to_string(),
@@ -363,10 +367,12 @@ impl DataBase{
         let previous_offer: Vec<OfferItems> = previous_offer_stmt.query_map([&offer_id, &round.to_string()], |row|{
             Ok(OfferItems {
                 item_asset_id: row.get(3)?,
-                item_name: row.get(4)?,
-                item_price: row.get(5)?,
-                item_link: row.get(6)?,
-                item_image: row.get(7)?,
+                item_contextid: row.get(4)?,
+                item_appid: row.get(5)?,
+                item_name: row.get(6)?,
+                item_price: row.get(7)?,
+                item_link: row.get(8)?,
+                item_image: row.get(9)?,
             }
         )
         }).expect("DB: query_map previous_offer").collect::<Result<Vec<_>, _>>().expect("DB: failed to collect previous_offer from offer_log");
@@ -404,14 +410,16 @@ impl DataBase{
 
             self.connection.execute(
                 "INSERT INTO offer_log (
-                    offer_id, round, item_asset_id, item_name, items_price, item_link, item_image, time
-                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+                    offer_id, round, item_asset_id, item_contextid, item_appid, item_name, items_price, item_link, item_image, time
+                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
                 ",
     
                 [
                     &offer_id,
                     &(round + 1).to_string(),
                     &item.item_asset_id,
+                    &item.item_contextid,
+                    &item.item_appid,
                     &item.item_name,
                     &item.item_price,
                     &item.item_link,
@@ -525,7 +533,9 @@ impl DataBase{
         let last_offer: Vec<OfferItems> = last_offer.query_map([&offer_id, &round.to_string()], |row|{
             Ok(OfferItems {
                 item_asset_id: row.get(3)?,
-                item_name: row.get(4)?,
+                item_contextid: row.get(4)?,
+                item_appid: row.get(5)?,
+                item_name: row.get(6)?,
                 item_price: row.get(5)?,
                 item_link: row.get(6)?,
                 item_image: row.get(7)?,
@@ -533,6 +543,8 @@ impl DataBase{
         )
         }).expect("DB: query_map previous_offer").collect::<Result<Vec<_>, _>>().expect("DB: failed to collect previous_offer from offer_log");
 
+        println!("last_offer {last_offer:#?}");
+        println!("offer_to_check {offer_to_check:#?}");
 
         if offer_to_check == last_offer {
 
@@ -589,6 +601,89 @@ impl DataBase{
         .expect("DB: Can't get trade_url from steam_user");
 
     trade_url
+    }
+
+    pub fn db_create_offer_draft(
+        &mut self,
+        offer_id: &str,
+        partner_trade_url: &str,
+        autosend: bool,
+        give_items: Vec<DraftItem>,
+    ) -> Result<String, rusqlite::Error> {
+        let draft_id = Uuid::new_v4().to_string();
+        let created_at = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as i64;
+
+        let tx = self.connection.transaction()?;
+
+        tx.execute(
+            "INSERT INTO trade_offer_drafts (draft_id, offer_id, partner_trade_url, autosend, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5)",
+            rusqlite::params![
+                draft_id,
+                offer_id,
+                partner_trade_url,
+                if autosend { 1 } else { 0 },
+                created_at
+            ],
+        )?;
+
+        {
+            let mut stmt = tx.prepare(
+                "INSERT INTO trade_offer_draft_items (draft_id, appid, contextid, assetid, amount, side)
+                 VALUES (?1, ?2, ?3, ?4, ?5, 'give')"
+            )?;
+
+            for it in give_items {
+                stmt.execute(rusqlite::params![
+                    draft_id,
+                    it.appid as i64,
+                    it.contextid,
+                    it.assetid,
+                    it.amount as i64
+                ])?;
+            }
+        }
+
+        tx.commit()?;
+        Ok(draft_id)
+    }
+
+    pub fn db_get_offer_draft(&self, draft_id: &str) -> Result<OfferDraft, rusqlite::Error> {
+        // read autosend (optional, but useful)
+        let autosend: i64 = self.connection.query_row(
+            "SELECT autosend FROM trade_offer_drafts WHERE draft_id = ?1",
+            rusqlite::params![draft_id],
+            |row| row.get(0),
+        )?;
+
+        let mut stmt = self.connection.prepare(
+            "SELECT appid, contextid, assetid, amount
+             FROM trade_offer_draft_items
+             WHERE draft_id = ?1 AND side = 'give'
+             ORDER BY id ASC"
+        )?;
+
+        let give_iter = stmt.query_map(rusqlite::params![draft_id], |row| {
+            Ok(DraftItem {
+                appid: row.get::<_, i64>(0)? as u32,
+                contextid: row.get(1)?,
+                assetid: row.get(2)?,
+                amount: row.get::<_, i64>(3)? as u32,
+            })
+        })?;
+
+        let mut give = Vec::new();
+        for it in give_iter {
+            give.push(it?);
+        }
+
+        Ok(OfferDraft {
+            give,
+            autosend: autosend == 1,
+        })
     }
 
     fn create_tables(&self) {
@@ -651,6 +746,8 @@ impl DataBase{
                 offer_id TEXT,
                 round INTEGER,
                 item_asset_id TEXT,
+                item_contextid TEXT,
+                item_appid TEXT,
                 item_name TEXT,
                 items_price TEXT,
                 item_link TEXT,
@@ -658,6 +755,28 @@ impl DataBase{
                 time TEXT,
                 FOREIGN KEY (offer_id) REFERENCES offer(offer_id) ON DELETE CASCADE
             );
+
+            CREATE TABLE IF NOT EXISTS trade_offer_drafts (
+                draft_id TEXT PRIMARY KEY,
+                offer_id TEXT NOT NULL,
+                partner_trade_url TEXT NOT NULL,
+                autosend INTEGER NOT NULL DEFAULT 0,
+                created_at INTEGER NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS trade_offer_draft_items (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                draft_id TEXT NOT NULL,
+                appid INTEGER NOT NULL,
+                contextid TEXT NOT NULL,
+                assetid TEXT NOT NULL,
+                amount INTEGER NOT NULL DEFAULT 1,
+                side TEXT NOT NULL DEFAULT 'give',  -- 'give' now, later could add 'receive'
+                FOREIGN KEY(draft_id) REFERENCES trade_offer_drafts(draft_id) ON DELETE CASCADE
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_draft_items_draft_id ON trade_offer_draft_items(draft_id);
+
 
         ").expect("DB: Failed to create tables");
     }

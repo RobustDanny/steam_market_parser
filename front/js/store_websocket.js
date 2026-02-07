@@ -208,12 +208,14 @@ export function connectStoreChatWS(buyerId, traderId, role) {
         if (!container) return;
     
         container.innerHTML = "";
-
+        console.log("offer_items kek", msg.items);
         msg.items.forEach(item => {
 
           container.insertAdjacentHTML("beforeend", `
             <div class="selected_item_card_cont" 
               data-key="${item.key}"
+              data-contextid="${item.contextid}"
+              data-appid="${item.appid}"
               data-name="${item.name}"
               data-image="${item.image}"
               data-item-link="${item.link}"
@@ -351,7 +353,9 @@ export function connectStoreChatWS(buyerId, traderId, role) {
               item_name: decodeURIComponent(el.dataset.name || ""),
               item_price: priceValue.toString(),
               item_link: decodeURIComponent(el.dataset.itemLink || ""),
-              item_image: decodeURIComponent(el.dataset.image || "")
+              item_image: decodeURIComponent(el.dataset.image || ""),
+              item_contextid: el.dataset.contextid,
+              item_appid: el.dataset.appid,
             };
           });
 

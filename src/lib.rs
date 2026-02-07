@@ -155,6 +155,8 @@ pub struct OfferContentToCheck{
 #[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
 pub struct OfferItems{
     pub item_asset_id: String,
+    pub item_contextid: String,
+    pub item_appid: String,
     pub item_name: String,
     pub item_price: String,
     pub item_link: String,
@@ -177,6 +179,26 @@ pub struct OfferCheckResult{
 
 //----------------------------------
 //----------------------------------
+
+//----------------------------------
+//----------------------------------
+//Trade offer draft
+#[derive(Serialize)]
+pub struct DraftItem {
+    pub appid: u32,
+    pub contextid: String,
+    pub assetid: String,
+    pub amount: u32,
+}
+
+#[derive(Serialize)]
+pub struct OfferDraft {
+    pub give: Vec<DraftItem>,
+    pub autosend: bool,
+}
+//----------------------------------
+//----------------------------------
+
 
 //----------------------------------
 //----------------------------------

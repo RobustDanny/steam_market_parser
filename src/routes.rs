@@ -35,7 +35,8 @@ use steam_market_parser::{
     OfferContentToCheck,
     OfferCheckResult,
     ProfileTradeUrl,
-    TradeOfferRequest
+    TradeOfferRequest,
+    DraftItem,
 };
 
 use crate::db::DataBase;
@@ -318,36 +319,63 @@ pub async fn offer_update_status_offer(current_status: web::Json<CurrentStatusOf
     HttpResponse::Ok()
 }
 
-pub async fn offer_check_offer_to_pay(sent_offer: web::Json<OfferContentToCheck>)-> impl Responder{
+pub async fn offer_check_offer_to_pay(sent_offer: web::Json<OfferContentToCheck>) -> impl Responder {
     let status_and_offer_id  = OfferContentToCheck {
         offer_id: sent_offer.offer_id.clone(),
         special_for_save_offer: sent_offer.special_for_save_offer.clone(),
         partner_steam_id: sent_offer.partner_steam_id.clone(),
     };
 
-    let db = DataBase::connect_to_db();
-
+    let mut db = DataBase::connect_to_db();
     let result: OfferCheckResult = db.db_offer_check_offer_to_pay(status_and_offer_id);
-    drop(db);
 
-    println!("{result:#?}");
-    match result.check_result {
-        true => {
-            println!("link: {}", result.partner_trade_url);
-            if let Err(e) = TradeOfferRequest::request_paramenters(result.partner_trade_url.clone()).await {
-                eprintln!("Trade offer request failed: {e}");
-            }
-
-            println!("Offer {} passed validation", result.offer_id)
-        }
-        false => {
-            println!("Offer {} couldn't pass validation!", result.offer_id)
-        }
+    if !result.check_result {
+        drop(db);
+        return HttpResponse::BadRequest().json(serde_json::json!({
+            "ok": false,
+            "offer_id": result.offer_id,
+            "error": "validation_failed"
+        }));
     }
 
+    // Map result.offer_items -> DraftItem
+    // IMPORTANT: update field name to your real assetid field
+    let give: Vec<DraftItem> = result.offer_items.iter().map(|it| DraftItem {
+        appid: 730,
+        contextid: "2".to_string(),
+        assetid: it.item_asset_id.to_string(), // <-- rename if needed
+        amount: 1,
+    }).collect();
 
-    HttpResponse::Ok()
+    let draft_id = match db.db_create_offer_draft(
+        &result.offer_id,
+        &result.partner_trade_url,
+        false,
+        give,
+    ) {
+        Ok(id) => id,
+        Err(e) => {
+            drop(db);
+            return HttpResponse::InternalServerError().json(serde_json::json!({
+                "ok": false,
+                "error": format!("db_create_offer_draft_failed: {e}")
+            }));
+        }
+    };
+
+    drop(db);
+
+    // Append draft_id to the steam trade URL
+    let steam_url = format!("{}&tastyrock_draft={}", result.partner_trade_url, draft_id);
+
+    HttpResponse::Ok().json(serde_json::json!({
+        "ok": true,
+        "offer_id": result.offer_id,
+        "draft_id": draft_id,
+        "steam_url": steam_url
+    }))
 }
+
 
 pub async fn account_post_trade_url(profile_trade_url: web::Json<ProfileTradeUrl>)->impl Responder{
 
@@ -363,36 +391,27 @@ pub async fn account_post_trade_url(profile_trade_url: web::Json<ProfileTradeUrl
     HttpResponse::Ok()
 }
 
-#[derive(Serialize)]
-pub struct DraftItem {
-    pub appid: u32,
-    pub contextid: String,
-    pub assetid: String,
-    pub amount: u32,
-}
-
-#[derive(Serialize)]
-pub struct OfferDraft {
-    pub give: Vec<DraftItem>,
-    pub autosend: bool,
-}
-
 pub async fn offer_get_draft(path: web::Path<String>) -> HttpResponse {
     let draft_id = path.into_inner();
     println!("offer_get_draft: {draft_id}");
 
-    HttpResponse::Ok().json(serde_json::json!({
-        "give": [
-            {
-                "appid": 730,
-                "contextid": "2",
-                "assetid": "TEST_ASSET_ID",
-                "amount": 1
-            }
-        ],
-        "autosend": false
-    }))
+    let db = DataBase::connect_to_db();
+
+    match db.db_get_offer_draft(&draft_id) {
+        Ok(draft) => {
+            drop(db);
+            HttpResponse::Ok().json(draft)
+        }
+        Err(_) => {
+            drop(db);
+            HttpResponse::NotFound().json(serde_json::json!({
+                "error": "draft_not_found",
+                "draft_id": draft_id
+            }))
+        }
+    }
 }
+
 
 
 pub async fn tera_update_data(session: Session, state: web::Data<AppState>, feed_state: web::Data<FeedItemsState>, _user_inventory: web::Data<UserInventoryState>) -> impl Responder {

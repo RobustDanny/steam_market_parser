@@ -148,6 +148,8 @@ async function sendItems() {
   
     return {
       key: el.dataset.key,
+      contextid: el.dataset.contextid,
+      appid: el.dataset.appid,
       image: el.querySelector("img")?.src,
       price: Number(priceValue) || 0,
       name,
@@ -160,6 +162,8 @@ async function sendItems() {
   
     return {
       item_asset_id: el.dataset.key,
+      item_contextid: el.dataset.contextid,
+      item_appid: el.dataset.appid,
       item_name: decodeURIComponent(el.dataset.name || ""),
       item_price: priceValue.toString(),
       item_link: decodeURIComponent(el.dataset.itemLink || ""),
@@ -380,6 +384,8 @@ function renderStoreInventory(inventory) {
     return `
       <div class="selected_item_card_cont"
         data-key="${item.key}"
+        data-contextid="${item.contextid}"
+        data-appid="${item.appid}"
         data-name="${encodeURIComponent(item.name || "")}"
         data-image="${item.image}"
         data-item-link="${encodeURIComponent(item.link || "")}"
@@ -426,17 +432,20 @@ function renderStoreInventory(inventory) {
       const card = e.target.closest(".card_hover-container");
       if (!card) return;
   
-      const key = `${card.dataset.appid}:${card.dataset.contextid}:${card.dataset.assetid}`;
+      // const key = `${card.dataset.appid}:${card.dataset.contextid}:${card.dataset.assetid}`;
+      const key = `${card.dataset.assetid}`;
       const name = decodeURIComponent(card.dataset.name || "");
       const image = decodeURIComponent(card.dataset.image || "");
       const link = card.dataset.item_link || "";
+      const contextid = card.dataset.contextid || "";
+      const appid = card.dataset.appid || "";
   
       if (e.target.closest(".store_inventory_add_to_offer_btn")) {
         if (selectedContainer.querySelector(`[data-key="${CSS.escape(key)}"]`)) return;
   
         selectedContainer.insertAdjacentHTML(
           "beforeend",
-          makeSelectedCard({ key, name, image, link })
+          makeSelectedCard({ key, name, image, link, contextid, appid })
         );
   
         card.classList.add("is-selected");
