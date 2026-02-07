@@ -3,6 +3,7 @@ use actix_web::{HttpResponse, Responder, web, Result};
 use tera::{Context};
 use uuid::Uuid;
 use serde_json::json;
+use serde::Serialize;
 use regex::Regex;
 use std::collections::HashMap;
 
@@ -361,6 +362,38 @@ pub async fn account_post_trade_url(profile_trade_url: web::Json<ProfileTradeUrl
 
     HttpResponse::Ok()
 }
+
+#[derive(Serialize)]
+pub struct DraftItem {
+    pub appid: u32,
+    pub contextid: String,
+    pub assetid: String,
+    pub amount: u32,
+}
+
+#[derive(Serialize)]
+pub struct OfferDraft {
+    pub give: Vec<DraftItem>,
+    pub autosend: bool,
+}
+
+pub async fn offer_get_draft(path: web::Path<String>) -> HttpResponse {
+    let draft_id = path.into_inner();
+    println!("offer_get_draft: {draft_id}");
+
+    HttpResponse::Ok().json(serde_json::json!({
+        "give": [
+            {
+                "appid": 730,
+                "contextid": "2",
+                "assetid": "TEST_ASSET_ID",
+                "amount": 1
+            }
+        ],
+        "autosend": false
+    }))
+}
+
 
 pub async fn tera_update_data(session: Session, state: web::Data<AppState>, feed_state: web::Data<FeedItemsState>, _user_inventory: web::Data<UserInventoryState>) -> impl Responder {
     let items = feed_state.items.lock().await.clone();
