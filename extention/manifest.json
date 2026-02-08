@@ -1,23 +1,28 @@
 {
-    "name": "TastyRock Steam Auto-Select",
-    "version": "0.1.0",
-    "manifest_version": 3,
-    "description": "Auto-select Steam trade offer items using a TastyRock draft id.",
-    "permissions": ["storage"],
-    "host_permissions": [
-      "https://steamcommunity.com/tradeoffer/*",
-      "http://127.0.0.1:8080/*",
-      "http://localhost:8080/*"
-    ],
-    "background": {
-      "service_worker": "background.js"
-    },
-    "content_scripts": [
-      {
-        "matches": ["https://steamcommunity.com/tradeoffer/*"],
-        "js": ["content.js"],
-        "run_at": "document_idle"
-      }
-    ]
-  }
-  
+  "name": "TastyRock Steam Auto-Select",
+  "version": "0.1.0",
+  "manifest_version": 3,
+  "description": "Auto-select Steam trade offer items using a TastyRock draft id.",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://steamcommunity.com/tradeoffer/*",
+    "http://127.0.0.1:8080/*",
+    "http://localhost:8080/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://steamcommunity.com/tradeoffer/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["page_bridge.js"],
+      "matches": ["https://steamcommunity.com/*"]
+    }
+  ]
+}

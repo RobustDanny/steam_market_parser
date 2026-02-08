@@ -536,9 +536,9 @@ impl DataBase{
                 item_contextid: row.get(4)?,
                 item_appid: row.get(5)?,
                 item_name: row.get(6)?,
-                item_price: row.get(5)?,
-                item_link: row.get(6)?,
-                item_image: row.get(7)?,
+                item_price: row.get(7)?,
+                item_link: row.get(8)?,
+                item_image: row.get(9)?,
             }
         )
         }).expect("DB: query_map previous_offer").collect::<Result<Vec<_>, _>>().expect("DB: failed to collect previous_offer from offer_log");
@@ -611,10 +611,7 @@ impl DataBase{
         give_items: Vec<DraftItem>,
     ) -> Result<String, rusqlite::Error> {
         let draft_id = Uuid::new_v4().to_string();
-        let created_at = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs() as i64;
+        let created_at = Utc::now().timestamp();
 
         let tx = self.connection.transaction()?;
 

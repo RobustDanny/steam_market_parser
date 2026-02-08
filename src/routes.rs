@@ -341,8 +341,8 @@ pub async fn offer_check_offer_to_pay(sent_offer: web::Json<OfferContentToCheck>
     // Map result.offer_items -> DraftItem
     // IMPORTANT: update field name to your real assetid field
     let give: Vec<DraftItem> = result.offer_items.iter().map(|it| DraftItem {
-        appid: 730,
-        contextid: "2".to_string(),
+        appid: it.item_appid.parse::<u32>().unwrap(),
+        contextid: it.item_contextid.to_string(),
         assetid: it.item_asset_id.to_string(), // <-- rename if needed
         amount: 1,
     }).collect();
@@ -367,7 +367,7 @@ pub async fn offer_check_offer_to_pay(sent_offer: web::Json<OfferContentToCheck>
 
     // Append draft_id to the steam trade URL
     let steam_url = format!("{}&tastyrock_draft={}", result.partner_trade_url, draft_id);
-
+    println!("stream_url: {}", steam_url);
     HttpResponse::Ok().json(serde_json::json!({
         "ok": true,
         "offer_id": result.offer_id,
