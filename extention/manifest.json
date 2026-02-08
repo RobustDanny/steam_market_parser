@@ -1,8 +1,8 @@
 {
-  "name": "TastyRock Steam Auto-Select",
+  "name": "TastyRock",
   "version": "0.1.0",
   "manifest_version": 3,
-  "description": "Auto-select Steam trade offer items using a TastyRock draft id.",
+  "description": "Auto-select Steam trade offer items using a TastyRock.",
   "permissions": ["storage"],
   "host_permissions": [
     "https://steamcommunity.com/tradeoffer/*",

@@ -359,21 +359,46 @@ export function connectStoreChatWS(buyerId, traderId, role) {
             };
           });
 
-          document.querySelector(".selected_items_accept_btn").addEventListener("click", async () => {
-            await fetch("/api/offer/check_offer_to_pay", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                offer_id: checkOfferId(),
-                special_for_save_offer,
-                partner_steam_id: checkIDs().buyer_id,
-              })
-            })
-          });
-
+          document.querySelector(".selected_items_accept_btn").addEventListener(
+            "click",
+            async () => {
+              // 🔓 open tab immediately (user gesture)
+              const steamTab = window.open("about:blank", "_blank");
           
-
-
+              if (!steamTab) {
+                console.error("Popup blocked");
+                return;
+              }
+          
+              try {
+                const res = await fetch("/api/offer/check_offer_to_pay", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    offer_id: checkOfferId(),
+                    special_for_save_offer,
+                    partner_steam_id: checkIDs().buyer_id,
+                  }),
+                });
+          
+                const data = await res.json();
+          
+                if (!res.ok || !data?.ok || !data.steam_url) {
+                  console.error("check_offer_to_pay failed:", data);
+                  steamTab.close();
+                  return;
+                }
+          
+                // ✅ redirect the already-opened tab
+                steamTab.location.href = data.steam_url;
+              } catch (e) {
+                console.error("request failed:", e);
+                steamTab.close();
+              }
+            },
+            { once: true }
+          );
+          
         }
 
         if(myRole === "buyer"){
