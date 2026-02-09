@@ -24,14 +24,15 @@ background: #212121;                 /* same as your cards */
 padding: 25px;
 border-radius: 12px;
 width: 90%;
-height: 90%;
-max-width: 640px;
+height: 80%;
+/* max-width: 640px; */
+max-width: 1200px;
 border: 1px solid #323232;           /* consistent border */
 box-shadow: 0 8px 25px rgba(0,0,0,0.35);
 color: #fff;
 display: flex;
 flex-direction: column;
-flex-wrap: wrap;
+flex-wrap: nowrap;   
 gap: 14px;
 z-index: 9999;
 
@@ -193,12 +194,14 @@ border-radius: 4px;
 }
 
 .user_inventory{
-display: flex; 
-flex-wrap: wrap; 
-overflow-y: auto;
-overflow-x: hidden;
-justify-content: center;
-height: 300px;
+  flex: 1;                    /* ✅ fill remaining space under hr */
+  min-height: 0;              /* ✅ allows inner scroll */
+  height: auto;               /* ✅ don't force fixed height */
+  display: flex;
+  flex-wrap: wrap;
+  overflow-y: auto;
+  overflow-x: hidden;
+  justify-content: center;
 }
 
 .user_inventory span{

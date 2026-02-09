@@ -1,7 +1,25 @@
 <div class="head_panel">
+  
     <div class="sign_in_container">
         {% if steam_user %}
+
+        <!-- <div class="input">
+            <button class="value">
+                <img src="/front/svg/offer_list.svg" class="steam_user_avatar">
+              Feed
+            </button>
+            <button class="value">
+                <img src="/front/svg/ad_me_icon.svg" class="steam_user_avatar">
+              Followers
+            </button>
+            <button class="value">
+                <img src="{{ steam_user.avatar_url_full }}" class="steam_user_avatar">
+              Settings
+            </button>
+        </div> -->
+
         <input id="main_steam_id" type="hidden" value="{{steam_user.steamid}}" style="display: none;">
+        
         <div class="hidded_button" id="offerList">
             <img src="/front/svg/offer_list.svg" class="steam_user_avatar">
         </div>
