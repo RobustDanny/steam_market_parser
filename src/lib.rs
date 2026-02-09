@@ -392,12 +392,25 @@ pub struct MostRecentItemsFilter{
     pub query: String,
 }
 
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct CardAppearingFilter{
+    pub card_appearing: String,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct FilterInput {
     pub appid: String,
     pub price_min: String,
     pub price_max: String,
     pub query: String,
+    pub card_appearing: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq)]
+pub enum CardAppearing {
+    StoresItems,
+    Items,
+    Ads,
 }
 
 //----------------------------------

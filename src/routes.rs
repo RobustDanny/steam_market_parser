@@ -5,7 +5,7 @@ use uuid::Uuid;
 use serde_json::json;
 use serde::Serialize;
 use regex::Regex;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::{
     AppState, 
@@ -14,29 +14,10 @@ use crate::{
     UserInventoryState,
     StoreHashMapState,
     StoreWebsocketListState,
+    GameListState
 };
 use steam_market_parser::{
-    AdCardHistoryVec, 
-    AppContext, 
-    BuyerAndStoreIDS, 
-    OfferContent,
-    OfferContentUpdated,
-    FilterInput, 
-    HistoryForm, 
-    Inventory, 
-    InventoryApp, 
-    InventoryGame, 
-    LoadGameInventory, 
-    OfferMakingPlayload, 
-    SteamUser, 
-    StoreID, 
-    UserProfileAds,
-    CurrentStatusOffer,
-    OfferContentToCheck,
-    OfferCheckResult,
-    ProfileTradeUrl,
-    TradeOfferRequest,
-    DraftItem,
+    AdCardHistoryVec, AppContext, BuyerAndStoreIDS, CardAppearingFilter, CurrentStatusOffer, DraftItem, FilterInput, HistoryForm, Inventory, InventoryApp, InventoryGame, LoadGameInventory, MostRecentItemsFilter, OfferCheckResult, OfferContent, OfferContentToCheck, OfferContentUpdated, OfferMakingPlayload, ProfileTradeUrl, SteamUser, StoreID, TradeOfferRequest, UserProfileAds
 };
 
 use crate::db::DataBase;
@@ -83,19 +64,57 @@ pub async fn load_inventory(_user_inventory: web::Data<UserInventoryState>, para
             });
         }        
 
-        let respond: Inventory = match serde_json::from_str(&respond) {
+        let mut respond: Inventory = match serde_json::from_str(&respond) {
             Ok(inv) => inv,
             Err(e) => {
                 eprintln!("Steam inventory parse error: {e}");
-                return HttpResponse::BadGateway()
-                    .body("Invalid inventory response from Steam");
+                return HttpResponse::BadGateway().body("Invalid inventory response from Steam");
             }
         };
         
+        respond = keep_only_tradable(respond);
+        
+        HttpResponse::Ok().json(&respond)
+        
+}
 
-        // *user_inventory.inventory.lock().await = respond;
+fn keep_only_tradable(mut inv: Inventory) -> Inventory {
+    // 1) collect all (classid, instanceid) pairs that are tradable == 1
+    let tradable_keys: HashSet<(String, String)> = inv
+        .descriptions
+        .iter()
+        .filter(|d| d.tradable == Some(1))
+        .filter_map(|d| {
+            Some((
+                d.classid.clone()?,     // Option<String>
+                d.instanceid.clone()?,  // Option<String>
+            ))
+        })
+        .collect();
 
-    HttpResponse::Ok().json(&respond)
+    // 2) filter descriptions down to tradable ones (optional but usually desired)
+    inv.descriptions = inv
+        .descriptions
+        .into_iter()
+        .filter(|d| d.tradable == Some(1))
+        .collect();
+
+    // 3) filter assets to only those whose (classid, instanceid) is tradable
+    inv.assets = inv
+        .assets
+        .into_iter()
+        .filter(|a| {
+            match (&a.classid, &a.instanceid) {
+                (Some(c), Some(i)) => tradable_keys.contains(&(c.clone(), i.clone())),
+                _ => false,
+            }
+        })
+        .collect();
+
+    // asset_properties: you can keep as-is, or filter by matching assetid/contextid if you want.
+    inv.total_inventory_count = Some(inv.assets.len() as u32);
+
+    inv
 }
 
 ///add error handle
@@ -130,8 +149,22 @@ pub async fn add_ad_steam_user_to_db(form: web::Form<UserProfileAds>, state: web
 pub async fn post_most_recent_item_filters(params: web::Query<FilterInput>,
     session: Session)-> impl Responder{
 
-        session.insert("filters", &*params).unwrap();
-    
+        let deref_param = &*params;
+        println!("{deref_param:#?}");
+        let deref_item_filters = MostRecentItemsFilter{
+            appid: deref_param.appid.clone(),
+            price_min: deref_param.price_min.clone(),
+            price_max: deref_param.price_max.clone(),
+            query: deref_param.query.clone(),
+        };
+
+        let deref_card_filters = CardAppearingFilter{
+            card_appearing: deref_param.card_appearing.clone()
+        };
+
+        session.insert("item_filters", deref_item_filters).unwrap();
+        session.insert("card_filters", deref_card_filters).unwrap();
+        
         HttpResponse::Ok().json(&*params)
 }
 
@@ -414,8 +447,13 @@ pub async fn offer_get_draft(path: web::Path<String>) -> HttpResponse {
 
 
 
-pub async fn tera_update_data(session: Session, state: web::Data<AppState>, feed_state: web::Data<FeedItemsState>, _user_inventory: web::Data<UserInventoryState>) -> impl Responder {
+pub async fn tera_update_data(session: Session, 
+    state: web::Data<AppState>, 
+    feed_state: web::Data<FeedItemsState>, 
+    _user_inventory: web::Data<UserInventoryState>,
+    game_list: web::Data<GameListState>) -> impl Responder {
     let items = feed_state.items.lock().await.clone();
+    let game_list_vec = game_list.game_list.lock().await.clone();
     let filters: FilterInput = match session.get("filters") {
         Ok(Some(f)) => f,
         _ => FilterInput {
@@ -423,6 +461,7 @@ pub async fn tera_update_data(session: Session, state: web::Data<AppState>, feed
             price_min: "0".into(),
             price_max: "999999".into(),
             query: "".into(),
+            card_appearing: "stores_items".into(),
         },
     };
     
@@ -441,6 +480,7 @@ pub async fn tera_update_data(session: Session, state: web::Data<AppState>, feed
     ctx.insert("filters", &filters);
     ctx.insert("steam_user", &steam_user);
     ctx.insert("vec_ad_cards_history", &vec_ad_cards_history);
+    ctx.insert("game_list", &game_list_vec);
 
     state
         .tera

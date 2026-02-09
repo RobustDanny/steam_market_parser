@@ -8,14 +8,14 @@ use tera::{Tera};
 use tokio::sync::{mpsc, Mutex, broadcast};
 
 use steam_market_parser::{
-    MostRecentItemsFilter,
+    ChatSessionPlayload, 
+    Inventory, 
+    MostRecent, 
     MostRecentItems, 
+    MostRecentItemsFilter, 
     SteamMostRecentResponse, 
-    MostRecent,
-    UserAdsQueue, 
-    Inventory,
-    StoreQueueHashmap,
-    ChatSessionPlayload
+    StoreQueueHashmap, 
+    UserAdsQueue
 };
 
 mod db;
@@ -59,6 +59,7 @@ mod background_tasks;
 use background_tasks::{
     tokio_user_ad_loop,
     tokio_receiver_most_recent_items_request,
+    tokio_db_update_game_list
 };
 
 mod store_chat_websocket;
@@ -86,6 +87,10 @@ struct UserInventoryState{
 
 struct StoreHashMapState{
     store_hashmap_state: StoreQueueHashmap,
+}
+
+struct GameListState{
+    game_list: Mutex<Vec<String>>,
 }
 
 struct StoreWebsocketListState{
@@ -155,8 +160,17 @@ async fn main()-> std::io::Result<()> {
         websocket_list: Mutex::new(HashMap::new()),
     });
 
+    let game_list_state = web::Data::new(GameListState{
+        game_list: Mutex::new(Vec::new()),
+    });
+
     let user_ad_state_for_ads = user_ad_state.clone();
+    let game_list_state_for_background = game_list_state.clone();
     let feed_state_for_ws = feed_state.clone();
+
+    tokio::spawn(async move {
+        tokio_db_update_game_list(game_list_state_for_background).await;
+    });
 
     tokio::spawn(async move {
         tokio_receiver_most_recent_items_request(response_receiver, db, feed_state_for_ws).await;
@@ -178,6 +192,7 @@ async fn main()-> std::io::Result<()> {
             .app_data(user_inventory.clone())
             .app_data(user_ad_state.clone())
             .app_data(feed_state.clone())
+            .app_data(game_list_state.clone())
             .app_data(store_hashmap.clone())
             .app_data(chat_hub.clone())
             .app_data(websocket_list_state.clone())

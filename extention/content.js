@@ -3,7 +3,7 @@
   "use strict";
 
   const params = new URLSearchParams(location.search);
-  const draftId = params.get("tastyrock_draft");
+  const draftId = params.get("tastyrock");
   if (!draftId) return;
 
   const API_BASE = "http://127.0.0.1:8080";
@@ -15,7 +15,7 @@
 
   async function fetchDraft() {
     const resp = await chrome.runtime.sendMessage({
-      type: "FETCH_TASTYROCK_DRAFT",
+      type: "FETCH_TASTYROCK",
       url: draftUrl,
     });
     if (!resp?.ok) throw new Error(resp?.error || "Unknown fetch error");

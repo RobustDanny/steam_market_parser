@@ -683,6 +683,21 @@ impl DataBase{
         })
     }
 
+    pub fn db_update_game_list(&self)-> Result<Vec<String>, rusqlite::Error>{
+
+        let mut quary = self.connection.prepare("
+        SELECT DISTINCT game FROM item_feed
+        ").expect("DB: Cant get game form item_feed");
+
+        let games = quary.query_map([], |row| {
+            let game: String = row.get(0)?;
+            Ok(game)
+        })?
+        .collect::<Result<Vec<_>, _>>()?;
+
+        Ok(games)
+    }
+
     fn create_tables(&self) {
         self.connection.execute_batch("
             CREATE TABLE IF NOT EXISTS item_feed (

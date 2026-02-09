@@ -6,6 +6,7 @@ use crate::{
     UserAdState,
     FeedItemsState,
     SteamMostRecentResponse,
+    GameListState
 };
 
 use crate::db::DataBase;
@@ -31,6 +32,31 @@ pub async fn tokio_user_ad_loop(state: web::Data<UserAdState>){
 
         drop(ads);
         tokio::time::sleep(Duration::from_secs(4)).await;
+    }
+}
+
+pub async fn tokio_db_update_game_list(game_list: web::Data<GameListState>){
+    loop {
+        
+        let db = DataBase::connect_to_db();
+
+        let list = match db.db_update_game_list() {
+            Ok(vec) => vec,
+            Err(e) => {
+                eprintln!("db_update_game_list failed: {e}");
+                tokio::time::sleep(Duration::from_secs(10)).await;
+                continue;
+            }
+        };
+
+        println!("List {list:#?}");
+        {
+            let mut game_list_guard = game_list.game_list.lock().await;
+            *game_list_guard = list;
+        }
+
+        drop(db);
+        tokio::time::sleep(Duration::from_secs(86400)).await;
     }
 }
 

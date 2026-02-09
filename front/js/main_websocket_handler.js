@@ -1,12 +1,23 @@
-// =======================
-// WS setup
-// =======================
+const main_ws = new WebSocket("ws://127.0.0.1:8080/ws");
+const ad_main_ws = new WebSocket("ws://127.0.0.1:8080/ws/ads");
 
-window.ws = new WebSocket("ws://127.0.0.1:8080/ws");
-window.ws_ad = new WebSocket("ws://127.0.0.1:8080/ws/ads");
+let CardAdAppearing = "stores_items";
 
-// Selected store steamid (set when user clicks an ad card)
-window.selectedStoreSteamId = null;
+export function sendMainWS(payload) {
+  if (!main_ws || main_ws.readyState !== WebSocket.OPEN) {
+    console.warn("WS not connected (send skipped)");
+    return;
+  }
+  main_ws.send(JSON.stringify(payload));
+}
+
+export function sendAdWS(payload) {
+  if (!ad_main_ws || ad_main_ws.readyState !== WebSocket.OPEN) {
+    console.warn("WS not connected (send skipped)");
+    return;
+  }
+  ad_main_ws.send(JSON.stringify(payload));
+}
 
 // =======================
 // Pagination state
@@ -62,7 +73,7 @@ function addCard(html) {
   // store newest first
   cards.unshift(html);
 
-  // If currently browsing older pages, keep the "same items" visible:
+  // If currently bromain_wsing older pages, keep the "same items" visible:
   // when a new card arrives at the front, shift the view by 1 (only if not on newest page)
   if (currentPage > 0) currentPage += 1;
 
@@ -113,63 +124,70 @@ if (btnPause) {
 }
 
 // =======================
-// WS_AD (ads feed)
+// ad_main_ws (ads feed)
 // =======================
 
-ws_ad.onopen = () => console.log("WS_AD CONNECTED");
-ws_ad.onclose = () => console.log("WS_AD CLOSED");
-ws_ad.onerror = (err) => console.log("WS_AD ERROR", err);
+ad_main_ws.onopen = () => console.log("ad_main_ws CONNECTED");
+ad_main_ws.onclose = () => console.log("ad_main_ws CLOSED");
+ad_main_ws.onerror = (err) => console.log("ad_main_ws ERROR", err);
 
-ws_ad.onmessage = (event) => {
-  const data = JSON.parse(event.data);
+ad_main_ws.onmessage = (event) => {
+  if(CardAdAppearing == "stores" || CardAdAppearing == "stores_items"){
+    const data = JSON.parse(event.data);
 
-  if (!data.user_ads || !data.user_ads[0]) {
-    console.error("No ads received or ads data is invalid");
-    return;
-  }
+    if (!data.user_ads || !data.user_ads[0]) {
+      console.error("No ads received or ads data is invalid");
+      return;
+    }
 
-  // Get only the FIRST ad
-  const user_ad = data.user_ads[0];
+    // Get only the FIRST ad
+    const user_ad = data.user_ads[0];
 
-  const img1 = user_ad.first_item_image  || "/front/svg/default_item_icon.svg";
-  const img2 = user_ad.second_item_image || "/front/svg/default_item_icon.svg";
-  const img3 = user_ad.third_item_image  || "/front/svg/default_item_icon.svg";
-  const img4 = user_ad.fourth_item_image || "/front/svg/default_item_icon.svg";
+    const img1 = user_ad.first_item_image  || "/front/svg/default_item_icon.svg";
+    const img2 = user_ad.second_item_image || "/front/svg/default_item_icon.svg";
+    const img3 = user_ad.third_item_image  || "/front/svg/default_item_icon.svg";
+    const img4 = user_ad.fourth_item_image || "/front/svg/default_item_icon.svg";
 
-  const adHtml = `
-    <div class="ad_card_from_feed" data-steamid="${user_ad.steamid}">
-      <div class="card_hover-container">
-        <div class="ad_card">
-          <div class="ad_image_container">
-            <img src="${img1}" class="ad_card_image">
-            <img src="${img2}" class="ad_card_image">
-            <img src="${img3}" class="ad_card_image">
-            <img src="${img4}" class="ad_card_image">
+    const adHtml = `
+      <div class="ad_card_from_feed" data-steamid="${user_ad.steamid}">
+        <div class="card_hover-container">
+          <div class="ad_card">
+            <div class="ad_image_container">
+              <img src="${img1}" class="ad_card_image">
+              <img src="${img2}" class="ad_card_image">
+              <img src="${img3}" class="ad_card_image">
+              <img src="${img4}" class="ad_card_image">
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  `;
+    `;
 
-  if (isPaused) {
-    pausedBuffer.unshift(adHtml);
-    return;
+    if (isPaused) {
+      pausedBuffer.unshift(adHtml);
+      return;
+    }
+    addCard(adHtml);
   }
-  addCard(adHtml);
 };
 
 // =======================
-// WS (items feed)
+// main_ws (items feed)
 // =======================
 
-ws.onopen = () => console.log("WS CONNECTED");
-ws.onclose = () => console.log("WS CLOSED");
-ws.onerror = (err) => console.log("WS ERROR", err);
+main_ws.onopen = () => console.log("main_ws CONNECTED");
+main_ws.onclose = () => console.log("main_ws CLOSED");
+main_ws.onerror = (err) => console.log("main_ws ERROR", err);
 
-ws.onmessage = (event) => {
+main_ws.onmessage = (event) => {
   const payload = JSON.parse(event.data);
 
   // console.log("Received update:", payload);
+  if (payload.type === "filters") {
+    if (payload.card_appearing) {
+      CardAdAppearing = payload.card_appearing;
+    }
+  }
 
   const arr = payload.items || [];
   if (!arr.length) return;

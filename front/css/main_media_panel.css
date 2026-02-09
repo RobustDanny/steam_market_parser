@@ -41,6 +41,13 @@ width: 20px;
 height: 20px;
 }
 
+.menu_icon{
+    justify-self: center;
+    align-self: center;
+    width: 20px;
+    height: 20px;
+}
+
 .media_icons_pause_cont{
 border-radius: 100%;
 display: flex;
@@ -52,6 +59,19 @@ align-items: center;
 justify-content: center;
 visibility: visible;
 cursor: pointer;
+}
+
+.menu_icons_pause_cont{
+    border-radius: 100%;
+    display: flex;
+    width: 40px;
+    height: 40px;
+    border: 1px solid #323232;
+    background-color: #212121;
+    align-items: center;
+    justify-content: center;
+    visibility: visible;
+    cursor: pointer;
 }
 
 .arrow_down_cont{

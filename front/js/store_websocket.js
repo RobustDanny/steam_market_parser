@@ -208,7 +208,6 @@ export function connectStoreChatWS(buyerId, traderId, role) {
         if (!container) return;
     
         container.innerHTML = "";
-        console.log("offer_items kek", msg.items);
         msg.items.forEach(item => {
 
           container.insertAdjacentHTML("beforeend", `

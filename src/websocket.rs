@@ -4,7 +4,10 @@ use actix_web_actors::ws;
 use actix_web::{Error, HttpRequest, Result, HttpResponse, web};
 use actix::prelude::*;
 use actix_session::Session;
-use steam_market_parser::UserProfileAds;
+use steam_market_parser::{
+    UserProfileAds,
+    CardAppearingFilter
+};
 
 use crate::{
     UserAdState, 
@@ -25,7 +28,8 @@ pub struct AdsBroadcastPayload {
 
 struct WsActor {
     state: web::Data<FeedItemsState>,
-    user_filters: MostRecentItemsFilter,
+    item_card_filters: MostRecentItemsFilter,
+    card_filters: CardAppearingFilter,
 }
 
 struct AdWSActor {
@@ -71,17 +75,36 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for AdWSActor {
 }
 
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsActor {
-    fn handle(&mut self, _msg: Result<ws::Message, ws::ProtocolError>, _ctx: &mut Self::Context) {
+    fn handle(&mut self, _msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
         if let Ok(ws::Message::Text(text)) = _msg {
             if let Ok(v) = serde_json::from_str::<serde_json::Value>(&text) {
                 if v["type"] == "filters" {
-                    self.user_filters = MostRecentItemsFilter {
+                    self.item_card_filters = MostRecentItemsFilter {
                         appid: v["appid"].as_str().unwrap_or("Steam").into(),
                         price_min: v["price_min"].as_str().unwrap_or("0").into(),
                         price_max: v["price_max"].as_str().unwrap_or("999999").into(),
                         query: v["query"].as_str().unwrap_or("").into(),
                     };
-                    println!("WS FILTERS UPDATED → {:?}", self.user_filters);
+
+                    if let Some(ca) = v["card_appearing"].as_str() {
+                        self.card_filters.card_appearing = ca.to_string();
+                    }
+                
+                    println!(
+                        "WS FILTERS UPDATED → {:?}, card_appearing={}",
+                        self.item_card_filters,
+                        self.card_filters.card_appearing
+                    );
+
+                    ctx.text(serde_json::json!({
+                        "type": "filters",
+                        "card_appearing": self.card_filters.card_appearing,
+                        "appid": self.item_card_filters.appid,
+                        "price_min": self.item_card_filters.price_min,
+                        "price_max": self.item_card_filters.price_max,
+                        "query": self.item_card_filters.query,
+                      }).to_string());
+                      
                 }
             }
         }
@@ -133,27 +156,57 @@ impl Handler<BroadcastItems> for WsActor {
     ///add filter by the game!!!
     fn handle(&mut self, msg: BroadcastItems, ctx: &mut Self::Context) {
         // apply per-user filters
-        let filtered_items: Vec<MostRecent> = msg.0.items
-            .iter()
-            .filter(|item| {
-                let converted_price = item.converted_price.parse::<f64>().unwrap_or(0.0);
-                let p_min = self.user_filters.price_min.parse::<f64>().unwrap_or(0.0);
-                let p_max = self.user_filters.price_max.parse::<f64>().unwrap_or(f64::MAX);
-                //add filter by the game!!!
-                converted_price >= p_min &&
-                converted_price <= p_max &&
-                item.name.to_lowercase().contains(&self.user_filters.query.to_lowercase())
-            })
-            .cloned()
-            .collect();
-    
-        let response = WsResponse {
-            items: filtered_items,
-        };
-        // println!("Broadcast → sending {} items", response.items.len());
+        if self.card_filters.card_appearing == "stores_items".to_string() || self.card_filters.card_appearing == "items".to_string() {
+            let filtered_items: Vec<MostRecent> = msg.0.items
+                .iter()
+                .filter(|item| {
+                    let converted_price = item.converted_price.parse::<f64>().unwrap_or(0.0);
+                    let p_min = self.item_card_filters.price_min.parse::<f64>().unwrap_or(0.0);
+                    let p_max = self.item_card_filters.price_max.parse::<f64>().unwrap_or(f64::MAX);
 
-        if let Ok(json) = serde_json::to_string(&response) {
-            ctx.text(json);
+                    
+                    //add filter by the game!!!
+
+
+                    converted_price >= p_min &&
+                    converted_price <= p_max &&
+                    item.name.to_lowercase().contains(&self.item_card_filters.query.to_lowercase())
+                })
+                .cloned()
+                .collect();
+        
+            let response = WsResponse {
+                items: filtered_items,
+            };
+            // println!("Broadcast → sending {} items", response.items.len());
+
+            if let Ok(json) = serde_json::to_string(&response) {
+                ctx.text(json);
+            }
+        }
+        else {
+            // let filtered_items: Vec<MostRecent> = msg.0.items
+            //     .iter()
+            //     .filter(|item| {
+            //         let converted_price = item.converted_price.parse::<f64>().unwrap_or(0.0);
+            //         let p_min = self.item_card_filters.price_min.parse::<f64>().unwrap_or(0.0);
+            //         let p_max = self.item_card_filters.price_max.parse::<f64>().unwrap_or(f64::MAX);
+            //         //add filter by the game!!!
+            //         converted_price >= p_min &&
+            //         converted_price <= p_max &&
+            //         item.name.to_lowercase().contains(&self.item_card_filters.query.to_lowercase())
+            //     })
+            //     .cloned()
+            //     .collect();
+        
+            let response = WsResponse {
+                items: Vec::new(),
+            };
+            // println!("Broadcast → sending {} items", response.items.len());
+
+            if let Ok(json) = serde_json::to_string(&response) {
+                ctx.text(json);
+            }
         }
     }
 }
@@ -164,17 +217,27 @@ pub async fn ws_handler(
     session: Session,
     state: web::Data<FeedItemsState>,
 ) -> Result<HttpResponse, Error> {
-    let filters: Option<MostRecentItemsFilter> = session.get("filters")?;
-    let filters = filters.unwrap_or_else(|| MostRecentItemsFilter {
+
+    // println!("session: {session:#?}");
+
+    let item_filters: Option<MostRecentItemsFilter> = session.get("item_filters")?;
+    let card_filters: Option<CardAppearingFilter> = session.get("card_filters")?;
+
+    let item_filters = item_filters.unwrap_or_else(|| MostRecentItemsFilter {
         appid: "Steam".into(),
         price_min: "0".into(),
         price_max: "99999".into(),
         query: "".into(),
     });
 
+    let card_filters = card_filters.unwrap_or_else(|| CardAppearingFilter {
+        card_appearing: "stores_items".into(),
+    });
+
     let ws = WsActor {
         state: state.clone(),
-        user_filters: filters,
+        item_card_filters: item_filters,
+        card_filters
     };
 
     ws::start(ws, &req, stream)

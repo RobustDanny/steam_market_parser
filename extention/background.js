@@ -1,5 +1,5 @@
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-    if (msg?.type !== "FETCH_TASTYROCK_DRAFT") return;
+    if (msg?.type !== "FETCH_TASTYROCK") return;
   
     (async () => {
       try {
