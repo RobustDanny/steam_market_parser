@@ -160,17 +160,23 @@ impl Handler<BroadcastItems> for WsActor {
             let filtered_items: Vec<MostRecent> = msg.0.items
                 .iter()
                 .filter(|item| {
+                    // skip items without game
+                    if item.game.trim().is_empty() {
+                        return false;
+                    }
+                
                     let converted_price = item.converted_price.parse::<f64>().unwrap_or(0.0);
                     let p_min = self.item_card_filters.price_min.parse::<f64>().unwrap_or(0.0);
                     let p_max = self.item_card_filters.price_max.parse::<f64>().unwrap_or(f64::MAX);
-
-                    
-                    //add filter by the game!!!
-
-
+                
                     converted_price >= p_min &&
                     converted_price <= p_max &&
-                    item.name.to_lowercase().contains(&self.item_card_filters.query.to_lowercase())
+                    item.name
+                        .to_lowercase()
+                        .contains(&self.item_card_filters.query.to_lowercase()) &&
+                    item.game
+                        .to_lowercase()
+                        .contains(&self.item_card_filters.appid.to_lowercase())
                 })
                 .cloned()
                 .collect();
