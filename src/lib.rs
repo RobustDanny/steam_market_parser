@@ -697,7 +697,7 @@ impl MostRecentItems{
                 }
             };
 
-            tokio::time::sleep(Duration::from_secs(4)).await;
+            tokio::time::sleep(Duration::from_secs(10)).await;
         }
     }
 }

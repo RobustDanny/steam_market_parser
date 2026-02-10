@@ -1,4 +1,6 @@
-import { sticky_tooltip } from "./misc_shared_fns.js";
+import { sticky_tooltip,
+  ChangeStyleOfElements
+ } from "./misc_shared_fns.js";
 import { 
   sendChatMessage, 
   closeStoreChatWS, 
@@ -10,7 +12,8 @@ import {
   checkStoreChatWS,
   checkOfferId,
 } from "./store_websocket.js";
-import { startBtcPay } from "./payments/bitcoin.js";
+import { startBtcPay
+ } from "./payments/bitcoin.js";
 
 let inventoryHandlersAttached = false;
 
@@ -205,6 +208,14 @@ async function sendItems() {
 //Quit
 
 quitIcon.addEventListener("click", () => {
+
+  ChangeStyleOfElements([
+    // document.querySelector(".store_inventory_list"),
+    // document.querySelectorAll(".selected_item_remove_btn"),
+    document.getElementById("store_button_load_inventory"),
+    document.getElementById("settings_appid_select")
+  ], "display", "inline");
+
   clearOfferId();
   sendWS({ type: "clear_offer" });
 

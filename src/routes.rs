@@ -399,7 +399,7 @@ pub async fn offer_check_offer_to_pay(sent_offer: web::Json<OfferContentToCheck>
     drop(db);
 
     // Append draft_id to the steam trade URL
-    let steam_url = format!("{}&tastyrock_draft={}", result.partner_trade_url, draft_id);
+    let steam_url = format!("{}&tastyrock={}", result.partner_trade_url, draft_id);
     println!("stream_url: {}", steam_url);
     HttpResponse::Ok().json(serde_json::json!({
         "ok": true,
