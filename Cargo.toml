@@ -23,3 +23,4 @@ tokio-stream = "0.1.17"
 dotenv = "0.15"
 uuid = { version = "1.20.0", features = ["v4"] }
 chrono = "0.4.43"
+stripe = { package = "async-stripe", version = "0.35", features = ["runtime-tokio-hyper"] }

@@ -52,7 +52,8 @@ use routes::{
     offer_update_status_offer,
     offer_check_offer_to_pay,
     account_post_trade_url,
-    offer_get_draft
+    offer_get_draft,
+    payment_stripe_success
 };
 
 mod background_tasks;
@@ -218,6 +219,9 @@ async fn main()-> std::io::Result<()> {
                     .route("/update_status_offer", web::post().to(offer_update_status_offer))
                     .route("/check_offer_to_pay", web::post().to(offer_check_offer_to_pay))
                     .route("/draft/{draft_id}", web::get().to(offer_get_draft))
+                )
+                .service(web::scope("/payment")
+                    .route("/stripe_success", web::get().to(payment_stripe_success))
                 )
             )
             .route("/store_rating", web::get().to(store_rating))

@@ -3,7 +3,7 @@ use actix_web::{HttpResponse, Responder, web, Result};
 use tera::{Context};
 use uuid::Uuid;
 use serde_json::json;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use regex::Regex;
 use std::collections::{HashMap, HashSet};
 
@@ -445,7 +445,15 @@ pub async fn offer_get_draft(path: web::Path<String>) -> HttpResponse {
     }
 }
 
+#[derive(Deserialize)]
+pub struct StripObj {
+    customer: String,
+    status: String,
+}
 
+pub async fn payment_stripe_success(obj: web::Query<StripObj>) -> String {
+    obj.customer.clone()
+}
 
 pub async fn tera_update_data(session: Session, 
     state: web::Data<AppState>, 

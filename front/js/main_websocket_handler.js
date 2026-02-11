@@ -1,5 +1,13 @@
-const main_ws = new WebSocket("ws://127.0.0.1:8080/ws");
-const ad_main_ws = new WebSocket("ws://127.0.0.1:8080/ws/ads");
+function wsUrl(path) {
+  const proto = location.protocol === "https:" ? "wss" : "ws";
+  return `${proto}://${location.host}${path}`;
+}
+
+const main_ws = new WebSocket(wsUrl("/ws"));
+const ad_main_ws = new WebSocket(wsUrl("/ws/ads"));
+
+// const main_ws = new WebSocket("ws://127.0.0.1:8080/ws");
+// const ad_main_ws = new WebSocket("ws://127.0.0.1:8080/ws/ads");
 
 let CardAdAppearing = "stores_items";
 
@@ -132,7 +140,7 @@ ad_main_ws.onclose = () => console.log("ad_main_ws CLOSED");
 ad_main_ws.onerror = (err) => console.log("ad_main_ws ERROR", err);
 
 ad_main_ws.onmessage = (event) => {
-  if(CardAdAppearing == "stores" || CardAdAppearing == "stores_items"){
+  if (CardAdAppearing == "stores" || CardAdAppearing == "stores_items") {
     const data = JSON.parse(event.data);
 
     if (!data.user_ads || !data.user_ads[0]) {
@@ -143,9 +151,9 @@ ad_main_ws.onmessage = (event) => {
     // Get only the FIRST ad
     const user_ad = data.user_ads[0];
 
-    const img1 = user_ad.first_item_image  || "/front/svg/default_item_icon.svg";
+    const img1 = user_ad.first_item_image || "/front/svg/default_item_icon.svg";
     const img2 = user_ad.second_item_image || "/front/svg/default_item_icon.svg";
-    const img3 = user_ad.third_item_image  || "/front/svg/default_item_icon.svg";
+    const img3 = user_ad.third_item_image || "/front/svg/default_item_icon.svg";
     const img4 = user_ad.fourth_item_image || "/front/svg/default_item_icon.svg";
 
     const adHtml = `
