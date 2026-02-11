@@ -416,6 +416,7 @@ pub enum CardAppearing {
 //----------------------------------
 //----------------------------------
 //Response
+
 #[derive(Deserialize, Serialize, Debug)]
 struct SteamMarketResponse {
     success: bool,

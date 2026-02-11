@@ -53,7 +53,10 @@ use routes::{
     offer_check_offer_to_pay,
     account_post_trade_url,
     offer_get_draft,
-    payment_stripe_success
+    stripe_webhook,
+    stripe_create_checkout,
+    payment_success_page,
+    payment_cancel_page
 };
 
 mod background_tasks;
@@ -221,7 +224,10 @@ async fn main()-> std::io::Result<()> {
                     .route("/draft/{draft_id}", web::get().to(offer_get_draft))
                 )
                 .service(web::scope("/payment")
-                    .route("/stripe_success", web::get().to(payment_stripe_success))
+                .route("/stripe/webhook", web::post().to(stripe_webhook))
+                .route("/stripe/create_checkout", web::post().to(stripe_create_checkout))
+                .route("/payment-success", web::get().to(payment_success_page))
+                .route("/payment-cancel", web::get().to(payment_cancel_page))
                 )
             )
             .route("/store_rating", web::get().to(store_rating))

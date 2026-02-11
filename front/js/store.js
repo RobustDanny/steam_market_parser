@@ -1,10 +1,11 @@
-import { sticky_tooltip,
+import {
+  sticky_tooltip,
   ChangeStyleOfElements
- } from "./misc_shared_fns.js";
-import { 
-  sendChatMessage, 
-  closeStoreChatWS, 
-  sendWS, 
+} from "./misc_shared_fns.js";
+import {
+  sendChatMessage,
+  closeStoreChatWS,
+  sendWS,
   clearOfferId,
   checkIDs,
   updateStoreButtonsWrapper,
@@ -12,8 +13,9 @@ import {
   checkStoreChatWS,
   checkOfferId,
 } from "./store_websocket.js";
-import { startBtcPay
- } from "./payments/bitcoin.js";
+import {
+  startBtcPay
+} from "./payments/bitcoin.js";
 
 let inventoryHandlersAttached = false;
 
@@ -45,18 +47,22 @@ function getChatRole() {
   return mainID === trader_id ? "trader" : "buyer";
 }
 
-function renderPayOptions(){
+function renderPayOptions() {
   const cont = document.querySelector(".store_payment_area");
+  if (!cont) return console.error("store_payment_area not found");
+
   cont.insertAdjacentHTML("beforeend", `
     <div class="store_payment_grid">
-      <div class="store_payment_card" id="pay_stripe">
+      <div class="store_payment_card" id="pay_cancel">
         <img src="/front/svg/payments/cancel_icon.svg" alt="Cancel">
         <span class="hidden_text_store">Cancel</span>
       </div>
-      <div class="store_payment_card" id="pay_stripe">
+
+      <div class="store_payment_card" id="pay_stripe_btn">
         <img src="/front/svg/payments/stripe.svg" alt="Stripe">
         <span class="hidden_text_store">Stripe</span>
       </div>
+
       <div class="store_payment_card" id="pay_btc">
         <img src="/front/svg/payments/bitcoin.svg" alt="Bitcoin">
         <span class="hidden_text_store">Bitcoin</span>
@@ -66,7 +72,48 @@ function renderPayOptions(){
     <div id="btc_pay_panel" style="margin-top:12px;"></div>
   `);
 
-  document.getElementById("pay_btc").addEventListener("click", startBtcPay);
+  document.getElementById("pay_cancel")?.addEventListener("click", closePayOptions);
+  document.getElementById("pay_btc")?.addEventListener("click", startBtcPay);
+  document.getElementById("pay_stripe_btn")?.addEventListener("click", startStripePay);
+
+  console.log("Pay options handlers attached");
+}
+
+function closePayOptions() {
+  document.querySelector(".store_payment_grid")?.remove();
+  document.getElementById("btc_pay_panel")?.remove();
+}
+
+async function startStripePay() {
+  console.log("Stripe clicked");
+  const offer_id = checkOfferId();
+  if (!offer_id) return console.error("No offer_id");
+
+  const btn = document.getElementById("pay_stripe_btn");
+  if (btn) btn.style.pointerEvents = "none";
+
+  try {
+    const res = await fetch("/api/payment/stripe/create_checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ offer_id }),
+    });
+
+    console.log("create_checkout status", res.status);
+
+    if (!res.ok) {
+      console.error("create_checkout failed:", await res.text());
+      return;
+    }
+
+    const data = await res.json();
+    console.log("create_checkout json", data);
+
+    if (!data.checkout_url) return console.error("No checkout_url");
+    window.location.href = data.checkout_url;
+  } finally {
+    if (btn) btn.style.pointerEvents = "";
+  }
 }
 
 export function renderActionButtons() {
@@ -100,11 +147,11 @@ export function renderActionButtons() {
     document.getElementById("send_btn").onclick = sendItems;
     document.getElementById("pay_btn")?.addEventListener("click", async () => {
       // document.querySelector(".store_inventory_area").innerHTML = "";
-      await sendWS({ type: "offer_step_paying"});
+      await sendWS({ type: "offer_step_paying" });
       renderPayOptions();
-      await paidOffer();
+      // await paidOffer();
     });
-    
+
   } else {
     button_cont.insertAdjacentHTML("beforeend", `
       <div class="selected_items_button_group">
@@ -128,7 +175,7 @@ export function renderActionButtons() {
     document.getElementById("accept_btn")?.addEventListener("click", () => {
       acceptOffer();
     });
- 
+
   }
 
   console.log("ROLE DEBUG", {
@@ -136,7 +183,7 @@ export function renderActionButtons() {
     selected: checkIDs().trader_id,
     role: getChatRole()
   });
-  
+
 }
 
 async function sendItems() {
@@ -145,10 +192,10 @@ async function sendItems() {
 
   const items = [...container.querySelectorAll(".selected_item_card_cont")].map(el => {
     const priceValue = el.querySelector(".selected_item_price_input")?.value || "0";
-  
-    const name = (() => { try { return decodeURIComponent(el.dataset.name || ""); } catch { return el.dataset.name || ""; }})();
-    const link = (() => { try { return decodeURIComponent(el.dataset.itemLink || ""); } catch { return el.dataset.itemLink || ""; }})();
-  
+
+    const name = (() => { try { return decodeURIComponent(el.dataset.name || ""); } catch { return el.dataset.name || ""; } })();
+    const link = (() => { try { return decodeURIComponent(el.dataset.itemLink || ""); } catch { return el.dataset.itemLink || ""; } })();
+
     return {
       key: el.dataset.key,
       contextid: el.dataset.contextid,
@@ -162,7 +209,7 @@ async function sendItems() {
 
   const special_for_update_offer = [...container.querySelectorAll(".selected_item_card_cont")].map(el => {
     const priceValue = el.querySelector(".selected_item_price_input")?.value || "0";
-  
+
     return {
       item_asset_id: el.dataset.key,
       item_contextid: el.dataset.contextid,
@@ -177,9 +224,9 @@ async function sendItems() {
 
   const res = await fetch("/api/offer/update_offer", {
     method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
+    headers: {
+      "Content-Type": "application/json"
+    },
     body: JSON.stringify({
       offer_id,
       special_for_update_offer
@@ -190,12 +237,12 @@ async function sendItems() {
     console.error("update_offer failed", await res.text());
     return;
   }
-  
+
   const json = await res.json();
-  
+
   sendWS({ type: "offer_items", items });
   sendWS({ type: "offer_log", json });
-  sendWS({ type: "send_offer"});
+  sendWS({ type: "send_offer" });
 }
 
 //--------------------
@@ -275,9 +322,9 @@ document.getElementById("store_filters_form").addEventListener("submit", async (
 
   const res = await fetch("/api/get_inventory_items", {
     method: "POST",
-        headers: {
-            "Content-Type": "application/x-www-form-urlencoded"
-        },
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
     body: data
   });
 
@@ -286,9 +333,9 @@ document.getElementById("store_filters_form").addEventListener("submit", async (
     console.error("Inventory load failed:", text);
     return;
   }
-  
+
   const json = await res.json();
-  
+
   console.log("Store inventory loaded:", json);
 
   renderStoreInventory(json);
@@ -315,8 +362,8 @@ function renderStoreInventory(inventory) {
     const icon = `https://steamcommunity.com/economy/image/${desc.icon_url}`;
     const name = desc.name || "Unknown item";
 
-    const card = 
-    `
+    const card =
+      `
       <div class="card_hover-container inventory-select"
           data-appid="${desc.appid}"
           data-classid="${asset.classid}"
@@ -379,18 +426,18 @@ function renderStoreInventory(inventory) {
 
 
     container.insertAdjacentHTML("beforeend", card);
-    
 
-  
+
+
 
   });
 
-  if (!inventoryHandlersAttached){
+  if (!inventoryHandlersAttached) {
     inventoryHandlersAttached = true;
     attachInventoryHandlers();
   }
 
-  
+
   function makeSelectedCard(item) {
     return `
       <div class="selected_item_card_cont"
@@ -418,10 +465,10 @@ function renderStoreInventory(inventory) {
   }
 
   // Price edit
-  document.addEventListener("input", function(e) {
+  document.addEventListener("input", function (e) {
     if (e.target.classList.contains("selected_item_price_input")) {
       let value = e.target.value;
-  
+
       // Only allow numbers like 5, 5.5, 12, 0.5 is invalid
       if (!/^\d*\.?\d*$/.test(value)) {
         // Remove last typed invalid character
@@ -429,7 +476,7 @@ function renderStoreInventory(inventory) {
       }
     }
 
-  updateStoreButtonsWrapper();
+    updateStoreButtonsWrapper();
 
   });
 
@@ -438,11 +485,11 @@ function renderStoreInventory(inventory) {
     const selectedContainer =
       document.getElementById("store_selected_items_list") ||
       document.querySelector(".store_selected_items_list");
-  
+
     inventoryContainer.addEventListener("click", (e) => {
       const card = e.target.closest(".card_hover-container");
       if (!card) return;
-  
+
       // const key = `${card.dataset.appid}:${card.dataset.contextid}:${card.dataset.assetid}`;
       const key = `${card.dataset.assetid}`;
       const name = decodeURIComponent(card.dataset.name || "");
@@ -450,30 +497,30 @@ function renderStoreInventory(inventory) {
       const link = card.dataset.item_link || "";
       const contextid = card.dataset.contextid || "";
       const appid = card.dataset.appid || "";
-  
+
       if (e.target.closest(".store_inventory_add_to_offer_btn")) {
         if (selectedContainer.querySelector(`[data-key="${CSS.escape(key)}"]`)) return;
-  
+
         selectedContainer.insertAdjacentHTML(
           "beforeend",
           makeSelectedCard({ key, name, image, link, contextid, appid })
         );
-  
+
         card.classList.add("is-selected");
         updateStoreButtonsWrapper();
         return;
       }
-  
+
       if (e.target.closest(".store_inventory_remove_from_offer_btn")) {
         selectedContainer
           .querySelector(`[data-key="${CSS.escape(key)}"]`)
           ?.remove();
-  
+
         card.classList.remove("is-selected");
         updateStoreButtonsWrapper();
         return;
       }
-  
+
       if (e.target.closest(".store_inventory_sent_to_chat_btn")) {
         sendWS({
           type: "item_asking",
@@ -486,34 +533,34 @@ function renderStoreInventory(inventory) {
     });
 
     // Remove from selected list (✕)
-  selectedContainer?.addEventListener("click", (e) => {
-    const rm = e.target.closest(".selected_item_remove_btn");
-    if (!rm) return;
+    selectedContainer?.addEventListener("click", (e) => {
+      const rm = e.target.closest(".selected_item_remove_btn");
+      if (!rm) return;
 
-    const selectedCard = e.target.closest(".selected_item_card_cont");
-    if (selectedCard) selectedCard.remove();
+      const selectedCard = e.target.closest(".selected_item_card_cont");
+      if (selectedCard) selectedCard.remove();
 
-    const key = selectedCard.dataset.key;
-    const assetId = key.split(":")[2];
-    const invCard = document.querySelector(
-      `.card_hover-container[data-assetid="${assetId}"]`
-    );
-    if (invCard) invCard.classList.remove("is-selected");
+      const key = selectedCard.dataset.key;
+      const assetId = key.split(":")[2];
+      const invCard = document.querySelector(
+        `.card_hover-container[data-assetid="${assetId}"]`
+      );
+      if (invCard) invCard.classList.remove("is-selected");
 
-    updateStoreButtonsWrapper();
-  });
+      updateStoreButtonsWrapper();
+    });
 
-  // Remove from selected list
-  selectedContainer?.addEventListener("click", (e) => {
-    const rm = e.target.closest(".selected_item_remove_btn");
-    if (!rm) return;
-    const selectedCard = e.target.closest(".selected_item_card_cont");
-    if (selectedCard) selectedCard.remove();
-  });
+    // Remove from selected list
+    selectedContainer?.addEventListener("click", (e) => {
+      const rm = e.target.closest(".selected_item_remove_btn");
+      if (!rm) return;
+      const selectedCard = e.target.closest(".selected_item_card_cont");
+      if (selectedCard) selectedCard.remove();
+    });
 
-  selectedContainer?.addEventListener("input", (e) => {
-    if (!e.target.classList.contains("selected_item_price_input")) return;
-  });
+    selectedContainer?.addEventListener("input", (e) => {
+      if (!e.target.classList.contains("selected_item_price_input")) return;
+    });
   }
 
 }
@@ -556,10 +603,10 @@ document.getElementById("store_inventoryFilter").addEventListener("input", funct
 document.getElementById("chat_send").addEventListener("click", sendChatMessage);
 
 document.getElementById("chat_input").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-        sendChatMessage();
-    }
+  if (e.key === "Enter") {
+    e.preventDefault();
+    sendChatMessage();
+  }
 });
 
 //--------------------
@@ -573,7 +620,7 @@ document.getElementById("chat_input").addEventListener("keydown", (e) => {
 
 async function acceptOffer() {
   if (!checkStoreChatWS() || checkStoreChatWS().readyState !== WebSocket.OPEN) return;
-  
+
   const offer_id = checkOfferId();
   await fetch("/api/offer/update_status_offer", {
     method: "POST",
@@ -581,14 +628,14 @@ async function acceptOffer() {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-    offer_id,
-    status: "ACCEPTED",
+      offer_id,
+      status: "ACCEPTED",
     })
   })
 
-  sendWS({ type: "accept_offer", text: "Trader accept offer"});
+  sendWS({ type: "accept_offer", text: "Trader accept offer" });
   sendWS({ type: "system", text: "Trader's accepted offer" });
-  sendWS({ type: "offer_step_accepting"});
+  sendWS({ type: "offer_step_accepting" });
   updateStoreButtonsWrapper();
 }
 
@@ -602,8 +649,8 @@ async function paidOffer() {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-    offer_id,
-    status: "PAY PROCESS",
+      offer_id,
+      status: "PAY PROCESS",
     })
   })
 

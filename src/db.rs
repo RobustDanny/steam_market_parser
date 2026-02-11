@@ -514,6 +514,24 @@ impl DataBase{
 
     }
 
+    pub fn db_offer_get_offer_price(&self, offer_id: String) -> i64 {
+        let price_text: String = self.connection
+            .query_row(
+                "SELECT price FROM offer WHERE offer_id = ?1",
+                [&offer_id],
+                |row| row.get::<_, String>(0),
+            )
+            .expect("DB: Cant get price from offer");
+    
+        // Accept "12", "12.5", "12.50", "$12.50"
+        let cleaned = price_text.trim().trim_start_matches('$');
+    
+        let dollars: f64 = cleaned.parse::<f64>().unwrap_or(0.0);
+    
+        // Convert to cents (rounded)
+        (dollars * 100.0).round() as i64
+    }
+
     pub fn db_offer_check_offer_to_pay(&self, items_and_offer_id: OfferContentToCheck)-> OfferCheckResult{
         // println!("items_and_offer_id {items_and_offer_id:#?}");
         let offer_id = items_and_offer_id.offer_id;
