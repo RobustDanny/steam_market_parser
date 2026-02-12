@@ -2,219 +2,221 @@
    SIDE PANEL (styled like your store)
    ========================= */
 
-   :root{
-    --panel-bg: #141414;
-    --panel-surface: #282828;
-    --panel-border: #323232;
-    --panel-input: #2d2d2d;
-    --panel-text: #e5e7eb;
-    --panel-muted: #9ca3af;
-    --panel-accent1: #184466;
-    --panel-accent2: #146bad;
-  }
-  
-  /* Panel container */
-  .side_panel{
-    position: fixed;
-    top: 0;
-    left: 0;
-    height: 100vh;
-  
-    width: 0px;                 /* collapsed width */
-    padding-top: 18px;
-  
-    display: flex;
-    justify-content: center;
-  
-    background: rgba(20,20,20,0.92);
-    backdrop-filter: blur(4px);
-  
-    border-right: 1px solid var(--panel-border);
-    box-shadow: 2px 0 18px rgba(0,0,0,0.35);
-    z-index: 100;
-  
-    transition: width 0.18s ease, background 0.18s ease;
-  }
-  
-  /* Expand on hover (or you can toggle with .is_open) */
-  .side_panel.is_open{
-    width: 260px;
-    background: rgba(20,20,20,0.96);
-  }
-  
-  /* Inner wrapper */
-  .side_panel_filters{
-    width: 100%;
-    padding: 0 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  /* Optional icon area (if you want icons on the left) */
-  .side_panel_icons{
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    margin-bottom: 10px;
-  }
-  
-  .side_panel_icon{
-    width: 20px;
-    height: 20px;
-    margin-left: 6px;
-    opacity: 0.9;
-    cursor: pointer;
-    transition: transform 0.15s ease, opacity 0.15s ease;
-  }
-  
-  .side_panel_icon:hover{
-    transform: translateY(-1px);
-    opacity: 1;
-  }
-  
-  /* Filters block (hidden when collapsed) */
-  .filters{
-    width: 100%;
-    box-sizing: border-box;
-    /* background: var(--panel-surface); */
-    /* border: 1px solid var(--panel-border); */
-    /* border-radius: 10px; */
-  
-    padding: 12px;
-  
-    opacity: 0;
-    visibility: hidden;
-    transform: translateX(-14px);
-    pointer-events: none;
-  
-    transition:
-      opacity 0.18s ease,
-      transform 0.18s ease,
-      visibility 0s linear 0.18s;
-  }
-  
-  /* Reveal filters when expanded */
-  .side_panel.is_open .filters{
-    opacity: 1;
-    visibility: visible;
-    transform: translateX(0);
-    pointer-events: auto;
-    transition:
-      opacity 0.18s ease,
-      transform 0.18s ease,
-      visibility 0s linear 0s;
-  }
-  
-  /* Header label */
-  .filters label{
-    display: inline-block;
-    font-size: 12px;
-    font-weight: 800;
-    letter-spacing: 0.4px;
-    color: var(--panel-text);
-    /* text-transform: uppercase; */
-    margin-bottom: 6px;
-  }
-  
-  /* Thin divider (match your UI vibe) */
-  .filters hr{
-    border: 0;
-    height: 1px;
-    background: rgba(255,255,255,0.06);
-    margin: 10px 0;
-  }
-  
-  /* Cards */
-  .filter_card{
-    width: 100%;
-  }
-  
-  /* Steps layout */
-  .cart .steps{
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .cart .steps .step{
-    display: grid;
-    gap: 10px;
-  }
-  
-  .cart .steps .step span{
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--panel-text);
-  }
-  
-  /* Inputs (same as your store inputs) */
-  .input_field{
-    width: 100%;
-    box-sizing: border-box;
-    height: 34px;
-    padding: 0 10px;
-    border-radius: 6px;
-    border: 1px solid #2e2e2e;
-    background: var(--panel-input);
-    color: #ffffff;
-    font-size: 12px;
-    outline: none;
-  
-    transition: border 0.2s ease, box-shadow 0.2s ease;
-  }
-  
-  .input_field:focus{
-    border-color: rgba(20,107,173,0.55);
-    box-shadow: 0 0 0 2px rgba(20,107,173,0.18);
-  }
-  
-  /* Range inputs */
-  input[type="range"]{
-    width: 100%;
-    cursor: pointer;
-    accent-color: #146bad; /* modern browsers */
-  }
-  
-  /* Checkout footer */
-  .checkout .footer{
-    padding-top: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  /* Button styled like your active state */
-  .checkout-btn{
-    width: 100%;
-    height: 36px;
-  
-    border-radius: 6px;
-    border: 1px solid var(--panel-border);
-  
-    background: linear-gradient(135deg, var(--panel-accent1), var(--panel-accent2));
-    color: #ffffff;
-    font-size: 13px;
-    font-weight: 700;
-  
-    cursor: pointer;
-    transition: transform 0.15s ease, background 0.2s ease, opacity 0.15s ease;
-  }
-  
-  /* Make it “active-looking” */
-  .checkout-btn:hover{
-    transform: translateY(-1px);
-  }
-  
-  /* Optional: tighten panel when collapsed (prevent text layout jitter) */
-  .side_panel:not(:hover):not(.is_open) .filters *{
-    user-select: none;
-  }
+:root {
+  --panel-bg: #141414;
+  --panel-surface: #282828;
+  --panel-border: #323232;
+  --panel-input: #2d2d2d;
+  --panel-text: #e5e7eb;
+  --panel-muted: #9ca3af;
+  --panel-accent1: #184466;
+  --panel-accent2: #146bad;
+}
 
-  /* From Uiverse.io by Shoh2008 */ 
+/* Panel container */
+.side_panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+
+  width: 0px;
+  /* collapsed width */
+  padding-top: 18px;
+
+  display: flex;
+  justify-content: center;
+
+  background: rgba(20, 20, 20, 0.92);
+  backdrop-filter: blur(4px);
+
+  border-right: 1px solid var(--panel-border);
+  box-shadow: 2px 0 18px rgba(0, 0, 0, 0.35);
+  z-index: 100;
+
+  transition: width 0.18s ease, background 0.18s ease;
+}
+
+/* Expand on hover (or you can toggle with .is_open) */
+.side_panel.is_open {
+  width: 260px;
+  background: rgba(20, 20, 20, 0.96);
+}
+
+/* Inner wrapper */
+.side_panel_filters {
+  width: 100%;
+  padding: 0 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Optional icon area (if you want icons on the left) */
+.side_panel_icons {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+.side_panel_icon {
+  width: 20px;
+  height: 20px;
+  margin-left: 6px;
+  opacity: 0.9;
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.side_panel_icon:hover {
+  transform: translateY(-1px);
+  opacity: 1;
+}
+
+/* Filters block (hidden when collapsed) */
+.filters {
+  width: 100%;
+  box-sizing: border-box;
+  /* background: var(--panel-surface); */
+  /* border: 1px solid var(--panel-border); */
+  /* border-radius: 10px; */
+
+  padding: 12px;
+
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-14px);
+  pointer-events: none;
+
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease,
+    visibility 0s linear 0.18s;
+}
+
+/* Reveal filters when expanded */
+.side_panel.is_open .filters {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+  pointer-events: auto;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease,
+    visibility 0s linear 0s;
+}
+
+/* Header label */
+.filters label {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  color: var(--panel-text);
+  /* text-transform: uppercase; */
+  margin-bottom: 6px;
+}
+
+/* Thin divider (match your UI vibe) */
+.filters hr {
+  border: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+  margin: 10px 0;
+}
+
+/* Cards */
+.filter_card {
+  width: 100%;
+}
+
+/* Steps layout */
+.cart .steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cart .steps .step {
+  display: grid;
+  gap: 10px;
+}
+
+.cart .steps .step span {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--panel-text);
+}
+
+/* Inputs (same as your store inputs) */
+.input_field {
+  width: 100%;
+  box-sizing: border-box;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid #2e2e2e;
+  background: var(--panel-input);
+  color: #ffffff;
+  font-size: 12px;
+  outline: none;
+
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input_field:focus {
+  border-color: rgba(20, 107, 173, 0.55);
+  box-shadow: 0 0 0 2px rgba(20, 107, 173, 0.18);
+}
+
+/* Range inputs */
+input[type="range"] {
+  width: 100%;
+  cursor: pointer;
+  accent-color: #146bad;
+  /* modern browsers */
+}
+
+/* Checkout footer */
+.checkout .footer {
+  padding-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Button styled like your active state */
+.checkout-btn {
+  width: 100%;
+  height: 36px;
+
+  border-radius: 6px;
+  border: 1px solid var(--panel-border);
+
+  background: linear-gradient(135deg, var(--panel-accent1), var(--panel-accent2));
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.2s ease, opacity 0.15s ease;
+}
+
+/* Make it “active-looking” */
+.checkout-btn:hover {
+  transform: translateY(-1px);
+}
+
+/* Optional: tighten panel when collapsed (prevent text layout jitter) */
+.side_panel:not(:hover):not(.is_open) .filters * {
+  user-select: none;
+}
+
+/* From Uiverse.io by Shoh2008 */
 .input {
   -webkit-appearance: none;
- /* remove default */
+  /* remove default */
   display: inline-block;
   margin: 0;
   width: 24px;
@@ -222,9 +224,9 @@
   border-radius: 12px;
   cursor: pointer;
   vertical-align: middle;
-  box-shadow: hsla(0,0%,100%,.15) 0 1px 1px, inset hsla(0,0%,0%,.5) 0 0 0 1px;
-  background-color: hsla(0,0%,0%,.2);
-  background-image: -webkit-radial-gradient( hsla(200,100%,90%,1) 0%, hsla(200,100%,70%,1) 15%, hsla(200,100%,60%,.3) 28%, hsla(200,100%,30%,0) 70% );
+  box-shadow: hsla(0, 0%, 100%, .15) 0 1px 1px, inset hsla(0, 0%, 0%, .5) 0 0 0 1px;
+  background-color: hsla(0, 0%, 0%, .2);
+  background-image: -webkit-radial-gradient(hsla(200, 100%, 90%, 1) 0%, hsla(200, 100%, 70%, 1) 15%, hsla(200, 100%, 60%, .3) 28%, hsla(200, 100%, 30%, 0) 70%);
   background-repeat: no-repeat;
   -webkit-transition: background-position .15s cubic-bezier(.8, 0, 1, 1),
     -webkit-transform .25s cubic-bezier(.8, 0, 1, 1);
@@ -254,8 +256,8 @@
   background-position: 0 0;
 }
 
-.input:checked ~ .input,
-.input:checked ~ .input:active {
+.input:checked~.input,
+.input:checked~.input:active {
   background-position: 0 -24px;
 }
 
@@ -278,10 +280,11 @@
   user-select: none;
 }
 
-.radio-option span{
+.radio-option span {
   font-size: 12px;
   margin-left: 5px;
 }
+
 /* Optional: hover effect */
 .radio-option:hover span {
   color: #ffffff;
@@ -291,133 +294,136 @@
    FOOTER INSIDE SIDE PANEL
    ========================= */
 
-   .most_bottom_footer{
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-  
-    height: 100px;
-    padding: 10px 14px;
-  
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: center;   
-    gap: 10px;
-  
-    background: rgba(20,20,20,0.92);
-    backdrop-filter: blur(4px);
-  
-    border-top: 1px solid var(--panel-border);
-  
-    /* hidden by default */
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(6px);
-    pointer-events: none;
-  
-    transition:
-      opacity 0.18s ease,
-      transform 0.18s ease,
-      visibility 0s linear 0.18s;
-  }
-  
-  /* Show footer when panel expands */
-  .side_panel.is_open .most_bottom_footer{
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-    pointer-events: auto;
-  
-    transition:
-      opacity 0.18s ease,
-      transform 0.18s ease,
-      visibility 0s linear 0s;
-  }
-  
-  /* Icons */
-  .menu_bts_cont{
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    /* gap: 10px; */
-  }
-  
-  .menu_bts_cont img{
-    width: 25px;
-    height: 25px;
-    opacity: 0.85;
-    cursor: pointer;
-  
-    transition: transform 0.15s ease, opacity 0.15s ease;
-  }
-  
-  .menu_bts_cont img:hover{
-    transform: translateY(-1px);
-    opacity: 1;
-  }
-  
-  /* Footer text */
-  .text_project{
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 12px;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--panel-muted);
-    user-select: none;
-  
-    /* allow centering nicely */
-    width: 100%;
-  }
+.most_bottom_footer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
 
-  .span_footer{
-    justify-self: center;
-  }
+  height: 100px;
+  padding: 10px 14px;
 
-  #text_project a{
-    color: var(--panel-muted);
-    text-decoration: none;
-  }
-  #text_project a:hover{
-    color: #ffffff;
-    /* text-decoration: underline; */
-  }
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 10px;
 
-  .hidden_text_side_panel {
-    position: fixed;            /* important */
-    background-color: #333;
-    color: white;
-    padding: 5px 8px;
-    border-radius: 4px;
-    font-size: 8pt;
-    /* white-space: nowrap; */
-    max-width: 100px;
+  background: rgba(20, 20, 20, 0.92);
+  backdrop-filter: blur(4px);
 
-    pointer-events: none;       /* prevents flicker */
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.15s ease;
-    z-index: 10000;
+  border-top: 1px solid var(--panel-border);
+
+  /* hidden by default */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(6px);
+  pointer-events: none;
+
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease,
+    visibility 0s linear 0.18s;
+}
+
+/* Show footer when panel expands */
+.side_panel.is_open .most_bottom_footer {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  pointer-events: auto;
+
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease,
+    visibility 0s linear 0s;
+}
+
+/* Icons */
+.menu_bts_cont {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+.menu_bts_cont img {
+  width: 25px;
+  height: 25px;
+  opacity: 0.85;
+  cursor: pointer;
+
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.menu_bts_cont img:hover {
+  transform: translateY(-1px);
+  opacity: 1;
+}
+
+/* Footer text */
+.text_project {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--panel-muted);
+  user-select: none;
+
+  /* allow centering nicely */
+  width: 100%;
+}
+
+.span_footer {
+  justify-self: center;
+}
+
+#text_project a {
+  color: var(--panel-muted);
+  text-decoration: none;
+}
+
+#text_project a:hover {
+  color: #ffffff;
+  /* text-decoration: underline; */
+}
+
+.hidden_text_side_panel {
+  position: fixed;
+  /* important */
+  background-color: #333;
+  color: white;
+  padding: 5px 8px;
+  border-radius: 4px;
+  font-size: 8pt;
+  /* white-space: nowrap; */
+  max-width: 100px;
+
+  pointer-events: none;
+  /* prevents flicker */
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease;
+  z-index: 10000;
 }
 
 /*range*/
-.range_row{
+.range_row {
   display: grid;
   grid-template-columns: 92px 1fr;
   gap: 10px;
   align-items: center;
 }
 
-.price_input_wrapper{
+.price_input_wrapper {
   position: relative;
   width: 100%;
 }
 
-.price_input_wrapper .dollar_sign{
+.price_input_wrapper .dollar_sign {
   position: absolute;
   left: 10px;
   top: 50%;
@@ -427,12 +433,12 @@
   font-size: 14px;
 }
 
-.price_with_dollar{
+.price_with_dollar {
   padding-left: 20px !important;
 }
 
 
-.input_small{
+.input_small {
   height: 32px;
   padding: 0 8px;
   font-size: 12px;
@@ -440,23 +446,26 @@
 
 /* remove ugly number arrows (optional) */
 input[type="number"]::-webkit-outer-spin-button,
-input[type="number"]::-webkit-inner-spin-button{
+input[type="number"]::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
-input[type="number"]{ -moz-appearance: textfield; }
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
 
 /* side_panel_actions_container */
 
-.side_panel_actions_container{
+.side_panel_actions_container {
   grid-column: 4;
-  position: fixed; 
+  position: fixed;
   top: 50%;
   left: 15px;
   display: flex;
   transform: translateY(-50%);
   justify-content: center;
   flex-direction: column;
-  gap: 10px;  
+  gap: 10px;
   /* z-index: 999; */
 }

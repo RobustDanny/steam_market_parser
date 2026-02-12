@@ -14,8 +14,8 @@ import {
   checkOfferId,
 } from "./store_websocket.js";
 import {
-  startBtcPay
-} from "./payments/bitcoin.js";
+  startStripePay
+} from "./payments/stripe.js";
 
 let inventoryHandlersAttached = false;
 
@@ -53,67 +53,19 @@ function renderPayOptions() {
 
   cont.insertAdjacentHTML("beforeend", `
     <div class="store_payment_grid">
-      <div class="store_payment_card" id="pay_cancel">
-        <img src="/front/svg/payments/cancel_icon.svg" alt="Cancel">
-        <span class="hidden_text_store">Cancel</span>
-      </div>
 
       <div class="store_payment_card" id="pay_stripe_btn">
         <img src="/front/svg/payments/stripe.svg" alt="Stripe">
         <span class="hidden_text_store">Stripe</span>
       </div>
 
-      <div class="store_payment_card" id="pay_btc">
-        <img src="/front/svg/payments/bitcoin.svg" alt="Bitcoin">
-        <span class="hidden_text_store">Bitcoin</span>
-      </div>
     </div>
 
     <div id="btc_pay_panel" style="margin-top:12px;"></div>
   `);
 
-  document.getElementById("pay_cancel")?.addEventListener("click", closePayOptions);
-  document.getElementById("pay_btc")?.addEventListener("click", startBtcPay);
-  document.getElementById("pay_stripe_btn")?.addEventListener("click", startStripePay);
+  document.getElementById("pay_stripe_btn")?.addEventListener("click", startStripePay(checkOfferId()));
 
-  console.log("Pay options handlers attached");
-}
-
-function closePayOptions() {
-  document.querySelector(".store_payment_grid")?.remove();
-  document.getElementById("btc_pay_panel")?.remove();
-}
-
-async function startStripePay() {
-  console.log("Stripe clicked");
-  const offer_id = checkOfferId();
-  if (!offer_id) return console.error("No offer_id");
-
-  const btn = document.getElementById("pay_stripe_btn");
-  if (btn) btn.style.pointerEvents = "none";
-
-  try {
-    const res = await fetch("/api/payment/stripe/create_checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ offer_id }),
-    });
-
-    console.log("create_checkout status", res.status);
-
-    if (!res.ok) {
-      console.error("create_checkout failed:", await res.text());
-      return;
-    }
-
-    const data = await res.json();
-    console.log("create_checkout json", data);
-
-    if (!data.checkout_url) return console.error("No checkout_url");
-    window.location.href = data.checkout_url;
-  } finally {
-    if (btn) btn.style.pointerEvents = "";
-  }
 }
 
 export function renderActionButtons() {

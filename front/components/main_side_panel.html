@@ -2,100 +2,97 @@
   ☰
 </button> -->
 <div class="side_panel">
-  
-    <div class="side_panel_filters">
-      <!-- <img class="side_panel_icon" src="/front/svg/filter_icon.svg"> -->
 
-      <div class="filters">
-        <label>Filters</label>
-        <hr />
-        <div class="filter_card cart">
-            <div class="steps">
-              <div class="step">
-                <!-- <hr /> -->
-                <input
-                  id="f_appid"
-                  class="input_field"
-                  placeholder="Enter a game"
-                  type="text"
-                  list="game_list_datalist"
-                />
+  <div class="side_panel_filters">
+    <!-- <img class="side_panel_icon" src="/front/svg/filter_icon.svg"> -->
 
-                <datalist id="game_list_datalist">
-                  {% for g in game_list %}
-                    <option value="{{ g }}"></option>
-                  {% endfor %}
-                </datalist>
-              <!-- <hr /> -->
-              <input
-                id="f_query"
-                class="input_field"
-                placeholder="Enter a query"
-                type="text"
-              />
-                <!-- <hr /> -->
-                <!-- <label>min price</label> -->
-                <div class="range_row">
-                  <div class="price_input_wrapper">
-                    <span class="dollar_sign">$</span>
-                    <input id="f_min_num" class="input_field input_small price_with_dollar" type="number" min="0" max="9999999" value="0" />
-                  </div>
-                  <input id="f_min" type="range" min="0" max="9999999" value="0" />
-                </div>
-              <!-- <hr /> -->
-              <!-- <label>max price</label> -->
-              <div class="range_row">
-                <div class="price_input_wrapper">
-                  <span class="dollar_sign">$</span>
-                  <input id="f_max_num" class="input_field input_small price_with_dollar" type="number" min="0" max="9999999" value="9999999" />
-                </div>
-                <input id="f_max" type="range" min="0" max="9999999" value="9999999" />
-              </div>
-              <!-- <hr /> -->
-              </div>
+    <div class="filters">
+      <label>Filters</label>
+      <hr />
+      <div class="filter_card cart">
+        <div class="steps">
+          <div class="step">
+            <!-- <hr /> -->
+            <input id="f_appid" class="input_field" placeholder="Enter a game" type="text" list="game_list_datalist" />
 
-              <div class="radio-input">
-                <label class="radio-option">
-                  <input name="radio" type="radio" class="input" value="stores_items" checked>
-                  <span>Stores and items</span>
-                </label>
-              
-                <label class="radio-option">
-                  <input name="radio" type="radio" class="input" value="stores">
-                  <span>Only stores</span>
-                </label>
-              
-                <label class="radio-option">
-                  <input name="radio" type="radio" class="input" value="items">
-                  <span>Only items</span>
-                </label>
+            <datalist id="game_list_datalist">
+              {% for g in game_list %}
+              <option value="{{ g }}"></option>
+              {% endfor %}
+            </datalist>
+            <!-- <hr /> -->
+            <input id="f_query" class="input_field" placeholder="Enter a query" type="text" />
+            <!-- <hr /> -->
+            <!-- <label>min price</label> -->
+            <div class="range_row">
+              <div class="price_input_wrapper">
+                <span class="dollar_sign">$</span>
+                <input id="f_min_num" class="input_field input_small price_with_dollar" type="number" min="0"
+                  max="9999999" value="0" />
               </div>
-              
+              <input id="f_min" type="range" min="0" max="9999999" value="0" />
             </div>
-  
-        </div>
-        <div class="filter_card checkout">
-            <div class="footer">
-              <button id="side_panel_apply_filters" type="button" class="checkout-btn">Apply</button>
-              <span class="hidden_text_side_panel">Apply filters</span>
+            <!-- <hr /> -->
+            <!-- <label>max price</label> -->
+            <div class="range_row">
+              <div class="price_input_wrapper">
+                <span class="dollar_sign">$</span>
+                <input id="f_max_num" class="input_field input_small price_with_dollar" type="number" min="0"
+                  max="9999999" value="9999999" />
+              </div>
+              <input id="f_max" type="range" min="0" max="9999999" value="9999999" />
             </div>
+            <!-- <hr /> -->
+          </div>
+
+          <div class="radio-input">
+            <label class="radio-option">
+              <input name="radio" type="radio" class="input" value="stores_items" checked>
+              <span>Stores and items</span>
+            </label>
+
+            <label class="radio-option">
+              <input name="radio" type="radio" class="input" value="stores">
+              <span>Only stores</span>
+            </label>
+
+            <label class="radio-option">
+              <input name="radio" type="radio" class="input" value="items">
+              <span>Only items</span>
+            </label>
+          </div>
+
         </div>
-        <hr />
-        
+
       </div>
+      <div class="filter_card checkout">
+        <div class="footer">
+          <button id="side_panel_apply_filters" type="button" class="checkout-btn">Apply</button>
+          <span class="hidden_text_side_panel">Apply filters</span>
+        </div>
+      </div>
+      <hr />
+
     </div>
-    
-    <div id="most_bottom_footer" class="most_bottom_footer">
-      <div id="menu_bts_cont" class="menu_bts_cont">
-        <img id="bureaucracy_icon" class="footer_icon" src="/front/svg/roll_icon.svg" alt="bureaucracy">
-        <span class="hidden_text_side_panel">Bureaucracy</span>
-      </div>
-    
-      <div id="text_project" class="text_project">
-        <a href="mailto:support@tastyrock.com"><span class="span_footer">support@tastyrock.com</span></a>
-        <span class="span_footer">&copy; 2026 TastyRock inc.</span>
-      </div>
+  </div>
+
+  <div id="most_bottom_footer" class="most_bottom_footer">
+    <div id="menu_bts_cont" class="menu_bts_cont">
+      <img id="idea_icon" class="footer_icon" src="/front/svg/idea_icon.svg" alt="idea">
+      <span class="hidden_text_side_panel">Rules</span>
+
+      <img id="library_icon" class="footer_icon" src="/front/svg/library_icon.svg" alt="library">
+      <span class="hidden_text_side_panel">Library</span>
+
+      <img id="bureaucracy_icon" class="footer_icon" src="/front/svg/roll_icon.svg" alt="bureaucracy">
+      <span class="hidden_text_side_panel">Bureaucracy</span>
     </div>
+
+    <div id="text_project" class="text_project">
+      <a href="mailto:support@tastyrock.com"><span class="span_footer">support@tastyrock.com</span></a>
+      <span class="span_footer">&copy; 2026 TastyRock inc.</span>
+    </div>
+  </div>
 </div>
 
 

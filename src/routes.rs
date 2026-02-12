@@ -485,16 +485,30 @@ pub async fn stripe_create_checkout(
 
     let db = DataBase::connect_to_db();
     let offer_id = req.offer_id.clone();
-
     let amount_cents: i64 = db.db_offer_get_offer_price(offer_id.clone());
 
+    // 1) Create Customer (with name)
+    let mut customer_params = stripe::CreateCustomer::new();
+    customer_params.name = Some("Ugine"); // ideally from req
+
+    let mut cust_md = std::collections::HashMap::new();
+    cust_md.insert("offer_id".to_string(), offer_id.clone());
+    customer_params.metadata = Some(cust_md);
+
+    let customer = stripe::Customer::create(&client, customer_params)
+        .await
+        .map_err(actix_web::error::ErrorBadGateway)?;
+
+    // 2) Create Checkout Session with that customer
     let mut params = stripe::CreateCheckoutSession::new();
     params.mode = Some(stripe::CheckoutSessionMode::Payment);
 
-    let success_url = format!("{public_url}/payment-success?offer_id={offer_id}");
-    let cancel_url  = format!("{public_url}/payment-cancel?offer_id={offer_id}");
+    let success_url = format!("{public_url}/stripe/return?offer_id={offer_id}");
+    let cancel_url  = format!("{public_url}/stripe/return?offer_id={offer_id}&canceled=1");
     params.success_url = Some(success_url.as_str());
     params.cancel_url  = Some(cancel_url.as_str());
+
+    params.customer = Some(customer.id);
 
     params.line_items = Some(vec![
         stripe::CreateCheckoutSessionLineItems {
