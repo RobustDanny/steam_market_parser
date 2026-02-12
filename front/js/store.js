@@ -60,11 +60,11 @@ function renderPayOptions() {
       </div>
 
     </div>
-
-    <div id="btc_pay_panel" style="margin-top:12px;"></div>
   `);
 
-  document.getElementById("pay_stripe_btn")?.addEventListener("click", startStripePay(checkOfferId()));
+  document.getElementById("pay_stripe_btn")?.addEventListener("click", () => {
+    startStripePay(checkOfferId());
+  });
 
 }
 

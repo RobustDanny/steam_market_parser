@@ -52,11 +52,7 @@ use routes::{
     offer_update_status_offer,
     offer_check_offer_to_pay,
     account_post_trade_url,
-    offer_get_draft,
-    stripe_webhook,
-    stripe_create_checkout,
-    payment_success_page,
-    payment_cancel_page
+    offer_get_draft
 };
 
 mod background_tasks;
@@ -70,6 +66,14 @@ mod store_chat_websocket;
 use store_chat_websocket::{
     ws_chat_handler,
     ChatHub
+};
+
+mod payments;
+use payments::{
+    stripe_create_checkout,
+    stripe_webhook,
+    payment_cancel_page,
+    payment_success_page
 };
 
 struct AppState {
@@ -224,10 +228,12 @@ async fn main()-> std::io::Result<()> {
                     .route("/draft/{draft_id}", web::get().to(offer_get_draft))
                 )
                 .service(web::scope("/payment")
-                .route("/stripe/webhook", web::post().to(stripe_webhook))
-                .route("/stripe/create_checkout", web::post().to(stripe_create_checkout))
-                .route("/payment-success", web::get().to(payment_success_page))
-                .route("/payment-cancel", web::get().to(payment_cancel_page))
+                    .service(web::scope("/stripe")
+                        .route("/webhook", web::post().to(stripe_webhook))
+                        .route("/create_checkout", web::post().to(stripe_create_checkout))
+                        .route("/success", web::get().to(payment_success_page))
+                        .route("/cancel", web::get().to(payment_cancel_page))
+                    )
                 )
             )
             .route("/store_rating", web::get().to(store_rating))
