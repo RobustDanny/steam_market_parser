@@ -15,7 +15,8 @@ use steam_market_parser::{
     OfferContentToCheck,
     OfferCheckResult,
     DraftItem,
-    OfferDraft
+    OfferDraft,
+    UserParamsFromDB
 };
 
 use uuid::Uuid;
@@ -514,7 +515,7 @@ impl DataBase{
 
     }
 
-    pub fn db_offer_get_offer_price(&self, offer_id: String) -> i64 {
+    pub fn db_offer_get_offer_price(&self, offer_id: String) -> f64 {
         let price_text: String = self.connection
             .query_row(
                 "SELECT price FROM offer WHERE offer_id = ?1",
@@ -529,7 +530,7 @@ impl DataBase{
         let dollars: f64 = cleaned.parse::<f64>().unwrap_or(0.0);
     
         // Convert to cents (rounded)
-        (dollars * 100.0).round() as i64
+        (dollars * 100.0).round()
     }
 
     pub fn db_offer_check_offer_to_pay(&self, items_and_offer_id: OfferContentToCheck)-> OfferCheckResult{
@@ -716,6 +717,81 @@ impl DataBase{
         Ok(games)
     }
 
+    pub fn db_get_user_params(&self, steam_id: String)-> Result<UserParamsFromDB, rusqlite::Error>{
+
+        let (user_name, user_trade_url) = self.connection.query_one("
+        SELECT nickname, trade_url FROM steam_user WHERE steamid = ?1
+        ", [&steam_id], |row| 
+        {
+            Ok((
+                row.get(0)?,
+                row.get(1)?,
+            ))
+        },
+        )?;
+
+        Ok(UserParamsFromDB{
+            user_steam_id: steam_id.clone(),
+            user_name,
+            user_trade_url
+        })
+
+    }
+
+    pub fn db_get_customer_id(&self, offer_id: &String)-> String{
+        let steam_id: String = self.connection.query_one("
+        SELECT buyer_steamid FROM offer WHERE offer_id = ?1
+        ", [&offer_id], |row| 
+            row.get(0),
+        ).expect("DB: Cant find buyer_steamid in offer");
+
+        steam_id
+    }
+
+    pub fn db_get_stripe_customer_id(&self, steam_id: &str) -> Result<Option<String>, rusqlite::Error> {
+        let mut stmt = self.connection.prepare(
+            "SELECT stripe_customer_id FROM stripe_customer WHERE steamid = ?1"
+        )?;
+
+        let mut rows = stmt.query([steam_id])?;
+
+        if let Some(row) = rows.next()? {
+            let id: String = row.get(0)?;
+            Ok(Some(id))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn db_insert_stripe_customer_id(&self, steam_id: &str, stripe_customer_id: &str) -> Result<(), rusqlite::Error> {
+        self.connection.execute(
+            "INSERT INTO stripe_customer (steamid, stripe_customer_id) VALUES (?1, ?2)
+             ON CONFLICT(steamid) DO UPDATE SET stripe_customer_id = excluded.stripe_customer_id",
+            [steam_id, stripe_customer_id],
+        )?;
+        Ok(())
+    }
+
+    pub fn db_insert_transaction(
+        &self,
+        steamid: String,
+        type_: String,
+        amount: String,
+        method: String,
+        pay_method: String,
+    ) -> Result<(), rusqlite::Error> {
+
+        let time = Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        self.connection.execute(
+            r#"
+            INSERT INTO transactions (steamid, type, amount, method, pay_method, created_at)
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+            "#,
+            rusqlite::params![steamid, type_, amount, method, pay_method, time],
+        )?;
+        Ok(())
+    }
+
     fn create_tables(&self) {
         self.connection.execute_batch("
             CREATE TABLE IF NOT EXISTS item_feed (
@@ -803,6 +879,22 @@ impl DataBase{
                 amount INTEGER NOT NULL DEFAULT 1,
                 side TEXT NOT NULL DEFAULT 'give',  -- 'give' now, later could add 'receive'
                 FOREIGN KEY(draft_id) REFERENCES trade_offer_drafts(draft_id) ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS stripe_customer (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                steamid TEXT UNIQUE NOT NULL,
+                stripe_customer_id TEXT UNIQUE NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS transactions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                steamid TEXT NOT NULL,
+                type TEXT NOT NULL,
+                amount TEXT NOT NULL,
+                method TEXT NOT NULL,
+                pay_method TEXT NOT NULL,
+                created_at TEXT NOT NULL
             );
 
             CREATE INDEX IF NOT EXISTS idx_draft_items_draft_id ON trade_offer_draft_items(draft_id);

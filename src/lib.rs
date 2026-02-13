@@ -614,6 +614,33 @@ pub struct DBFiltersMostRecentItems{
 
 //----------------------------------
 //----------------------------------
+//Customer creating
+
+pub struct UserParamsFromDB{
+    pub user_steam_id: String,
+    pub user_name: String,
+    pub user_trade_url: String,
+}
+
+//----------------------------------
+//----------------------------------
+
+//----------------------------------
+//----------------------------------
+//Transaction fees
+
+pub enum PaymentMethodEnum{
+    STRIPE(String),
+    BITCOIN(String),
+}
+
+pub enum PaymentMethodFeeEnum{
+    STRIPE(f64),
+    BITCOIN(f64),
+}
+
+//----------------------------------
+//----------------------------------
 //Trait bounds
 
 //Allow to send requests and get access to ProcessSteamRequest methods
