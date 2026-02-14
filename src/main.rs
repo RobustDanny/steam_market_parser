@@ -74,7 +74,9 @@ use payments::{
     stripe_create_checkout,
     stripe_webhook,
     payment_cancel_page,
-    payment_success_page
+    payment_success_page,
+    stripe_connect_start,
+    stripe_connect_callback,
 };
 
 struct AppState {
@@ -234,6 +236,8 @@ async fn main()-> std::io::Result<()> {
                 )
                 .service(web::scope("/payment")
                     .service(web::scope("/stripe")
+                        .route("/connect/start", web::get().to(stripe_connect_start))
+                        .route("/connect/callback", web::get().to(stripe_connect_callback))
                         .route("/webhook", web::post().to(stripe_webhook))
                         .route("/create_checkout", web::post().to(stripe_create_checkout))
                         .route("/success", web::get().to(payment_success_page))

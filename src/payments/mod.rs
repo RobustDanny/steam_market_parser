@@ -11,5 +11,7 @@ pub use stripe::payment::{
     stripe_create_checkout,
     stripe_webhook,
     payment_success_page,
-    payment_cancel_page
+    payment_cancel_page,
+    stripe_connect_start,
+    stripe_connect_callback,
 };

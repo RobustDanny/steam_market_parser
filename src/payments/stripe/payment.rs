@@ -329,3 +329,69 @@ pub(crate) async fn create_transfer(
     stripe::Transfer::create(client, params).await
 }
 
+pub async fn stripe_connect_start() -> actix_web::Result<HttpResponse> {
+    let client_id = std::env::var("STRIPE_CONNECT_CLIENT_ID")
+        .map_err(actix_web::error::ErrorInternalServerError)?;
+    let public_url = std::env::var("PUBLIC_URL")
+        .map_err(actix_web::error::ErrorInternalServerError)?;
+
+    // Your callback URL
+    let redirect_uri = format!("{public_url}/api/payment/stripe/connect/callback");
+
+    let url = format!(
+        "https://connect.stripe.com/oauth/authorize?response_type=code&client_id={}&scope=read_write&redirect_uri={}",
+        urlencoding::encode(&client_id),
+        urlencoding::encode(&redirect_uri),
+    );
+
+    Ok(HttpResponse::Found()
+        .append_header(("Location", url))
+        .finish())
+}
+
+#[derive(Deserialize)]
+pub struct ConnectCallbackQuery {
+    pub code: String,
+    pub state: Option<String>, // use for CSRF + steamid binding
+}
+
+pub async fn stripe_connect_callback(q: web::Query<ConnectCallbackQuery>) -> actix_web::Result<HttpResponse> {
+    let secret = std::env::var("STRIPE_SECRET_KEY")
+        .map_err(actix_web::error::ErrorInternalServerError)?;
+    let client_id = std::env::var("STRIPE_CONNECT_CLIENT_ID")
+        .map_err(actix_web::error::ErrorInternalServerError)?;
+
+    // IMPORTANT: bind seller steamid via `state` (recommended).
+    // For now assume you can get steamid from session/cookie:
+    let steamid = "TODO_GET_FROM_SESSION";
+
+    // Exchange code for acct id
+    let http = reqwest::Client::new();
+    let resp = http
+        .post("https://connect.stripe.com/oauth/token")
+        .form(&[
+            ("grant_type", "authorization_code"),
+            ("code", q.code.as_str()),
+            ("client_id", client_id.as_str()),
+            ("client_secret", secret.as_str()),
+        ])
+        .send()
+        .await
+        .map_err(actix_web::error::ErrorBadGateway)?;
+
+    let json: serde_json::Value = resp.json().await
+        .map_err(actix_web::error::ErrorBadGateway)?;
+
+    let acct = json["stripe_user_id"].as_str().unwrap_or("").to_string(); // <-- acct_...
+
+    if !acct.starts_with("acct_") {
+        return Ok(HttpResponse::BadRequest().body("Stripe connect failed"));
+    }
+
+    let db = DataBase::connect_to_db();
+    db.db_upsert_user_stripe_id(&steamid, &acct)
+        .map_err(actix_web::error::ErrorInternalServerError)?;
+
+    Ok(HttpResponse::Ok().body("Stripe connected"))
+}
+

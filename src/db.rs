@@ -912,6 +912,19 @@ impl DataBase{
         Ok(())
     }
 
+    pub fn db_upsert_user_stripe_id(&self, steamid: &str, acct: &str) -> Result<(), rusqlite::Error> {
+        self.connection.execute(
+            "
+            INSERT INTO user_wallets (steamid, stripe_id)
+            VALUES (?1, ?2)
+            ON CONFLICT(steamid) DO UPDATE SET stripe_id=excluded.stripe_id
+            ",
+            rusqlite::params![steamid, acct],
+        )?;
+        Ok(())
+    }
+    
+
     fn create_tables(&self) {
         self.connection.execute_batch("
             CREATE TABLE IF NOT EXISTS item_feed (

@@ -24,3 +24,4 @@ dotenv = "0.15"
 uuid = { version = "1.20.0", features = ["v4"] }
 chrono = "0.4.43"
 stripe = { package = "async-stripe", version = "0.35", features = ["runtime-tokio-hyper"] }
+urlencoding = "2.1.3"
