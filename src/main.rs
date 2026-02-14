@@ -59,7 +59,8 @@ mod background_tasks;
 use background_tasks::{
     tokio_user_ad_loop,
     tokio_receiver_most_recent_items_request,
-    tokio_db_update_game_list
+    tokio_db_update_game_list,
+    tokio_db_check_transaction_availability
 };
 
 mod store_chat_websocket;
@@ -175,6 +176,10 @@ async fn main()-> std::io::Result<()> {
     let user_ad_state_for_ads = user_ad_state.clone();
     let game_list_state_for_background = game_list_state.clone();
     let feed_state_for_ws = feed_state.clone();
+
+    tokio::spawn(async move {
+        tokio_db_check_transaction_availability().await;
+    });
 
     tokio::spawn(async move {
         tokio_db_update_game_list(game_list_state_for_background).await;

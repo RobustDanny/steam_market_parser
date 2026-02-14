@@ -775,19 +775,139 @@ impl DataBase{
     pub fn db_insert_transaction(
         &self,
         steamid: String,
-        type_: String,
         amount: String,
         method: String,
         pay_method: String,
     ) -> Result<(), rusqlite::Error> {
+        let time = Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+        let status = "SUCCESS".to_string(); // buyer payment is successful immediately
+    
+        self.connection.execute(
+            "
+            INSERT INTO transactions (steamid, amount, method, pay_method, status, created_at, updated_at)
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+            ",
+            rusqlite::params![steamid, amount, method, pay_method, status, time, time],
+        )?;
+        Ok(())
+    }    
 
+    pub fn db_check_stripe_wallet_transaction_availability(&self) {
+        let result = self.connection.execute(
+            "
+            UPDATE stripe_wallet
+            SET status='AVAILABLE', updated_at=datetime('now')
+            WHERE status='LOCKED'
+            AND datetime(created_at) <= datetime('now', '-8 days');
+            ",
+            [],
+        );
+    
+        match result {
+            Ok(rows) => println!("Updated {} expired LOCKED stripe_wallet", rows),
+            Err(e) => eprintln!("DB: Failed to update stripe_wallet: {e}"),
+        }
+    }
+
+    pub fn db_get_stripe_wallet_available(&self, limit: i64) -> Result<Vec<(i64, String, String, i64)>, rusqlite::Error> {
+        // (id, stripe_id(acct), offer_id, amount_cents)
+        let mut stmt = self.connection.prepare(
+            "
+            SELECT id, stripe_id, offer_id, amount_cents
+            FROM stripe_wallet
+            WHERE status='AVAILABLE'
+              AND stripe_transfer_id IS NULL
+            ORDER BY id ASC
+            LIMIT ?1
+            "
+        )?;
+    
+        let rows = stmt.query_map([limit], |row| {
+            Ok((
+                row.get::<_, i64>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, i64>(3)?,
+            ))
+        })?;
+    
+        let mut out = Vec::new();
+        for r in rows { out.push(r?); }
+        Ok(out)
+    }
+    
+    pub fn db_mark_stripe_wallet_transferred(
+        &self,
+        row_id: i64,
+        transfer_id: &str,
+    ) -> Result<(), rusqlite::Error> {
+        self.connection.execute(
+            "
+            UPDATE stripe_wallet
+            SET status='TRANSFERRED',
+                stripe_transfer_id=?1,
+                updated_at=datetime('now')
+            WHERE id=?2
+            ",
+            rusqlite::params![transfer_id, row_id],
+        )?;
+        Ok(())
+    }    
+
+    pub fn db_get_trader_steamid_by_offer(&self, offer_id: &str) -> Result<String, rusqlite::Error> {
+        self.connection.query_row(
+            "SELECT trader_steamid FROM offer WHERE offer_id = ?1",
+            [offer_id],
+            |row| row.get(0),
+        )
+    }
+
+    pub fn db_get_connected_acct_for_steamid(&self, steamid: &str) -> Result<Option<String>, rusqlite::Error> {
+        let mut stmt = self.connection.prepare(
+            "SELECT stripe_id FROM user_wallets WHERE steamid = ?1"
+        )?;
+        let mut rows = stmt.query([steamid])?;
+        if let Some(row) = rows.next()? {
+            Ok(Some(row.get(0)?))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn db_insert_stripe_wallet_locked(
+        &self,
+        stripe_acct: &str,     // acct_...
+        offer_id: &str,
+        amount_cents: i64,
+        stripe_event_id: &str, // evt_...
+    ) -> Result<(), rusqlite::Error> {
         let time = Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
         self.connection.execute(
-            r#"
-            INSERT INTO transactions (steamid, type, amount, method, pay_method, created_at)
-            VALUES (?1, ?2, ?3, ?4, ?5, ?6)
-            "#,
-            rusqlite::params![steamid, type_, amount, method, pay_method, time],
+            "
+            INSERT INTO stripe_wallet
+              (stripe_id, offer_id, amount_cents, status, stripe_event_id, stripe_transfer_id, created_at, updated_at)
+            VALUES
+              (?1, ?2, ?3, 'LOCKED', ?4, NULL, ?5, ?6)
+            ",
+            rusqlite::params![stripe_acct, offer_id, amount_cents, stripe_event_id, time, time],
+        )?;
+        Ok(())
+    }
+
+    pub fn db_mark_transfer_for_offer(
+        &self,
+        offer_id: &str,
+        stripe_transfer_id: &str,
+    ) -> Result<(), rusqlite::Error> {
+        self.connection.execute(
+            "
+            UPDATE stripe_wallet
+            SET status='TRANSFERRED',
+                stripe_transfer_id=?1,
+                updated_at=datetime('now')
+            WHERE offer_id=?2 AND status='AVAILABLE'
+            ",
+            rusqlite::params![stripe_transfer_id, offer_id],
         )?;
         Ok(())
     }
@@ -815,6 +935,26 @@ impl DataBase{
                 trade_url TEXT,
                 status TEXT
             );
+            CREATE TABLE IF NOT EXISTS user_wallets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                steamid TEXT UNIQUE,
+                stripe_id TEXT UNIQUE,
+                bitcoin TEXT UNIQUE
+            );
+            CREATE TABLE IF NOT EXISTS stripe_wallet (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                stripe_id TEXT NOT NULL,         
+                offer_id TEXT NOT NULL,
+                amount_cents INTEGER NOT NULL,   
+                status TEXT NOT NULL,            
+                stripe_event_id TEXT UNIQUE,     
+                stripe_transfer_id TEXT,         
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+                );
+
+            CREATE INDEX IF NOT EXISTS idx_sw_stripe_id_status ON stripe_wallet(stripe_id, status);
+
             CREATE TABLE IF NOT EXISTS ad_steam_user (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 steamid TEXT UNIQUE,
@@ -890,11 +1030,12 @@ impl DataBase{
             CREATE TABLE IF NOT EXISTS transactions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 steamid TEXT NOT NULL,
-                type TEXT NOT NULL,
                 amount TEXT NOT NULL,
                 method TEXT NOT NULL,
                 pay_method TEXT NOT NULL,
-                created_at TEXT NOT NULL
+                status TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
             );
 
             CREATE INDEX IF NOT EXISTS idx_draft_items_draft_id ON trade_offer_draft_items(draft_id);

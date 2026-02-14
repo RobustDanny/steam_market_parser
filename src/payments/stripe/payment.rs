@@ -63,9 +63,15 @@ pub async fn stripe_create_checkout(
         }
     ]);
 
+    let buyer_steamid = db.db_get_customer_id(&offer_id.to_string());
+    let trader_steamid = db.db_get_trader_steamid_by_offer(&offer_id).unwrap_or("unknown".to_string());
+
     let mut md = std::collections::HashMap::new();
     md.insert("Offer".to_string(), offer_id.clone());
+    md.insert("BuyerSteamID".to_string(), buyer_steamid);
+    md.insert("TraderSteamID".to_string(), trader_steamid);
     params.metadata = Some(md);
+
 
     let mut pi_md = std::collections::HashMap::new();
     pi_md.insert("Offer".to_string(), offer_id.clone());
@@ -157,54 +163,69 @@ pub async fn stripe_webhook(req: HttpRequest, body: web::Bytes) -> HttpResponse 
         stripe::EventType::CheckoutSessionCompleted => {
             match event.data.object {
                 stripe::EventObject::CheckoutSession(session) => {
-                    // 1) offer_id from metadata
-                let offer_id = match session
-                .metadata
-                .as_ref()
-                .and_then(|m| m.get("Offer"))
-                .cloned()
-                    {
+                    let offer_id = match session.metadata.as_ref().and_then(|m| m.get("Offer")).cloned() {
                         Some(v) => v,
-                        None => {
-                            eprintln!("checkout.session.completed without metadata Offer");
-                            return HttpResponse::Ok().finish();
-                        }
+                        None => return HttpResponse::Ok().finish(),
                     };
-                let steamid = session
-                .customer_details
-                .as_ref()
-                .and_then(|cd| cd.name.as_deref())
-                .unwrap_or("unknown")
-                .to_string();
-    
-                // 3) amount (Stripe gives cents as i64; you store TEXT)
-                let amount_cents: i64 = session.amount_total.unwrap_or(0);
-                let amount = amount_cents.to_string();
-    
-                // 4) pay_method (keep it simple; or store card/klarna/link if you later fetch PI)
-                let pay_method = "checkout".to_string();
-    
-                // 5) insert transaction    
-                let db = DataBase::connect_to_db();
-    
-                // IMPORTANT: you asked for idempotency later; for now just insert.
-                // If Stripe retries the webhook, you'll get duplicates until you add an idempotency guard.
-                if let Err(e) = db.db_insert_transaction(
-                        steamid.clone(),
-                        "BUY".to_string(),
-                        amount,
+
+                    let buyer_steamid = session.metadata.as_ref()
+                        .and_then(|m| m.get("BuyerSteamID"))
+                        .cloned()
+                        .unwrap_or_else(|| "unknown".to_string());
+
+                    let trader_steamid = session.metadata.as_ref()
+                        .and_then(|m| m.get("TraderSteamID"))
+                        .cloned()
+                        .unwrap_or_else(|| "unknown".to_string());
+
+                    let amount_cents: i64 = session.amount_total.unwrap_or(0);
+
+                    let db = DataBase::connect_to_db();
+
+                    // insert buyer transaction
+                    if let Err(e) = db.db_insert_transaction(
+                        buyer_steamid.clone(),
+                        amount_cents.to_string(),
                         "STRIPE".to_string(),
-                        pay_method,
+                        "checkout".to_string(),
                     ) {
                         eprintln!("db_insert_transaction failed: {e}");
-                        // return 500 so Stripe retries (optional)
                         return HttpResponse::InternalServerError().finish();
                     }
-        
-                println!("PAID offer_id={offer_id} steamid={steamid} amount_cents={amount_cents}");
-                        HttpResponse::Ok().finish()
+
+                    // get seller connected acct_...
+                    let seller_acct = match db.db_get_connected_acct_for_steamid(&trader_steamid) {
+                        Ok(Some(acct)) => acct,
+                        Ok(None) => {
+                            eprintln!("Seller has no connected Stripe account steamid={trader_steamid}");
+                            // still ACK ok so Stripe doesn’t retry forever
+                            return HttpResponse::Ok().finish();
+                        }
+                        Err(e) => {
+                            eprintln!("db_get_connected_acct_for_steamid failed: {e}");
+                            return HttpResponse::InternalServerError().finish();
+                        }
+                    };
+
+                    // insert seller locked credit (idempotent via UNIQUE stripe_event_id)
+                    if let Err(e) = db.db_insert_stripe_wallet_locked(
+                        &seller_acct,
+                        &offer_id,
+                        amount_cents,
+                        event.id.as_str(),
+                    ) {
+                        // if duplicate event, ignore
+                        if e.sqlite_error_code() == Some(rusqlite::ErrorCode::ConstraintViolation) {
+                            return HttpResponse::Ok().finish();
+                        }
+                        eprintln!("db_insert_stripe_wallet_locked failed: {e}");
+                        return HttpResponse::InternalServerError().finish();
                     }
-                    _ => HttpResponse::BadRequest().finish(),
+
+                    println!("PAID offer_id={offer_id} buyer={buyer_steamid} seller={trader_steamid} amount_cents={amount_cents}");
+                    HttpResponse::Ok().finish()
+                }
+                _ => HttpResponse::BadRequest().finish(),
             }
         }
         _ => HttpResponse::Ok().finish(),
@@ -288,3 +309,23 @@ pub async fn payment_cancel_page(
 
     Ok(HttpResponse::Ok().content_type("text/html").body(body))
 }
+
+pub(crate) async fn create_transfer(
+    client: &stripe::Client,
+    destination_acct: &str, // acct_...
+    amount_cents: i64,
+    offer_id: &str,
+) -> Result<stripe::Transfer, stripe::StripeError> {
+    let mut params = stripe::CreateTransfer::new(
+        stripe::Currency::USD,
+        destination_acct.to_string(),
+    );
+    params.amount = Some(amount_cents);
+
+    let mut md = std::collections::HashMap::new();
+    md.insert("Offer".to_string(), offer_id.to_string());
+    params.metadata = Some(md);
+
+    stripe::Transfer::create(client, params).await
+}
+
