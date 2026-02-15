@@ -1,11 +1,13 @@
 use stripe::{Webhook, CheckoutSessionId};
 use serde::Deserialize;
 use actix_web::{HttpResponse, HttpRequest, web};
+use actix_session::{Session};
 
 use crate::db::DataBase;
 use crate::AppState;
 
 use steam_market_parser::{
+    SteamUser
 };
 
 const STRIPE_FEE: f64 = 1.03;
@@ -355,17 +357,17 @@ pub struct ConnectCallbackQuery {
     pub state: Option<String>, // use for CSRF + steamid binding
 }
 
-pub async fn stripe_connect_callback(q: web::Query<ConnectCallbackQuery>) -> actix_web::Result<HttpResponse> {
+pub async fn stripe_connect_callback(q: web::Query<ConnectCallbackQuery>, session: Session,) -> actix_web::Result<HttpResponse> {
     let secret = std::env::var("STRIPE_SECRET_KEY")
         .map_err(actix_web::error::ErrorInternalServerError)?;
     let client_id = std::env::var("STRIPE_CONNECT_CLIENT_ID")
         .map_err(actix_web::error::ErrorInternalServerError)?;
+    let public_url = std::env::var("PUBLIC_URL")
+        .map_err(actix_web::error::ErrorInternalServerError)?;
 
-    // IMPORTANT: bind seller steamid via `state` (recommended).
-    // For now assume you can get steamid from session/cookie:
-    let steamid = "TODO_GET_FROM_SESSION";
+    // must match what you used in /connect/start
+    let redirect_uri = format!("{public_url}/api/payment/stripe/connect/callback");
 
-    // Exchange code for acct id
     let http = reqwest::Client::new();
     let resp = http
         .post("https://connect.stripe.com/oauth/token")
@@ -374,24 +376,46 @@ pub async fn stripe_connect_callback(q: web::Query<ConnectCallbackQuery>) -> act
             ("code", q.code.as_str()),
             ("client_id", client_id.as_str()),
             ("client_secret", secret.as_str()),
+            ("redirect_uri", redirect_uri.as_str()),
         ])
         .send()
         .await
         .map_err(actix_web::error::ErrorBadGateway)?;
 
-    let json: serde_json::Value = resp.json().await
+    let status = resp.status();
+    let text = resp
+        .text()
+        .await
         .map_err(actix_web::error::ErrorBadGateway)?;
 
-    let acct = json["stripe_user_id"].as_str().unwrap_or("").to_string(); // <-- acct_...
+    eprintln!("Stripe OAuth token status={status} body={text}");
 
-    if !acct.starts_with("acct_") {
-        return Ok(HttpResponse::BadRequest().body("Stripe connect failed"));
+    // Parse JSON (even if error)
+    let json: serde_json::Value = serde_json::from_str(&text)
+        .map_err(actix_web::error::ErrorBadGateway)?;
+
+    // If Stripe returned an error, show it
+    if !status.is_success() || json.get("error").is_some() {
+        let err = json.get("error").and_then(|v| v.as_str()).unwrap_or("unknown_error");
+        let desc = json.get("error_description").and_then(|v| v.as_str()).unwrap_or("no_description");
+        return Ok(HttpResponse::BadRequest().body(format!("Stripe OAuth error: {err}\n{desc}")));
     }
+
+    let acct = json.get("stripe_user_id").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    if !acct.starts_with("acct_") {
+        return Ok(HttpResponse::BadRequest().body(format!("Missing stripe_user_id in response: {json}")));
+    }
+
+    // TODO: replace with real steamid from session + verify q.state
+    let steam_user: SteamUser = session
+    .get::<SteamUser>("steam_user")?
+    .ok_or_else(|| actix_web::error::ErrorUnauthorized("Not logged in"))?;
+
+    let steamid = steam_user.steamid;
 
     let db = DataBase::connect_to_db();
     db.db_upsert_user_stripe_id(&steamid, &acct)
         .map_err(actix_web::error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().body("Stripe connected"))
+    Ok(HttpResponse::Ok().body(format!("Stripe connected: {acct}")))
 }
-

@@ -135,6 +135,6 @@ pub async fn tokio_db_check_transaction_availability() {
         }
 
         drop(db);
-        tokio::time::sleep(Duration::from_secs(600)).await; // 10 min
+        tokio::time::sleep(Duration::from_secs(20)).await;
     }
 }

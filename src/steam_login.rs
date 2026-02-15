@@ -7,7 +7,7 @@ use steam_market_parser::SteamUser;
 use crate::db::DataBase;
 
 pub async fn steam_login() -> impl Responder {
-    let realm = "http://localhost:8080";
+    let realm = "https://lap.tastyrock.com";
     let path = "/api/auth/steam/return";
     let steam_openid = match SteamOpenId::new(realm, path) {
         Ok(openid) => openid,
@@ -27,7 +27,7 @@ pub async fn steam_return(
     req: actix_web::HttpRequest,
     session: Session,
 ) -> impl Responder {
-    let realm = "http://localhost:8080";
+    let realm = "https://lap.tastyrock.com";
     let path = "/api/auth/steam/return";
     
     let steam_openid = match SteamOpenId::new(realm, path) {

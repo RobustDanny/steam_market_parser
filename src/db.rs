@@ -847,7 +847,7 @@ impl DataBase{
             SET status='TRANSFERRED',
                 stripe_transfer_id=?1,
                 updated_at=datetime('now')
-            WHERE id=?2
+            WHERE id=?2 AND status='AVAILABLE'
             ",
             rusqlite::params![transfer_id, row_id],
         )?;
@@ -890,24 +890,6 @@ impl DataBase{
               (?1, ?2, ?3, 'LOCKED', ?4, NULL, ?5, ?6)
             ",
             rusqlite::params![stripe_acct, offer_id, amount_cents, stripe_event_id, time, time],
-        )?;
-        Ok(())
-    }
-
-    pub fn db_mark_transfer_for_offer(
-        &self,
-        offer_id: &str,
-        stripe_transfer_id: &str,
-    ) -> Result<(), rusqlite::Error> {
-        self.connection.execute(
-            "
-            UPDATE stripe_wallet
-            SET status='TRANSFERRED',
-                stripe_transfer_id=?1,
-                updated_at=datetime('now')
-            WHERE offer_id=?2 AND status='AVAILABLE'
-            ",
-            rusqlite::params![stripe_transfer_id, offer_id],
         )?;
         Ok(())
     }

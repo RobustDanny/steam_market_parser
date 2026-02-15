@@ -1,0 +1,24 @@
+/* /front/css/theme.css */
+:root {
+    --bg-backdrop: rgba(0, 0, 0, 0.65);
+    --bg-main: #212121;
+    --bg-panel: #282828;
+    --bg-input: #2d2d2d;
+
+    --border-main: #323232;
+    --border-input: #2e2e2e;
+
+    --text-main: #ffffff;
+    --text-muted: #d1d5db;
+    --text-dim: #8b8b8b;
+
+    --accent-primary: #146bad;
+    --accent-primary-soft: rgba(20, 107, 173, 0.4);
+    --accent-cyan: #38bdf8;
+
+    --grad-selected: linear-gradient(135deg, #1b2f40, #1e3a52);
+    --grad-chat-me: linear-gradient(135deg, #23343f, #1b2a33);
+    --grad-chat-other: linear-gradient(135deg, #16232c, #0f1b22);
+
+    --shadow-main: 0 8px 25px rgba(0, 0, 0, 0.35);
+}
