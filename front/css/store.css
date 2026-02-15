@@ -91,10 +91,6 @@
 .store_filters {
     display: flex;
     flex-direction: row;
-    background: #282828;
-    padding: 12px;
-    border-radius: 8px;
-
     justify-content: space-between;
 }
 
@@ -149,22 +145,6 @@
 
 .store_input {
     width: auto;
-    height: 34px;
-    padding: 0 10px;
-    border-radius: 5px;
-    border: 1px solid #2e2e2e;
-    background: #2d2d2d;
-    color: white;
-    font-size: 12px;
-    outline: none;
-    transition: border 0.2s ease, box-shadow 0.2s ease;
-    /* margin-bottom: 10px; */
-    align-self: center;
-    display: flex;
-}
-
-.chat_input_group input {
-    width: 100%;
     height: 34px;
     padding: 0 10px;
     border-radius: 5px;
@@ -244,9 +224,6 @@
     /* span columns 1 and 2 */
     grid-row: 2 / 3;
     /* third row */
-    background: #282828;
-    padding: 12px;
-    border-radius: 8px;
     min-height: 80px;
     display: flex;
     flex-direction: row;
@@ -672,36 +649,25 @@ z-index: 9998;
 
 .selected_items_accept_btn_cont {
     /* justify-content: space-between; */
-    background: #282828;
-    align-content: end;
+    background: transparent;
+    /* align-content: end; */
     width: 100%;
 
 }
 
 .selected_items_accept_btn {
     padding: 12px;
-    width: 100%;
-    margin-top: 4px;
-    border: 1px solid #323232;
-    border-radius: 6px;
-
+    /* margin-top: 4px; */
     background: #909192;
-    /* gray */
-    color: #ffffff;
-    font-size: 14px;
-    font-weight: 600;
-
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: not-allowed;
     opacity: 0.6;
-
-    transition:
-        background 0.25s ease,
-        transform 0.15s ease,
-        opacity 0.15s ease;
 }
 
 .selected_items_accept_btn.is_active {
-    background: linear-gradient(135deg, #184466, #146bad);
+    background: var(--color-primary);
     cursor: pointer;
     opacity: 1;
 }
@@ -722,7 +688,7 @@ z-index: 9998;
     display: flex;
     flex-direction: row;
     justify-content: space-around;
-
+    background: transparent;
     align-self: end;
     padding: 12px;
     gap: 12px;

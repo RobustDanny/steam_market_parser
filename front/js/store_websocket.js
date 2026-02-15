@@ -333,7 +333,7 @@ export function connectStoreChatWS(buyerId, traderId, role) {
         btnContainer.insertAdjacentHTML(
           "beforeend",
           `
-              <button id="accept_btn" class="selected_items_accept_btn">Send Offer</button>
+              <button id="accept_btn" class="secondary_btn selected_items_accept_btn">Send Offer</button>
               <span class="hidden_text_store">Click to send offer to buyer</span>
             `
         );

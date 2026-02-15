@@ -1,225 +1,189 @@
-.modal_backdrop {
-position: fixed;
-top: 0;
-left: 0;
-width: 100%;
-height: 100%;
-background: rgba(0, 0, 0, 0.6);
-backdrop-filter: blur(4px);
-display: none;
-align-items: center;
-justify-content: center;
-z-index: 9998;
-}
-
-.modal_backdrop hr {
-border: none;
-height: 1px;
-background: #2e2e2e;
-/* margin: 10px 0; */
-}
-
 .main_modal_form {
-background: #212121;                 /* same as your cards */
-padding: 25px;
-border-radius: 12px;
-width: 90%;
-height: 80%;
-/* max-width: 640px; */
-max-width: 1200px;
-border: 1px solid #323232;           /* consistent border */
-box-shadow: 0 8px 25px rgba(0,0,0,0.35);
-color: #fff;
-display: flex;
-flex-direction: column;
-flex-wrap: nowrap;   
-gap: 14px;
-z-index: 9999;
+    background: #212121;
+    /* same as your cards */
+    padding: 25px;
+    border-radius: 12px;
+    width: 90%;
+    height: 80%;
+    /* max-width: 640px; */
+    max-width: 1200px;
+    border: 1px solid #323232;
+    /* consistent border */
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.35);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 14px;
+    z-index: 9999;
 
-animation: fadeIn 0.25s ease-out;
+    animation: fadeIn 0.25s ease-out;
 }
 
 .load_inventory_modal_form {
-background: transparent;                 /* same as your cards */
-padding: 25px;
-/* border-radius: 12px; */
-/* width: 100%;
+    background: transparent;
+    /* same as your cards */
+    padding: 25px;
+    /* border-radius: 12px; */
+    /* width: 100%;
 max-width: 640px; */
-/* border: 1px solid #323232;           consistent border */
-/* box-shadow: 0 8px 25px rgba(0,0,0,0.35); */
-color: #fff;
-display: flex;
-flex-direction: column;
-gap: 14px;
-z-index: 9999;
-animation: fadeIn 0.25s ease-out;
+    /* border: 1px solid #323232;           consistent border */
+    /* box-shadow: 0 8px 25px rgba(0,0,0,0.35); */
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    z-index: 9999;
+    animation: fadeIn 0.25s ease-out;
 }
 
 .load_inventory_modal_form label {
-font-size: 13px;
-font-weight: 600;
-color: #ffffff;
-opacity: 0.85;
+    font-size: 13px;
+    font-weight: 600;
+    color: #ffffff;
+    opacity: 0.85;
 }
 
 /* Inputs, textareas */
-.load_inventory_modal_form input{
-width: 90%;
-padding: 10px 12px;
-background: #2d2d2d;                 /* matches .input_field */
-color: #fff;
-border: 1px solid #2e2e2e;
-border-radius: 6px;
-outline: none;
-font-size: 13px;
-transition: border-color 0.2s ease, box-shadow 0.2s ease;
+.load_inventory_modal_form input {
+    width: 90%;
+    padding: 10px 12px;
+    background: #2d2d2d;
+    /* matches .input_field */
+    color: #fff;
+    border: 1px solid #2e2e2e;
+    border-radius: 6px;
+    outline: none;
+    font-size: 13px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card_view_modal_form {
-background: transparent;                 /* same as your cards */
-padding: 25px;
-border-radius: 12px;
-justify-self: end;
-/* width: 90%; */
-max-width: 640px;
-/* border: 1px solid #323232;           */
-/* box-shadow: 0 8px 25px rgba(0,0,0,0.35); */
-/* color: #fff; */
-display: flex;
-flex-direction: column;
-gap: 14px;
-z-index: 9999;
-animation: fadeIn 0.25s ease-out;
+    background: transparent;
+    /* same as your cards */
+    padding: 25px;
+    border-radius: 12px;
+    justify-self: end;
+    /* width: 90%; */
+    max-width: 640px;
+    /* border: 1px solid #323232;           */
+    /* box-shadow: 0 8px 25px rgba(0,0,0,0.35); */
+    /* color: #fff; */
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    z-index: 9999;
+    animation: fadeIn 0.25s ease-out;
 }
 
 /* Labels */
 .card_view_modal_form label {
-font-size: 13px;
-font-weight: 600;
-color: #ffffff;
-opacity: 0.85;
-justify-self: center;
-display: flex;
+    font-size: 13px;
+    font-weight: 600;
+    color: #ffffff;
+    opacity: 0.85;
+    justify-self: center;
+    display: flex;
 }
 
 /* Inputs, textareas */
-.card_view_modal_form input{
-/* width: 100%; */
-/* padding: 10px 12px; */
-background: #2d2d2d;                 /* matches .input_field */
-color: #fff;
-border: 1px solid #2e2e2e;
-border-radius: 6px;
-outline: none;
-font-size: 13px;
-transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-
-
-/* Submit button */
-.card_view_modal_form button {
-padding: 12px;
-margin-top: 4px;
-border: 1px solid #323232;
-border-radius: 6px;
-background: #28a4c6;                 /* your blue highlight */
-color: white;
-font-size: 14px;
-font-weight: 600;
-cursor: pointer;
-transition: background 0.25s ease, transform 0.15s ease;
-}
-
-.card_view_modal_form button:hover {
-background: #66dbe6;                 
-transform: translateY(-2px);  
+.card_view_modal_form input {
+    /* width: 100%; */
+    /* padding: 10px 12px; */
+    background: #2d2d2d;
+    /* matches .input_field */
+    color: #fff;
+    border: 1px solid #2e2e2e;
+    border-radius: 6px;
+    outline: none;
+    font-size: 13px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card_hover-container {
-display: inline-block;
-cursor: default;
+    display: inline-block;
+    cursor: default;
 }
 
 .card_hover-container:hover .hidden-text {
-opacity: 1;
-visibility: visible;
+    opacity: 1;
+    visibility: visible;
 }
 
 .store_button {
     border: transparent;
-    background: transparent;              
+    background: transparent;
     color: transparent;
 }
 
 .ad_card {
-width: 80px;
-height: 90px;
-border-radius: 10px;
-background: #212121;
-display: flex;
-position: relative;
-padding: 1.8rem;
-align-content: center;
-justify-content: center;
-/* border: 1px solid #28a4c6; */
-box-shadow: 0 0 2px 2px rgba(102, 219, 230, 0.25);
-transition: 0.5s ease-out;
-/* overflow: hidden; */
-margin: 0.4rem;
-animation: smoothPulse 5s infinite;
-animation-delay: 1s;
+    width: 80px;
+    height: 90px;
+    border-radius: 10px;
+    background: #212121;
+    display: flex;
+    position: relative;
+    padding: 1.8rem;
+    align-content: center;
+    justify-content: center;
+    /* border: 1px solid #28a4c6; */
+    box-shadow: 0 0 2px 2px rgba(102, 219, 230, 0.25);
+    transition: 0.5s ease-out;
+    /* overflow: hidden; */
+    margin: 0.4rem;
+    animation: smoothPulse 5s infinite;
+    animation-delay: 1s;
 }
 
 .ad_card:hover {
-/* border-color: #66dbe6; */
-box-shadow: 0 40px 30px 0 rgba(0, 0, 0, 0.25);
-cursor: pointer;
+    /* border-color: #66dbe6; */
+    box-shadow: 0 40px 30px 0 rgba(0, 0, 0, 0.25);
+    cursor: pointer;
 }
 
 .ad_image_container {
-display: grid;
-width: 100%;
-height: 100%;
-grid-template-columns: repeat(2, 1fr);
-grid-template-rows: repeat(2, 1fr);
-gap: 0.6em;
+    display: grid;
+    width: 100%;
+    height: 100%;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 0.6em;
 }
 
 .ad_card_image {
-width: 100%;
-height: 100%;
-object-fit: cover;
-border-radius: 4px;  
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 4px;
 }
 
-.user_inventory{
-  flex: 1;                    
-  min-height: 0;              
-  height: auto;               
-  display: flex;
-  flex-wrap: wrap;
-  overflow-y: auto;
-  overflow-x: hidden;
-  justify-content: center;
+.user_inventory {
+    flex: 1;
+    min-height: 0;
+    height: auto;
+    display: flex;
+    flex-wrap: wrap;
+    overflow-y: auto;
+    overflow-x: hidden;
+    justify-content: center;
 }
 
-.user_inventory span{
-justify-self: center;
-align-self: center;
+.user_inventory span {
+    justify-self: center;
+    align-self: center;
 }
 
 .inventory_card {
-width: 50px;
-height: 60px;
-border-radius: 10px;
-background: #212121;
-position: relative;
-padding: 1.1rem;
-border: 1px solid #323232;
-transition: 0.5s ease-out;
-/* overflow: hidden; */
-margin: 0.4rem;
+    width: 50px;
+    height: 60px;
+    border-radius: 10px;
+    background: #212121;
+    position: relative;
+    padding: 1.1rem;
+    border: 1px solid #323232;
+    transition: 0.5s ease-out;
+    /* overflow: hidden; */
+    margin: 0.4rem;
 }
 
 .inventory_card_details {
@@ -230,23 +194,23 @@ margin: 0.4rem;
     place-content: center;
 }
 
-.inventory_item_icon{
-padding-left: 5px;
-padding-right: 5px;
-width: auto;
-height: 50px;
-/* position: absolute; */
-justify-self: center;
-align-self: center;    
+.inventory_item_icon {
+    padding-left: 5px;
+    padding-right: 5px;
+    width: auto;
+    height: 50px;
+    /* position: absolute; */
+    justify-self: center;
+    align-self: center;
 }
 
-.refresh_items{
+.refresh_items {
     width: 20px;
     height: 20px;
     cursor: pointer;
 }
 
-.history_cards{
+.history_cards {
     width: 20px;
     height: 20px;
     cursor: pointer;
@@ -258,7 +222,7 @@ align-self: center;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.65);
+    background: rgba(0, 0, 0, 0.65);
     z-index: 9999;
     display: none;
     justify-content: center;
@@ -272,7 +236,7 @@ align-self: center;
     width: 90%;
     max-width: 640px;
     border: 1px solid #323232;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.35);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.35);
     color: #fff;
     display: flex;
     justify-content: center;
@@ -282,29 +246,36 @@ align-self: center;
 
 /*Key frames*/
 @keyframes smoothPulse {
-0% {
-transform: scale(1);
-box-shadow: 0 0 2px 2px rgba(102, 219, 230, 0.4);
-}
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 2px 2px rgba(102, 219, 230, 0.4);
+    }
 
-20% {
-transform: scale(1.02);
-box-shadow: 0 0 2px 2px rgba(102, 219, 230, 0.4);
-}
+    20% {
+        transform: scale(1.02);
+        box-shadow: 0 0 2px 2px rgba(102, 219, 230, 0.4);
+    }
 
-40% {
-transform: scale(1);
-box-shadow: 0 0 2px 2px rgba(102, 219, 230, 0.4);
-}
+    40% {
+        transform: scale(1);
+        box-shadow: 0 0 2px 2px rgba(102, 219, 230, 0.4);
+    }
 
-/* 40%–100% is the timeout (no animation happening) */
-100% {
-transform: scale(1);
-box-shadow: 0 0 2px 2px rgba(102, 219, 230, 0.4);
-}
+    /* 40%–100% is the timeout (no animation happening) */
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 2px 2px rgba(102, 219, 230, 0.4);
+    }
 }
 
 @keyframes fadeIn {
-from { opacity: 0; transform: scale(0.95); }
-to   { opacity: 1; transform: scale(1); }
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
 }

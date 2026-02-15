@@ -81,11 +81,11 @@ export function renderActionButtons() {
     button_cont.insertAdjacentHTML("beforeend", `
       <div class="selected_items_button_group">
         <div class="selected_items_accept_btn_cont">
-        <button id="send_btn" class="selected_items_accept_btn">Send</button>
+        <button id="send_btn" class="secondary_btn selected_items_accept_btn">Send</button>
         <span class="hidden_text_store">Send offer. You can change amount of items and their price</span>
         </div>
         <div class="selected_items_accept_btn_cont">
-        <button id="pay_btn" class="selected_items_accept_btn">Pay</button>
+        <button id="pay_btn" class="secondary_btn selected_items_accept_btn">Pay</button>
         <span class="hidden_text_store">Pay offer. This action valid only when trader accepted your offer</span>
         </div>
       </div>
@@ -108,11 +108,11 @@ export function renderActionButtons() {
     button_cont.insertAdjacentHTML("beforeend", `
       <div class="selected_items_button_group">
       <div class="selected_items_accept_btn_cont">
-        <button id="send_btn" class="selected_items_accept_btn">Send</button>
+        <button id="send_btn" class="secondary_btn selected_items_accept_btn">Send</button>
         <span class="hidden_text_store">Send offer. You can change amount of items and their price</span>
       </div>
       <div class="selected_items_accept_btn_cont">
-        <button id="accept_btn" class="selected_items_accept_btn">Accept</button>
+        <button id="accept_btn" class="secondary_btn selected_items_accept_btn">Accept</button>
         <span class="hidden_text_store">Accept offer. Buyer will able to pay only after accepting offer</span>
       </div>
       </div>
@@ -232,7 +232,7 @@ quitIcon.addEventListener("click", () => {
   inv_cont.innerHTML = "";
   inv_cont.insertAdjacentHTML("beforeend", `
     <div id="inventory_input_group" class="inventory_input_group">
-        <input class="store_input" type="text" id="store_inventoryFilter" placeholder="Search items...">
+        <input class="input_field" type="text" id="store_inventoryFilter" placeholder="Search items...">
     </div>
     <div id="store_inventory" class="store_inventory_list">
         <span class="store_no_items_span">No items yet</span>

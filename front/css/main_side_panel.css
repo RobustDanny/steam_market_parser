@@ -149,33 +149,52 @@
   color: var(--panel-text);
 }
 
-/* Inputs (same as your store inputs) */
-.input_field {
-  width: 100%;
-  box-sizing: border-box;
-  height: 34px;
-  padding: 0 10px;
-  border-radius: 6px;
-  border: 1px solid #2e2e2e;
-  background: var(--panel-input);
-  color: #ffffff;
-  font-size: 12px;
-  outline: none;
-
-  transition: border 0.2s ease, box-shadow 0.2s ease;
-}
-
-.input_field:focus {
-  border-color: rgba(20, 107, 173, 0.55);
-  box-shadow: 0 0 0 2px rgba(20, 107, 173, 0.18);
-}
-
 /* Range inputs */
 input[type="range"] {
+  -webkit-appearance: none;
   width: 100%;
+  height: 6px;
+  background: #ddd;
+  /* Track color */
+  border-radius: 5px;
+  outline: none;
+}
+
+/* Track (Chrome, Safari, Edge) */
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px;
+  background: var(--color-primary);
+  /* Track color */
+  border-radius: 5px;
+}
+
+/* Thumb (Chrome, Safari, Edge) */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 18px;
+  width: 18px;
+  background: var(--color-primary);
+  /* Thumb color */
+  border-radius: 50%;
+  margin-top: -6px;
+  /* Align thumb vertically */
   cursor: pointer;
-  accent-color: #146bad;
-  /* modern browsers */
+}
+
+/* Firefox Track */
+input[type="range"]::-moz-range-track {
+  background: var(--color-primary);
+  height: 6px;
+  border-radius: 5px;
+}
+
+/* Firefox Thumb */
+input[type="range"]::-moz-range-thumb {
+  height: 8px;
+  width: 8px;
+  background: var(--color-primary);
+  border-radius: 50%;
+  cursor: pointer;
 }
 
 /* Checkout footer */
@@ -184,28 +203,6 @@ input[type="range"] {
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-/* Button styled like your active state */
-.checkout-btn {
-  width: 100%;
-  height: 36px;
-
-  border-radius: 6px;
-  border: 1px solid var(--panel-border);
-
-  background: linear-gradient(135deg, var(--panel-accent1), var(--panel-accent2));
-  color: #ffffff;
-  font-size: 13px;
-  font-weight: 700;
-
-  cursor: pointer;
-  transition: transform 0.15s ease, background 0.2s ease, opacity 0.15s ease;
-}
-
-/* Make it “active-looking” */
-.checkout-btn:hover {
-  transform: translateY(-1px);
 }
 
 /* Optional: tighten panel when collapsed (prevent text layout jitter) */
@@ -242,8 +239,6 @@ input[type="range"] {
   -webkit-transform: scale(1.5);
   -webkit-transition: -webkit-transform .1s cubic-bezier(0, 0, .2, 1);
 }
-
-
 
 /* The up/down direction logic */
 
@@ -436,7 +431,6 @@ input[type="range"] {
 .price_with_dollar {
   padding-left: 20px !important;
 }
-
 
 .input_small {
   height: 32px;

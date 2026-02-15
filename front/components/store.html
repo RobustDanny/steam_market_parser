@@ -1,10 +1,10 @@
-<div id="user_storeBackdrop">
-    <div id="user_store" class="user_store">
+<div id="user_storeBackdrop" class="backdrop">
+    <div id="user_store" class="popup_window">
 
         <div class="store_grid">
 
             <!-- ROW 1 – COL 1 -->
-            <div class="store_filters">
+            <div class="inner_window_conteiner store_filters">
                 <div class="div_quit_store">
                     <img id="quit_store_icon" class="quit_store_icon" src="/front/svg/quit_store.svg" alt="quit store">
                     <span class="hidden_text_store">Quit Store</span>
@@ -12,11 +12,12 @@
                 <form class="store_filters_form" id="store_filters_form">
                     <div style="display: flex; flex-direction: row; gap: 10px;">
                         <input id="store_steamid" style="display: none;" name="settings_steamid">
-                        <select class="store_input" name="settings_appid" id="settings_appid_select">
+                        <select class="input_field store_input" name="settings_appid" id="settings_appid_select">
                             <option>Select game</option>
                         </select>
                         <button id="store_button_load_inventory" class="store_button" type="submit">
-                            <img id="reload_store" class="reload_store_icon" src="/front/svg/refresh_icon.svg" alt="reload inventory">
+                            <img id="reload_store" class="reload_store_icon" src="/front/svg/refresh_icon.svg"
+                                alt="reload inventory">
                             <span class="hidden_text_store">Load store inventory</span>
                         </button>
                     </div>
@@ -26,7 +27,7 @@
                             <span>Avg trade time</span>
                         </div> -->
                         <div style="display: flex; flex-direction: row;">
-                            <img src="/front/svg/queue_icon.svg"  class="timer_icon" alt="current store queue">
+                            <img src="/front/svg/queue_icon.svg" class="timer_icon" alt="current store queue">
                             <span>Ppl before you</span>
                         </div>
                     </div>
@@ -34,7 +35,7 @@
             </div>
 
             <!-- ROW 1 – COL 2 -->
-            <div class="store_steps">
+            <div class="inner_window_conteiner">
                 <div class="current_offer_data_cont">
                     <span id="current_offer_data_span" class="current_offer_data_span"></span>
                 </div>
@@ -49,7 +50,7 @@
                 <div class="chat_messages" id="chat_messages"></div>
 
                 <div class="chat_input_group">
-                    <input class="store_input" id="chat_input" type="text" placeholder="Type message...">
+                    <input class="input_field" id="chat_input" type="text" placeholder="Type message...">
                     <button class="store_button" id="chat_send" type="button">
                         <img class="reload_store_icon" src="/front/svg/send_icon.svg" alt="send message">
                     </button>
@@ -57,8 +58,8 @@
             </div>
 
             <!-- NEW ROW: spans columns 1 & 2 -->
-            <div class="store_selected_items">
-                
+            <div class="inner_window_conteiner store_selected_items">
+
                 <div id="store_selected_items_list" class="store_selected_items_list">
                 </div>
 
@@ -67,7 +68,7 @@
             <!-- ROW 2 — COL 1 & 2 merged -->
             <div class="store_inventory_area">
                 <div id="inventory_input_group" class="inventory_input_group">
-                    <input class="store_input" type="text" id="store_inventoryFilter" placeholder="Search items...">
+                    <input class="input_field" type="text" id="store_inventoryFilter" placeholder="Search items...">
                 </div>
                 <div id="store_inventory" class="store_inventory_list">
                     <span class="store_no_items_span">No items yet</span>

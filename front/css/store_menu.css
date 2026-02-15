@@ -1,33 +1,3 @@
-#store_menuBackdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.65);
-    backdrop-filter: blur(4px);
-    z-index: 9999;
-    display: none;
-    justify-content: center;
-    align-items: center;
-}
-
-
-.store_menu {
-    background: #212121;
-    padding: 25px;
-    border-radius: 12px;
-    min-width: 300px;
-    border: 1px solid #323232;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.35);
-    color: #fff;
-    display: flex;
-    justify-content: space-around;
-    gap: 14px;
-    animation: fadeIn 0.25s ease-out;
-    align-items: center;
-}
-
 .store_widget {
     background: #212121;
     padding: 25px;
@@ -35,7 +5,7 @@
     width: 5px;
     height: 10px;
     border: 1px solid #323232;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.35);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.35);
     color: #fff;
     display: flex;
     flex-direction: column;
@@ -44,18 +14,18 @@
     cursor: pointer;
 }
 
-.store_info{
+.store_info {
     display: flex;
     flex-direction: column;
     gap: 14px;
 }
 
-.store_info span{
+.store_info span {
     font-size: medium;
     font: 400;
 }
 
-.store_widget_icon{
+.store_widget_icon {
     width: 30px;
     height: 30px;
     align-self: center;

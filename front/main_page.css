@@ -1,5 +1,6 @@
-body{
-  background-color: #141414;
+body {
+  background: var(--color-bg-page-alt, var(--color-bg-page));
+  color: var(--color-text-primary);
   overflow-x: hidden;
   display: grid;
   grid-template-columns: 3% 95% 2%;
