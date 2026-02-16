@@ -627,7 +627,7 @@ pub struct UserParamsFromDB{
 
 //----------------------------------
 //----------------------------------
-//Transaction fees
+//Transaction properties
 
 pub enum PaymentMethodEnum{
     STRIPE(String),

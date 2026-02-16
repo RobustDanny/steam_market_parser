@@ -14,6 +14,12 @@ pub struct RoomId {
     trader_steamid: String,
 }
 
+impl RoomId {
+    pub fn new(buyer_steamid: String, trader_steamid: String) -> Self {
+        Self { buyer_steamid, trader_steamid }
+    }
+}
+
 pub struct WsSession {
     room: RoomId,
     hub: Addr<ChatHub>,
@@ -284,6 +290,62 @@ struct OfferStep {
     from_role: String,  // "buyer" | "trader" | "system"
     step_type: String,
     text: String,
+}
+
+#[derive(Message)]
+#[rtype(result = "()")]
+pub struct PaymentSucceeded {
+    pub room: RoomId,
+    pub offer_id: String,
+}
+
+impl Handler<PaymentSucceeded> for ChatHub {
+    type Result = ();
+
+    fn handle(&mut self, msg: PaymentSucceeded, _: &mut Context<Self>) {
+        let Some(state) = self.rooms.get_mut(&msg.room) else {
+            // room not connected right now -> nothing to broadcast
+            return;
+        };
+
+        // keep offer_id in room state (so late-joiners can see it)
+        state.offer_id = Some(msg.offer_id.clone());
+
+        // 1) broadcast offer_paid state
+        let payload = serde_json::json!({
+            "type": "paid_offer",
+            "offer_id": msg.offer_id,
+            "offer_dirty": false,
+            "offer_send": true,
+            "offer_accepted": true,
+            "offer_paid": true
+        })
+        .to_string();
+
+        for addr in state.clients.keys() {
+            addr.do_send(WsText(payload.clone()));
+        }
+
+        // 2) broadcast system texts
+        let system1 = serde_json::json!({
+            "type": "system",
+            "from_role": "system",
+            "offer_id": state.offer_id,
+            "text": "Offer successfully paid"
+        }).to_string();
+
+        let system2 = serde_json::json!({
+            "type": "reveal_send_offer",
+            "from_role": "system",
+            "offer_id": state.offer_id,
+            "text": "Trader is sending offer"
+        }).to_string();
+
+        for addr in state.clients.keys() {
+            addr.do_send(WsText(system1.clone()));
+            addr.do_send(WsText(system2.clone()));
+        }
+    }
 }
 
 pub struct RoomState {
