@@ -4,6 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import { getInventoryGames, type InventoryGame } from "@/lib/getInventoryGames";
 import { X, Handbag, RotateCcw, Warehouse } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type SteamUser = {
     steamid: string;
@@ -79,6 +85,11 @@ export function AdvertisePopup({
     // Load games once (replace endpoint with yours)
     const [games, setGames] = useState<InventoryGame[]>([]);
     const [gamesLoading, setGamesLoading] = useState(false);
+
+    useEffect(() => {
+        if (!appid) return;
+        loadInventory();
+    }, [appid]);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -411,24 +422,33 @@ export function AdvertisePopup({
                                     {loadingInv ? "Loading..." : "No items yet"}
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-9 gap-1.5">
-                                    {filteredInventory.map((it) => (
-                                        <button
-                                            key={it.id}
-                                            type="button"
-                                            onClick={() => pickItemToSlot(it)}
-                                            className="group rounded-md border border-border bg-card overflow-hidden hover:border-primary/60 transition"
-                                            title={it.name}
-                                        >
-                                            <img
-                                                src={it.image}
-                                                onError={(e) => (e.currentTarget.src = "/front/svg/default_item_icon.svg")}
-                                                className="w-full aspect-square object-cover"
-                                                alt=""
-                                            />
-                                        </button>
-                                    ))}
-                                </div>
+                                <TooltipProvider delayDuration={200}>
+                                    <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-9 gap-1.5">
+                                        {filteredInventory.map((it) => (
+                                            <Tooltip key={it.id}>
+                                                <TooltipTrigger asChild>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => pickItemToSlot(it)}
+                                                        className="group rounded-md border border-border bg-card overflow-hidden hover:border-primary/60 transition"
+                                                        aria-label={it.name}
+                                                    >
+                                                        <img
+                                                            src={it.image}
+                                                            onError={(e) => (e.currentTarget.src = "/front/svg/default_item_icon.svg")}
+                                                            className="w-full aspect-square object-cover"
+                                                            alt={it.name}
+                                                        />
+                                                    </button>
+                                                </TooltipTrigger>
+
+                                                <TooltipContent side="top" align="center">
+                                                    <span className="text-xs">{it.name}</span>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        ))}
+                                    </div>
+                                </TooltipProvider>
                             )}
                         </div>
                     </div>

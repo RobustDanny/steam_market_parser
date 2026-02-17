@@ -22,6 +22,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useStoreChat } from "@/hooks/useStoreChat";
 import { getInventoryGames, type InventoryGame } from "@/lib/getInventoryGames";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type InventoryItem = {
     id: string;           // assetid (unique per item)
@@ -484,33 +490,42 @@ export function StoreModal({
                                             {loadingInv ? "Loading..." : "No items yet"}
                                         </div>
                                     ) : (
-                                        <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-9 gap-1.5">
-                                            {filteredInventory.map((it) => (
-                                                <button
-                                                    key={it.id}
-                                                    type="button"
-                                                    onClick={() =>
-                                                        addToOffer({
-                                                            key: it.assetid,        // ✅ real assetid
-                                                            contextid: it.contextid, // ✅ real contextid
-                                                            appid: it.appid,
-                                                            name: it.name,
-                                                            image: it.image,
-                                                            link: "",
-                                                        })
-                                                    }
-                                                    className="group rounded-md border border-border bg-card overflow-hidden hover:border-primary/60 transition"
-                                                    title={it.name}
-                                                >
-                                                    <img
-                                                        src={it.image}
-                                                        onError={(e) => (e.currentTarget.src = "/front/svg/default_item_icon.svg")}
-                                                        className="w-full aspect-square object-cover"
-                                                        alt=""
-                                                    />
-                                                </button>
-                                            ))}
-                                        </div>
+                                        <TooltipProvider delayDuration={200}>
+                                            <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-9 gap-1.5">
+                                                {filteredInventory.map((it) => (
+                                                    <Tooltip key={it.id}>
+                                                        <TooltipTrigger asChild>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    addToOffer({
+                                                                        key: it.assetid,
+                                                                        contextid: it.contextid,
+                                                                        appid: it.appid,
+                                                                        name: it.name,
+                                                                        image: it.image,
+                                                                        link: "",
+                                                                    })
+                                                                }
+                                                                className="group rounded-md border border-border bg-card overflow-hidden hover:border-primary/60 transition"
+                                                                aria-label={it.name}
+                                                            >
+                                                                <img
+                                                                    src={it.image}
+                                                                    onError={(e) => (e.currentTarget.src = "/front/svg/default_item_icon.svg")}
+                                                                    className="w-full aspect-square object-cover"
+                                                                    alt={it.name}
+                                                                />
+                                                            </button>
+                                                        </TooltipTrigger>
+
+                                                        <TooltipContent side="top" align="center">
+                                                            <span className="text-xs">{it.name}</span>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                ))}
+                                            </div>
+                                        </TooltipProvider>
                                     )}
                                 </div>
 
