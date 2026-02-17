@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { getInventoryGames, type InventoryGame } from "@/lib/getInventoryGames";
 import { X, Handbag, RotateCcw, Warehouse } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
     Tooltip,
@@ -54,6 +55,7 @@ export function AdvertisePopup({
     const [appid, setAppid] = useState<string>(""); // selected game
     const [inventoryQuery, setInventoryQuery] = useState("");
     const [loadingInv, setLoadingInv] = useState(false);
+    const invAbortRef = useRef<AbortController | null>(null);
 
     // Inventory content
     const [inventory, setInventory] = useState<InventoryItem[]>([]);
@@ -74,7 +76,13 @@ export function AdvertisePopup({
 
     // Close on ESC
     useEffect(() => {
-        if (!isOpen) return;
+        if (!isOpen) {
+            invAbortRef.current?.abort();
+            setAppid("");
+            setInventory([]);
+            setInventoryQuery("");
+            setLoadingInv(false);
+        }
         const onKey = (e: KeyboardEvent) => {
             if (e.key === "Escape") onClose();
         };
@@ -87,12 +95,13 @@ export function AdvertisePopup({
     const [gamesLoading, setGamesLoading] = useState(false);
 
     useEffect(() => {
-        if (!appid) return;
-        loadInventory();
-    }, [appid]);
-
-    useEffect(() => {
-        if (!isOpen) return;
+        if (!isOpen) {
+            invAbortRef.current?.abort();
+            setAppid("");
+            setInventory([]);
+            setInventoryQuery("");
+            setLoadingInv(false);
+        }
 
         (async () => {
             setGamesLoading(true);
@@ -128,7 +137,7 @@ export function AdvertisePopup({
     }
 
     type SteamInventoryResponse = {
-        assets?: { classid: string; instanceid: string }[];
+        assets?: { assetid: string; classid: string; instanceid: string }[];
         descriptions?: { classid: string; instanceid: string; icon_url?: string; name?: string }[];
     };
 
@@ -146,12 +155,10 @@ export function AdvertisePopup({
             const d = descMap.get(`${a.classid}_${a.instanceid}`);
             if (!d) continue;
 
-            const image = d.icon_url
-                ? `https://steamcommunity.com/economy/image/${d.icon_url}`
-                : "";
+            const image = d.icon_url ? `https://steamcommunity.com/economy/image/${d.icon_url}` : "";
 
             out.push({
-                id: `${a.classid}_${a.instanceid}`,
+                id: a.assetid,                 // ✅ unique per item (fixes filtering/render)
                 name: d.name ?? "Unknown item",
                 image,
             });
@@ -160,22 +167,32 @@ export function AdvertisePopup({
         return out;
     }
 
-    async function loadInventory(e?: React.FormEvent) {
+    async function loadInventory(e?: React.FormEvent, appidOverride?: string) {
         e?.preventDefault();
-        if (!appid) return;
 
+        const chosenAppid = appidOverride ?? appid;
+        if (!chosenAppid) return;
+
+        // abort previous in-flight request
+        invAbortRef.current?.abort();
+        const controller = new AbortController();
+        invAbortRef.current = controller;
+
+        // match StoreModal feel: clear + show loading immediately
         setLoadingInv(true);
+        setInventory([]); // important so old game items disappear instantly
+
         try {
-            // SAME as your old JS: new URLSearchParams(new FormData(form))
             const body = new URLSearchParams({
                 settings_steamid: steamUser.steamid,
-                settings_appid: appid,
+                settings_appid: chosenAppid,
             }).toString();
 
             const res = await fetch("/api/get_inventory_items", {
                 method: "POST",
                 headers: { "Content-Type": "application/x-www-form-urlencoded" },
                 body,
+                signal: controller.signal,
             });
 
             if (!res.ok) {
@@ -187,11 +204,17 @@ export function AdvertisePopup({
             const json = (await res.json()) as SteamInventoryResponse;
             const items = mapSteamInventoryToItems(json);
             setInventory(items);
-        } catch (err) {
-            console.error(err);
-            setInventory([]);
+        } catch (err: any) {
+            // ignore abort errors
+            if (err?.name !== "AbortError") {
+                console.error(err);
+                setInventory([]);
+            }
         } finally {
-            setLoadingInv(false);
+            // only stop loading if THIS request is still the latest one
+            if (invAbortRef.current === controller) {
+                setLoadingInv(false);
+            }
         }
     }
 
@@ -289,7 +312,12 @@ export function AdvertisePopup({
                                         <select
                                             className="h-9 w-full rounded-lg bg-secondary border border-border px-2 text-sm"
                                             value={appid}
-                                            onChange={(e) => setAppid(e.target.value)}
+                                            onChange={(e) => {
+                                                const next = e.target.value;
+                                                setAppid(next);
+                                                setInventoryQuery("");
+                                                loadInventory(undefined, next);
+                                            }}
                                             disabled={gamesLoading}
                                         >
                                             {gamesLoading ? (
@@ -319,12 +347,14 @@ export function AdvertisePopup({
                                     </div>
 
 
-                                    <input
-                                        className="h-9 w-full rounded-lg bg-secondary border border-border px-3 text-sm placeholder:text-muted-foreground"
-                                        value={inventoryQuery}
-                                        onChange={(e) => setInventoryQuery(e.target.value)}
-                                        placeholder="Search items..."
-                                    />
+                                    <div className="flex items-center gap-2">
+                                        <Input
+                                            className="h-9 w-full rounded-lg bg-secondary border border-border px-3 text-sm placeholder:text-muted-foreground max-w-xs"
+                                            value={inventoryQuery}
+                                            onChange={(e) => setInventoryQuery(e.target.value)}
+                                            placeholder="Search items..."
+                                        />
+                                    </div>
 
                                     {/* <div className="text-xs text-muted-foreground">
                                         {loadingInv ? "Loading..." : `Items: ${filteredInventory.length}`}
