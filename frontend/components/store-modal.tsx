@@ -3,7 +3,7 @@
 import { useState } from "react"
 import {
     ArrowLeft,
-    RefreshCw,
+    RotateCcw,
     ChevronDown,
     Send,
     Users,
@@ -22,6 +22,27 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
+import { useStoreChat } from "@/hooks/useStoreChat";
+
+type SelectedItem = {
+    key: string;        // assetid (you use it)
+    contextid: string;
+    appid: string;
+    name: string;
+    image: string;
+    link: string;
+    price: string;      // keep as string for input
+};
+
+interface StoreModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    storeName?: string;
+
+    buyerId: string;
+    traderId: string;
+    role: "buyer" | "trader";
+}
 
 interface ChatMessage {
     id: number
@@ -140,10 +161,112 @@ interface StoreModalProps {
     storeName?: string
 }
 
-export function StoreModal({ isOpen, onClose, storeName = "Project Winter" }: StoreModalProps) {
+
+
+export function StoreModal({
+    isOpen,
+    onClose,
+    storeName = "Project Winter",
+    buyerId,
+    traderId,
+    role,
+}: StoreModalProps) {
     const [message, setMessage] = useState("")
     const [searchItems, setSearchItems] = useState("")
     const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES)
+    const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
+    const [showPay, setShowPay] = useState(false);
+
+    const {
+        sendWS,
+        offerId,
+        ensureOfferId,
+        bothInRoom,
+        canPay,
+        canAccept,
+        statusText,
+    } = useStoreChat({ buyerId, traderId, role });
+
+    const addToOffer = (item: Omit<SelectedItem, "price">) => {
+        setSelectedItems((prev) => {
+            if (prev.some((x) => x.key === item.key)) return prev;
+            return [...prev, { ...item, price: "" }];
+        });
+    };
+
+    const removeFromOffer = (key: string) => {
+        setSelectedItems((prev) => prev.filter((x) => x.key !== key));
+    };
+
+    const setItemPrice = (key: string, price: string) => {
+        // allow only digits and single dot
+        if (!/^\d*\.?\d*$/.test(price)) return;
+        setSelectedItems((prev) => prev.map((x) => (x.key === key ? { ...x, price } : x)));
+    };
+
+    const sendItems = async () => {
+        if (selectedItems.length === 0) return;
+
+        const offer_id = await ensureOfferId();
+
+        const special_for_update_offer = selectedItems.map((it) => ({
+            item_asset_id: it.key,
+            item_contextid: it.contextid,
+            item_appid: it.appid,
+            item_name: it.name,
+            item_price: (it.price || "0").toString(),
+            item_link: it.link,
+            item_image: it.image,
+        }));
+
+        const res = await fetch("/api/offer/update_offer", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ offer_id, special_for_update_offer }),
+        });
+
+        if (!res.ok) {
+            console.error("update_offer failed", await res.text());
+            return;
+        }
+
+        const json = await res.json();
+
+        // what you used to send over WS
+        const wsItems = selectedItems.map((it) => ({
+            key: it.key,
+            contextid: it.contextid,
+            appid: it.appid,
+            image: it.image,
+            price: Number(it.price) || 0,
+            name: it.name,
+            link: it.link,
+        }));
+
+        sendWS({ type: "offer_items", items: wsItems });
+        sendWS({ type: "offer_log", json });
+        sendWS({ type: "send_offer" });
+    };
+
+    const acceptOffer = async () => {
+        if (!offerId) return;
+
+        await fetch("/api/offer/update_status_offer", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ offer_id: offerId, status: "ACCEPTED" }),
+        });
+
+        sendWS({ type: "accept_offer", text: "Trader accept offer" });
+        sendWS({ type: "system", text: "Trader's accepted offer" });
+        sendWS({ type: "offer_step_accepting" });
+    };
+
+    const goToPayStep = async () => {
+        sendWS({ type: "offer_step_paying" });
+        // show your pay options in React state instead of renderPayOptions()
+        setShowPay(true);
+    };
 
     const sendMessage = () => {
         if (!message.trim()) return
@@ -164,7 +287,12 @@ export function StoreModal({ isOpen, onClose, storeName = "Project Winter" }: St
 
     return (
         <>
-            <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+            <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+                onClick={(e) => {
+                    // click backdrop only
+                    if (e.currentTarget === e.target) onClose();
+                }}
+            />
             <div className="fixed inset-4 md:inset-8 lg:inset-12 z-50 rounded-2xl bg-card border border-border shadow-2xl shadow-black/50 overflow-hidden flex flex-col">
                 {/* Top bar */}
                 <div className="flex items-stretch border-b border-border min-h-[72px]">
@@ -183,7 +311,7 @@ export function StoreModal({ isOpen, onClose, storeName = "Project Winter" }: St
                                 <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
                             </button>
                             <button className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors" aria-label="Refresh">
-                                <RefreshCw className="h-4 w-4" />
+                                <RotateCcw className="h-4 w-4" />
                             </button>
                         </div>
                         <div className="flex items-center gap-1.5 text-muted-foreground ml-auto">
@@ -194,19 +322,41 @@ export function StoreModal({ isOpen, onClose, storeName = "Project Winter" }: St
 
                     {/* Center: status + actions */}
                     <div className="flex flex-col items-center justify-center gap-2 px-6 flex-1 border-r border-border">
-                        <p className="text-sm text-muted-foreground">Waiting for both participants in room</p>
+                        <p className="text-sm text-muted-foreground">{statusText}</p>
                         <div className="flex items-center gap-3">
-                            <Button variant="secondary" className="rounded-lg px-8 h-9">
+                            <Button
+                                variant="secondary"
+                                className="rounded-lg px-8 h-9"
+                                onClick={sendItems}
+                                disabled={!bothInRoom || selectedItems.length === 0}
+                            >
                                 Send
                             </Button>
-                            <Button variant="secondary" className="rounded-lg px-8 h-9">
-                                Pay
-                            </Button>
+
+                            {role === "buyer" ? (
+                                <Button
+                                    variant="secondary"
+                                    className="rounded-lg px-8 h-9"
+                                    onClick={goToPayStep}
+                                    disabled={!canPay}
+                                >
+                                    Pay
+                                </Button>
+                            ) : (
+                                <Button
+                                    variant="secondary"
+                                    className="rounded-lg px-8 h-9"
+                                    onClick={acceptOffer}
+                                    disabled={!canAccept}
+                                >
+                                    Accept
+                                </Button>
+                            )}
                         </div>
                     </div>
 
                     {/* Right: empty space (store face removed) */}
-                    <div className="flex-1" />
+                    {/* <div className="flex-1" /> */}
                 </div>
 
                 {/* Content area */}
@@ -260,7 +410,7 @@ export function StoreModal({ isOpen, onClose, storeName = "Project Winter" }: St
                                     return (
                                         <div key={msg.id} className={cn("rounded-lg px-3 py-2.5", style.bg)}>
                                             <div className="flex items-center gap-2 mb-1">
-                                                <Icon className={cn("h-3.5 w-3.5", style.accent)} />
+                                                {/* <Icon className={cn("h-3.5 w-3.5", style.accent)} /> */}
                                                 <span className={cn("text-xs font-medium", style.accent)}>{msg.sender}</span>
                                                 <span className="text-[10px] text-muted-foreground ml-auto">{msg.time}</span>
                                             </div>

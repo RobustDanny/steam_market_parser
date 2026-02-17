@@ -52,7 +52,9 @@ use routes::{
     offer_update_status_offer,
     offer_check_offer_to_pay,
     account_post_trade_url,
-    offer_get_draft
+    offer_get_draft,
+    api_me,
+    account_reset_trade_url
 };
 
 mod background_tasks;
@@ -214,6 +216,7 @@ async fn main()-> std::io::Result<()> {
             .service(Files::new("/front", "./front"))
             .route("/", web::get().to(tera_update_data))
             .service(web::scope("/api")
+                .route("/me", web::get().to(api_me))
                 .route("/logout", web::get().to(steam_logout)) 
                 .route("/get_inventory_items", web::post().to(load_inventory))
                 .route("/get_inventory_games", web::post().to(get_inventory_games))
@@ -226,6 +229,7 @@ async fn main()-> std::io::Result<()> {
                 .route("/auth/steam/return", web::get().to(steam_return))
                 .service(web::scope("/account")
                     .route("/post_trade_url", web::post().to(account_post_trade_url))
+                    .route("/post_reset_url", web::post().to(account_reset_trade_url))
                 )
                 .service(web::scope("/offer")
                     .route("/make_offer", web::post().to(offer_make_offer))
@@ -245,10 +249,15 @@ async fn main()-> std::io::Result<()> {
                     )
                 )
             )
+            .service(web::scope("/ws")
+            .route("", web::get().to(ws_handler)) 
+            .route("/ads", web::get().to(ws_ad_handler)) 
+            .route("/chat", web::get().to(ws_chat_handler)) 
+        )
+            .service(web::scope("/web")
             .route("/store_rating", web::get().to(store_rating))
-            .route("/ws", web::get().to(ws_handler)) 
-            .route("/ws/ads", web::get().to(ws_ad_handler)) 
-            .route("/ws/chat", web::get().to(ws_chat_handler)) 
+
+        )
             
     })
     .bind(("127.0.0.1", 8080))?

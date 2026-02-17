@@ -16,11 +16,18 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 
 interface MarketplaceSidebarProps {
-    isOpen: boolean
-    onToggle: () => void
+    isOpen: boolean;
+    onToggle: () => void;
+    onApplyFilters: (f: {
+        appid: string;
+        price_min: string;
+        price_max: string;
+        query: string;
+        card_appearing: string;
+    }) => void;
 }
 
-export function MarketplaceSidebar({ isOpen, onToggle }: MarketplaceSidebarProps) {
+export function MarketplaceSidebar({ isOpen, onToggle, onApplyFilters }: MarketplaceSidebarProps) {
     const [gameFilter, setGameFilter] = useState("")
     const [queryFilter, setQueryFilter] = useState("")
     const [priceMin, setPriceMin] = useState([0])
@@ -153,12 +160,22 @@ export function MarketplaceSidebar({ isOpen, onToggle }: MarketplaceSidebarProps
 
                         {/* Apply button */}
                         <Button
+                            onClick={() => onApplyFilters({
+                                appid: gameFilter || "Steam",
+                                price_min: String(priceMin[0]),
+                                price_max: String(priceMax[0]),
+                                query: queryFilter,
+                                card_appearing:
+                                    filterType === "stores-and-items" ? "stores_items"
+                                        : filterType === "only-stores" ? "stores"
+                                            : "items",
+                            })}
                             className="w-full rounded-full bg-primary hover:bg-primary/80 text-primary-foreground font-medium h-10"
                         >
                             Apply
                         </Button>
 
-                        <div className="h-px bg-border mt-5" />
+                        {/* <div className="h-px bg-border mt-5" /> */}
                     </div>
                 </ScrollArea>
 

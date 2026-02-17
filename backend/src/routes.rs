@@ -446,6 +446,19 @@ pub async fn account_post_trade_url(profile_trade_url: web::Json<ProfileTradeUrl
     HttpResponse::Ok()
 }
 
+pub async fn account_reset_trade_url(profile_trade_url: web::Json<ProfileTradeUrl>)->impl Responder{
+
+    let steam_id = &profile_trade_url.steam_id;
+
+    let db = DataBase::connect_to_db();
+
+    db.db_account_reset_trade_url(steam_id);
+
+    drop(db);
+
+    HttpResponse::Ok()
+}
+
 pub async fn offer_get_draft(path: web::Path<String>) -> HttpResponse {
     let draft_id = path.into_inner();
     println!("offer_get_draft: {draft_id}");
@@ -465,6 +478,13 @@ pub async fn offer_get_draft(path: web::Path<String>) -> HttpResponse {
             }))
         }
     }
+}
+
+pub async fn api_me(session: Session) -> impl Responder {
+    let steam_user: Option<SteamUser> = session.get("steam_user").unwrap_or(None);
+    HttpResponse::Ok().json(serde_json::json!({
+        "steam_user": steam_user
+    }))
 }
 
 pub async fn tera_update_data(session: Session, 

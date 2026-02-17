@@ -1,8 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    typescript: {
-        ignoreBuildErrors: true,
-    }
-}
+    async rewrites() {
+        return [
+            {
+                source: "/api/:path*",
+                destination: "https://app.tastyrock.com/api/:path*",
+            },
+            {
+                source: "/ws/:path*",
+                destination: "https://app.tastyrock.com/ws/:path*",
+            },
+        ];
+    },
+};
 
-export default nextConfig
+export default nextConfig;

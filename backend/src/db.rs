@@ -53,7 +53,7 @@ impl DataBase{
     ///Work on price. This is wrong one now
     pub fn db_post_most_recent_items(&self, data: SteamMostRecentResponse) -> (i64, i64) {
         // ID BEFORE inserts
-        let mut start_id = self.connection.last_insert_rowid();
+        let start_id = self.connection.last_insert_rowid();
 
         let count: i64 = self.connection.query_one(
             "SELECT COUNT(*) FROM item_feed",
@@ -613,6 +613,21 @@ impl DataBase{
             ],
         )
         .expect("DB: Can't add trade_url to steam_user");
+
+    }
+
+    pub fn db_account_reset_trade_url(&self, steam_id: &String){
+
+        self.connection
+        .execute(
+            "UPDATE steam_user
+             SET trade_url = NULL
+             WHERE steamid = ?1",
+            [
+                &steam_id,
+            ],
+        )
+        .expect("DB: Can't null trade_url in steam_user");
 
     }
 

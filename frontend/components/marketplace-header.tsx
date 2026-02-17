@@ -22,6 +22,7 @@ import { NotificationPopup } from "@/components/notification-popup"
 import { ProfileSettingsPopup } from "@/components/profile-settings-popup"
 import { StoreQuickPreview } from "@/components/store-preview-popup"
 import { AdvertisePopup } from "@/components/advertise-popup"
+import { useMe } from "@/hooks/userAuth"
 
 interface MarketplaceHeaderProps {
     isOpen: boolean
@@ -43,6 +44,7 @@ export function MarketplaceHeader({
     stats,
     onOpenStoreModal,
 }: MarketplaceHeaderProps) {
+    const { steamUser } = useMe()
     const [profileOpen, setProfileOpen] = useState(false)
     const [notifOpen, setNotifOpen] = useState(false)
     const [settingsOpen, setSettingsOpen] = useState(false)
@@ -80,7 +82,7 @@ export function MarketplaceHeader({
                 {/* Left section - main nav */}
                 <TooltipProvider delayDuration={200}>
                     <nav className="flex items-center gap-1">
-                        <Tooltip>
+                        {/* <Tooltip>
                             <TooltipTrigger asChild>
                                 <button className="flex items-center justify-center h-9 w-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors" aria-label="Marketplace">
                                     <LayoutGrid className="h-5 w-5" />
@@ -90,90 +92,94 @@ export function MarketplaceHeader({
                         </Tooltip>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <button
-                                    onClick={() => {
-                                        setStoreQueueOpen(!storeQueueOpen)
-                                        setNotifOpen(false)
-                                        setProfileOpen(false)
-                                    }}
-                                    className="flex items-center justify-center h-9 w-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-                                    aria-label="Store"
-                                >
-                                    <Store className="h-5 w-5" />
-                                </button>
-                            </TooltipTrigger>
-                            <TooltipContent>Store</TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <button
-                                    onClick={() => {
-                                        closeAll()
-                                        setAdvertiseOpen(true)
-                                    }}
-                                    className="flex items-center justify-center h-9 w-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-                                    aria-label="Advertise"
-                                >
-                                    <Megaphone className="h-5 w-5" />
-                                </button>
-                            </TooltipTrigger>
-                            <TooltipContent>Advertise</TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
                                 <button className="flex items-center justify-center h-9 w-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors" aria-label="Favorites">
                                     <Heart className="h-5 w-5" />
                                 </button>
                             </TooltipTrigger>
                             <TooltipContent>Favorites</TooltipContent>
-                        </Tooltip>
+                        </Tooltip> */}
                     </nav>
                 </TooltipProvider>
 
                 {/* Center section - stats */}
-                <div className="hidden md:flex items-center gap-5">
-                    <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-muted-foreground">Items:</span>
-                        <span className="text-xs font-medium text-foreground">{stats.totalItems}</span>
-                    </div>
-                    <div className="h-3 w-px bg-border" />
-                    <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-muted-foreground">Avg:</span>
-                        <span className="text-xs font-medium text-foreground">${stats.avgPrice.toFixed(2)}</span>
-                    </div>
-                    <div className="h-3 w-px bg-border" />
-                    <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-muted-foreground">Min:</span>
-                        <span className="text-xs font-medium text-accent">${stats.minPrice}</span>
-                    </div>
-                    <div className="h-3 w-px bg-border" />
-                    <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-muted-foreground">Max:</span>
-                        <span className="text-xs font-medium text-foreground">${stats.maxPrice}</span>
+                <div className="justify-self-center">
+                    <div className="hidden md:flex items-center gap-5">
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-xs text-muted-foreground">Items:</span>
+                            <span className="text-xs font-medium text-foreground">{stats.totalItems}</span>
+                        </div>
+                        <div className="h-3 w-px bg-border" />
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-xs text-muted-foreground">Avg:</span>
+                            <span className="text-xs font-medium text-foreground">${stats.avgPrice.toFixed(2)}</span>
+                        </div>
+                        <div className="h-3 w-px bg-border" />
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-xs text-muted-foreground">Min:</span>
+                            <span className="text-xs font-medium text-accent">${stats.minPrice}</span>
+                        </div>
+                        <div className="h-3 w-px bg-border" />
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-xs text-muted-foreground">Max:</span>
+                            <span className="text-xs font-medium text-foreground">${stats.maxPrice}</span>
+                        </div>
                     </div>
                 </div>
 
                 {/* Right section - profile & actions */}
                 <div className="flex items-center gap-1">
-                    <TooltipProvider delayDuration={200}>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <button
-                                    onClick={() => {
-                                        setNotifOpen(!notifOpen)
-                                        setProfileOpen(false)
-                                        setStoreQueueOpen(false)
-                                    }}
-                                    className="relative flex items-center justify-center h-9 w-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-                                    aria-label="Notifications"
-                                >
-                                    <Bell className="h-5 w-5" />
-                                    <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-accent" />
-                                </button>
-                            </TooltipTrigger>
-                            <TooltipContent>Notifications</TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
+                    {steamUser ? (
+                        <TooltipProvider delayDuration={200}>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        onClick={() => {
+                                            setStoreQueueOpen(!storeQueueOpen)
+                                            setNotifOpen(false)
+                                            setProfileOpen(false)
+                                        }}
+                                        className="flex items-center justify-center h-9 w-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                                        aria-label="Store"
+                                    >
+                                        <Store className="h-5 w-5" />
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent>Store</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        onClick={() => {
+                                            closeAll()
+                                            setAdvertiseOpen(true)
+                                        }}
+                                        className="flex items-center justify-center h-9 w-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                                        aria-label="Advertise"
+                                    >
+                                        <Megaphone className="h-5 w-5" />
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent>Advertise</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        onClick={() => {
+                                            setNotifOpen(!notifOpen)
+                                            setProfileOpen(false)
+                                            setStoreQueueOpen(false)
+                                        }}
+                                        className="relative flex items-center justify-center h-9 w-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                                        aria-label="Notifications"
+                                    >
+                                        <Bell className="h-5 w-5" />
+                                        <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-accent" />
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent>Notifications</TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    ) : (<></>)}
 
                     {/* Profile avatar */}
                     <button
@@ -185,7 +191,17 @@ export function MarketplaceHeader({
                         className="ml-2 flex items-center justify-center h-8 w-8 rounded-full bg-primary/15 border border-primary/25 overflow-hidden hover:border-primary/40 transition-colors"
                         aria-label="Profile"
                     >
-                        <span className="text-primary text-xs font-bold">TR</span>
+                        {steamUser?.avatar_url_full ? (
+                            <img
+                                src={steamUser.avatar_url_full}
+                                alt={steamUser.nickname ?? "Profile"}
+                                className="h-full w-full object-cover"
+                                referrerPolicy="no-referrer"
+                            />
+                        ) : (
+                            <span className="text-primary text-xs font-bold">TR</span>
+                        )}
+
                     </button>
 
                     {/* Collapse header button */}
@@ -200,23 +216,33 @@ export function MarketplaceHeader({
             </header>
 
             {/* Popups */}
-            <ProfileDropdown
-                isOpen={profileOpen}
-                onClose={() => setProfileOpen(false)}
-                onOpenSettings={() => setSettingsOpen(true)}
-            />
-            <NotificationPopup
-                isOpen={notifOpen}
-                onClose={() => setNotifOpen(false)}
-            />
-            <ProfileSettingsPopup
-                isOpen={settingsOpen}
-                onClose={() => setSettingsOpen(false)}
-            />
-            <AdvertisePopup
-                isOpen={advertiseOpen}
-                onClose={() => setAdvertiseOpen(false)}
-            />
+            {steamUser ? (
+                <>
+                    <ProfileDropdown
+                        isOpen={profileOpen}
+                        onClose={() => setProfileOpen(false)}
+                        onOpenSettings={() => setSettingsOpen(true)}
+                        isAuthed={!!steamUser}
+                    />
+                    <NotificationPopup
+                        isOpen={notifOpen}
+                        onClose={() => setNotifOpen(false)}
+                    />
+                    <ProfileSettingsPopup
+                        isOpen={settingsOpen}
+                        onClose={() => setSettingsOpen(false)}
+                    />
+                    <AdvertisePopup
+                        isOpen={advertiseOpen}
+                        onClose={() => setAdvertiseOpen(false)}
+                        steamUser={{
+                            steamid: steamUser.steamid,
+                            nickname: steamUser.nickname ?? "",
+                            avatar_url_full: steamUser.avatar_url_full ?? "",
+                        }}
+                    />
+                </>
+            ) : (<></>)}
             {/* Store icon opens Queue-only popup */}
             <StoreQuickPreview
                 isOpen={storeQueueOpen}

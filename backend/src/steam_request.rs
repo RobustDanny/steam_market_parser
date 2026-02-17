@@ -48,7 +48,7 @@ pub trait ProcessSteamRequest{
     // }
 }
 
-async fn send_request<T: SteamRequest + DeserializeOwned>(url: String) -> Result<T, Box<dyn std::error::Error + Send + Sync>>{
+async fn send_request<T: SteamRequest + DeserializeOwned + Debug>(url: String) -> Result<T, Box<dyn std::error::Error + Send + Sync>>{
     // type SteamResponse: for<'de> Deserialize<'de>;
         
         let client = reqwest::Client::new();
@@ -60,7 +60,9 @@ async fn send_request<T: SteamRequest + DeserializeOwned>(url: String) -> Result
             .await?
             .text()
             .await?;
-
+        
+        // println!("{:#?}", respond);
         let respond = serde_json::from_str(&respond)?;
+        
         Ok(respond)
 }

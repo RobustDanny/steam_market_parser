@@ -1,98 +1,263 @@
 "use client"
 
-import { useState, useRef, useCallback, useMemo } from "react"
+import { useState, useRef, useCallback, useMemo, useEffect } from "react"
 import { MarketplaceSidebar } from "@/components/marketplace-sidebar"
 import { MarketplaceHeader } from "@/components/marketplace-header"
-import { ItemCard, type ItemData } from "@/components/item-card"
-import { ScrollControls } from "@/components/scroll-controls"
-import { ChatFab } from "@/components/chat-fab"
+import { ItemCard, type ItemCardData } from "@/components/feed-card"
+// import { ScrollControls } from "@/components/scroll-controls"
+// import { ChatFab } from "@/components/chat-fab"
 import { StorePreviewPopup } from "@/components/store-preview-popup"
 import { StoreModal } from "@/components/store-modal"
+import { FeedCard, MostRecent, UserProfileAds } from "@/types/feed"
 import { cn } from "@/lib/utils"
 
-const ITEM_COLORS = [
-    "#635bff",
-    "#80e9ff",
-    "#0a9dff",
-    "#ff6059",
-    "#a0f0d0",
-    "#f5a623",
-    "#e87de8",
-    "#635bff",
-    "#80e9ff",
-    "#0a9dff",
-]
+export function AnimatedCard({
+    children,
+    className,
+    enabled = true,
+}: {
+    children: React.ReactNode;
+    className?: string;
+    enabled?: boolean;
+}) {
+    const [entered, setEntered] = useState(!enabled);
 
-const GAME_NAMES = [
-    "Elden Ring",
-    "CS:GO",
-    "Monster Hunter",
-    "Battlefront II",
-    "Metal Gear",
-    "Dark Souls III",
-    "Touhou Project",
-    "Worms W.M.D",
-    "Ultraman",
-    "Phantom Spark",
-]
+    useEffect(() => {
+        if (!enabled) return;
+        // next paint -> transition in
+        const id = requestAnimationFrame(() => setEntered(true));
+        return () => cancelAnimationFrame(id);
+    }, [enabled]);
 
-// Simple seeded PRNG for deterministic item generation (avoids hydration mismatch)
-function seededRandom(seed: number) {
-    let s = seed
-    return () => {
-        s = (s * 16807 + 0) % 2147483647
-        return s / 2147483647
-    }
+    return (
+        <div
+            className={cn(
+                "will-change-transform will-change-opacity",
+                enabled &&
+                "transition-all duration-200 ease-out motion-reduce:transition-none",
+                enabled && (entered ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-2 scale-[0.98]"),
+                className
+            )}
+        >
+            {children}
+        </div>
+    );
 }
 
-function generateItems(): ItemData[] {
-    const rng = seededRandom(42)
-    const items: ItemData[] = []
-    for (let i = 0; i < 48; i++) {
-        const isBundle = rng() > 0.55
-        const hasPrice = rng() > 0.25
-        items.push({
-            id: i,
-            title: GAME_NAMES[i % GAME_NAMES.length],
-            price: hasPrice ? Math.floor(rng() * 20) + 2 : null,
-            type: isBundle ? "bundle" : "single",
-            color: ITEM_COLORS[i % ITEM_COLORS.length],
-        })
-    }
-    return items
+function AdCard({ ad }: { ad: UserProfileAds }) {
+    const imgs = [ad.first_item_image, ad.second_item_image, ad.third_item_image, ad.fourth_item_image];
+
+    return (
+        <div className="rounded-lg bg-card border border-border overflow-hidden p-2">
+            <div className="grid grid-cols-2 gap-1">
+                {imgs.map((src, i) => (
+                    <img key={i} src={src} className="w-full h-auto rounded" alt="" />
+                ))}
+            </div>
+        </div>
+    );
 }
 
-const ITEMS = generateItems()
+// const ITEM_COLORS = [
+//     "#635bff",
+//     "#80e9ff",
+//     "#0a9dff",
+//     "#ff6059",
+//     "#a0f0d0",
+//     "#f5a623",
+//     "#e87de8",
+//     "#635bff",
+//     "#80e9ff",
+//     "#0a9dff",
+// ]
+
+// const GAME_NAMES = [
+//     "Elden Ring",
+//     "CS:GO",
+//     "Monster Hunter",
+//     "Battlefront II",
+//     "Metal Gear",
+//     "Dark Souls III",
+//     "Touhou Project",
+//     "Worms W.M.D",
+//     "Ultraman",
+//     "Phantom Spark",
+// ]
+
+export function sendFilters(ws: WebSocket | null, f: {
+    appid: string; price_min: string; price_max: string; query: string; card_appearing: string;
+}) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ type: "filters", ...f }));
+}
+
+const PAGE_SIZE = 200;
+
+function wsUrl(path: string) {
+    if (typeof window === "undefined") return path;
+    const proto = window.location.protocol === "https:" ? "wss" : "ws";
+    return `${proto}://${window.location.host}${path}`;
+}
+
+// Rust WS item -> your ItemData
+function mapRustItemToItemData(it: any): ItemCardData {
+    // TODO: change these keys to match your real Rust JSON
+    return {
+        id: it.id ?? (it.market_hash_name ? hashStr(it.market_hash_name) : Math.floor(Math.random() * 1e9)),
+        title: it.name ?? it.title ?? "Unknown",
+        price: (it.converted_price ?? it.price ?? null),
+        type: "single",                 // or "bundle" if you have that concept
+        color: "#A8DADC",               // or derive by game/appid if you want
+    };
+}
+
+// small stable hash for missing numeric ids
+function hashStr(s: string) {
+    let h = 2166136261;
+    for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
+    return (h >>> 0);
+}
 
 export default function Page() {
+    const [cards, setCards] = useState<FeedCard[]>([]);
+    const pausedBufferRef = useRef<FeedCard[]>([]);
+    const [currentPage, setCurrentPage] = useState(0);  // 0 = newest
+    const [isPaused, setIsPaused] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(false)
     const [headerOpen, setHeaderOpen] = useState(true)
     const [storeModalOpen, setStoreModalOpen] = useState(false)
     const [storeModalName, setStoreModalName] = useState("Project Winter")
+    const mainWsRef = useRef<WebSocket | null>(null);
+    const seenRef = useRef<Set<string>>(new Set());
     // Full store preview popup (from bundle card click)
-    const [bundlePreview, setBundlePreview] = useState<{ open: boolean; item: ItemData | null }>({
+    const [bundlePreview, setBundlePreview] = useState<{ open: boolean; item: ItemCardData | null }>({
         open: false,
         item: null,
     })
     const gridRef = useRef<HTMLDivElement>(null)
+    const cardAdAppearingRef = useRef<string>("stores_items");
 
-    const scrollBy = useCallback((amount: number) => {
-        gridRef.current?.scrollBy({ top: amount, behavior: "smooth" })
-    }, [])
+    const totalPages = useMemo(() => Math.max(1, Math.ceil(cards.length / PAGE_SIZE)), [cards.length]);
+
+    const pageItems = useMemo(() => {
+        const start = currentPage * PAGE_SIZE;
+        const end = start + PAGE_SIZE;
+        return cards.slice(start, end);
+    }, [cards, currentPage]);
+
+    const onApplyFilters = useCallback((f: {
+        appid: string; price_min: string; price_max: string; query: string; card_appearing: string;
+    }) => {
+        const ws = mainWsRef.current;
+        if (!ws || ws.readyState !== WebSocket.OPEN) return;
+        ws.send(JSON.stringify({ type: "filters", ...f }));
+
+        // optional: clear existing cards when filters change (matches typical UX)
+        // setCards([]);
+        pausedBufferRef.current = [];
+        setCurrentPage(0);
+    }, []);
+
+    const addNewest = useCallback((card: FeedCard) => {
+        setCards(prev => {
+            setCurrentPage(p => (p > 0 ? p + 1 : p));
+            return [card, ...prev];
+        });
+    }, []);
+
+    const flushPaused = useCallback(() => {
+        const buf = pausedBufferRef.current;
+        if (!buf.length) return;
+        setCards(prev => [...buf, ...prev]);
+        pausedBufferRef.current = [];
+    }, []);
+
+    function getCardKey(c: FeedCard) {
+        return c.kind === "ad"
+            ? `ad:${c.data.steamid}:${c.data.first_item_image}`
+            : `it:${c.data.listinginfo_id}`;
+    }
+
+    const isPausedRef = useRef(false);
+    useEffect(() => { isPausedRef.current = isPaused; }, [isPaused]);
+
+    useEffect(() => {
+        const main = new WebSocket(wsUrl("/ws"));
+        const ads = new WebSocket(wsUrl("/ws/ads"));
+
+        // optional: store refs so you can send filters later
+        mainWsRef.current = main;
+
+        main.onopen = () => console.log("main_ws CONNECTED");
+        main.onclose = () => console.log("main_ws CLOSED");
+        main.onerror = (e) => console.log("main_ws ERROR", e);
+
+        ads.onopen = () => console.log("ad_main_ws CONNECTED");
+        ads.onclose = () => console.log("ad_main_ws CLOSED");
+        ads.onerror = (e) => console.log("ad_main_ws ERROR", e);
+
+        ads.onmessage = (event) => {
+            console.log("ads ws")
+            const payload = JSON.parse(event.data) as { user_ads?: UserProfileAds[] };
+            const ad0 = payload.user_ads?.[0];
+            if (!ad0) return;
+
+            // respect your card_appearing behavior
+            if (cardAdAppearingRef.current !== "stores" && cardAdAppearingRef.current !== "stores_items") return;
+
+            const card: FeedCard = { kind: "ad", data: ad0 };
+
+            if (isPausedRef.current) pausedBufferRef.current.unshift(card);
+            else addNewest(card);
+        };
+
+        main.onmessage = (event) => {
+            console.log("main ws")
+            const payload = JSON.parse(event.data);
+
+            // server echoes filters
+            if (payload?.type === "filters" && payload?.card_appearing) {
+                cardAdAppearingRef.current = payload.card_appearing;
+                return;
+            }
+
+            const arr: MostRecent[] = payload?.items ?? [];
+            if (!arr.length) return;
+
+            // preserve your ordering logic
+            const mapped: FeedCard[] = arr.map((it) => ({ kind: "item", data: it }));
+
+            if (isPausedRef.current) {
+                for (let i = mapped.length - 1; i >= 0; i--) pausedBufferRef.current.unshift(mapped[i]);
+                return;
+            }
+            for (let i = mapped.length - 1; i >= 0; i--) addNewest(mapped[i]);
+        };
+
+        return () => {
+            mainWsRef.current = null;
+            main.close();
+            ads.close();
+        };
+    }, [addNewest]);
 
     const stats = useMemo(() => {
-        const priced = ITEMS.filter((i) => i.price !== null)
-        const prices = priced.map((i) => i.price as number)
+        const itemCards = cards.filter((c) => c.kind === "item");
+        const prices = itemCards
+            .map((c) => Number.parseFloat(c.data.converted_price))
+            .filter((n) => Number.isFinite(n));
+
         return {
-            totalItems: ITEMS.length,
-            avgPrice: prices.length > 0 ? prices.reduce((a, b) => a + b, 0) / prices.length : 0,
-            minPrice: prices.length > 0 ? Math.min(...prices) : 0,
-            maxPrice: prices.length > 0 ? Math.max(...prices) : 0,
-        }
-    }, [])
+            totalItems: itemCards.length,
+            avgPrice: prices.length ? prices.reduce((a, b) => a + b, 0) / prices.length : 0,
+            minPrice: prices.length ? Math.min(...prices) : 0,
+            maxPrice: prices.length ? Math.max(...prices) : 0,
+        };
+    }, [cards]);
+
 
     // Bundle card click -> full preview popup (Rating, Status, Queue, etc.)
-    const handleBundleClick = useCallback((item: ItemData) => {
+    const handleBundleClick = useCallback((item: ItemCardData) => {
         setBundlePreview({ open: true, item })
     }, [])
 
@@ -111,12 +276,29 @@ export default function Page() {
         setStoreModalOpen(true)
     }, [])
 
+    function mapMostRecentToItemCardData(it: MostRecent): ItemCardData {
+        const priceNum = Number.parseFloat(it.converted_price);
+        return {
+            id: it.id,
+            title: it.name,
+            price: Number.isFinite(priceNum) ? priceNum : null,
+            type: "single",
+            color: "#A8DADC",
+            appid: it.appid,
+            market_hash_name: it.market_hash_name,
+            icon: it.icon,
+            game_icon: it.game_icon,
+            tradable: it.tradable === "1",
+        };
+    }
+
     return (
         <div className="relative h-screen overflow-hidden bg-background">
             {/* Sidebar */}
             <MarketplaceSidebar
                 isOpen={sidebarOpen}
                 onToggle={() => setSidebarOpen(!sidebarOpen)}
+                onApplyFilters={onApplyFilters}
             />
 
             {/* Header */}
@@ -137,27 +319,35 @@ export default function Page() {
                     headerOpen ? "pt-14" : "pt-0"
                 )}
             >
-                <div className="p-3 pr-16">
+                <div className="p-3">
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-2">
-                        {ITEMS.map((item) => (
-                            <ItemCard
-                                key={item.id}
-                                item={item}
-                                onBundleClick={handleBundleClick}
-                            />
-                        ))}
+                        {pageItems.map((c) => {
+                            const k = getCardKey(c);
+                            const seen = seenRef.current.has(k);
+                            if (!seen) seenRef.current.add(k);
+
+                            return (
+                                <AnimatedCard key={k} enabled={!seen}>
+                                    {c.kind === "ad" ? (
+                                        <AdCard ad={c.data} />
+                                    ) : (
+                                        <ItemCard item={mapMostRecentToItemCardData(c.data)} onBundleClick={handleBundleClick} />
+                                    )}
+                                </AnimatedCard>
+                            );
+                        })}
                     </div>
                 </div>
             </main>
 
             {/* Right scroll controls (hideable) */}
-            <ScrollControls
+            {/* <ScrollControls
                 onScrollUp={() => scrollBy(-400)}
                 onScrollDown={() => scrollBy(400)}
-            />
+            /> */}
 
             {/* Chat FAB */}
-            <ChatFab />
+            {/* <ChatFab /> */}
 
             {/* Bundle card click -> full store preview popup (Rating, Status, Queue, Avg times) */}
             <StorePreviewPopup
@@ -172,6 +362,9 @@ export default function Page() {
                 isOpen={storeModalOpen}
                 onClose={() => setStoreModalOpen(false)}
                 storeName={storeModalName}
+                buyerId="current-user-id"
+                traderId="store-owner-id"
+                role="buyer"
             />
         </div>
     )

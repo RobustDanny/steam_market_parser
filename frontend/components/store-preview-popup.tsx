@@ -23,7 +23,7 @@ export function StorePreviewPopup({
 
     return (
         <>
-            <div className="fixed inset-0 z-50" onClick={onClose} />
+            <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" onClick={onClose} />
             <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-80 rounded-xl bg-card border border-border shadow-2xl shadow-black/40 overflow-hidden">
                 <div className="p-5">
                     <div className="flex items-center justify-between mb-5">
@@ -98,7 +98,7 @@ export function StoreQuickPreview({
 
     return (
         <>
-            <div className="fixed inset-0 z-50" onClick={onClose} />
+            <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" onClick={onClose} />
             <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-72 rounded-xl bg-card border border-border shadow-2xl shadow-black/40 overflow-hidden">
                 <div className="p-5">
                     <p className="text-xs text-muted-foreground mb-3">{storeName}</p>
