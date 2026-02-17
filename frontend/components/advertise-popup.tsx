@@ -2,12 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { getInventoryGames, type InventoryGame } from "@/lib/getInventoryGames";
-import {
-    X,
-    Handbag,
-    RotateCcw,
-    Warehouse
-} from "lucide-react";
+import { X, Handbag, RotateCcw, Warehouse } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type SteamUser = {
@@ -109,15 +104,49 @@ export function AdvertisePopup({
     }, [inventory, inventoryQuery]);
 
     function pickItemToSlot(item: InventoryItem) {
-        setSlots((prev) => ({ ...prev, [activeSlot]: item.image }));
-        // auto-advance to next empty slot (nice UX)
         const keys: SlotKey[] = ["first_item_image", "second_item_image", "third_item_image", "fourth_item_image"];
-        const nextEmpty = keys.find((k) => (k === activeSlot ? false : !slots[k]));
-        if (nextEmpty) setActiveSlot(nextEmpty);
-        else {
-            const idx = keys.indexOf(activeSlot);
-            setActiveSlot(keys[Math.min(idx + 1, keys.length - 1)]);
+
+        setSlots((prev) => {
+            const next = { ...prev, [activeSlot]: item.image };
+
+            const nextEmpty = keys.find((k) => k !== activeSlot && !next[k]);
+            setActiveSlot(nextEmpty ?? keys[Math.min(keys.indexOf(activeSlot) + 1, 3)]);
+
+            return next;
+        });
+    }
+
+    type SteamInventoryResponse = {
+        assets?: { classid: string; instanceid: string }[];
+        descriptions?: { classid: string; instanceid: string; icon_url?: string; name?: string }[];
+    };
+
+    function mapSteamInventoryToItems(inv: SteamInventoryResponse): InventoryItem[] {
+        const assets = inv.assets ?? [];
+        const descriptions = inv.descriptions ?? [];
+
+        const descMap = new Map<string, (typeof descriptions)[number]>();
+        for (const d of descriptions) {
+            descMap.set(`${d.classid}_${d.instanceid}`, d);
         }
+
+        const out: InventoryItem[] = [];
+        for (const a of assets) {
+            const d = descMap.get(`${a.classid}_${a.instanceid}`);
+            if (!d) continue;
+
+            const image = d.icon_url
+                ? `https://steamcommunity.com/economy/image/${d.icon_url}`
+                : "";
+
+            out.push({
+                id: `${a.classid}_${a.instanceid}`,
+                name: d.name ?? "Unknown item",
+                image,
+            });
+        }
+
+        return out;
     }
 
     async function loadInventory(e?: React.FormEvent) {
@@ -126,26 +155,30 @@ export function AdvertisePopup({
 
         setLoadingInv(true);
         try {
-            // TODO: replace with your real inventory endpoint.
-            // Your server form was SettingsFormInventory with settings_steamid + settings_appid.
-            const body = toUrlEncoded({
+            // SAME as your old JS: new URLSearchParams(new FormData(form))
+            const body = new URLSearchParams({
                 settings_steamid: steamUser.steamid,
                 settings_appid: appid,
-            });
+            }).toString();
 
-            const res = await fetch("/api/load_inventory", {
+            const res = await fetch("/api/get_inventory_items", {
                 method: "POST",
                 headers: { "Content-Type": "application/x-www-form-urlencoded" },
                 body,
             });
 
             if (!res.ok) {
+                console.error("get_inventory_items failed:", await res.text());
                 setInventory([]);
                 return;
             }
 
-            const json = (await res.json()) as { items: InventoryItem[] };
-            setInventory(json.items ?? []);
+            const json = (await res.json()) as SteamInventoryResponse;
+            const items = mapSteamInventoryToItems(json);
+            setInventory(items);
+        } catch (err) {
+            console.error(err);
+            setInventory([]);
         } finally {
             setLoadingInv(false);
         }
@@ -232,9 +265,12 @@ export function AdvertisePopup({
 
                     {/* Content */}
                     <div className="p-4">
-                        <div className="flex flex-col lg:flex-row gap-3 justify-between">
+                        <div className="flex flex-col lg:flex-row gap-3 items-start">
                             {/* Inventory loader form */}
-                            <form onSubmit={loadInventory} className="w-full lg:w-1/2 rounded-xl border border-border bg-secondary/30 p-3">
+                            <form
+                                onSubmit={loadInventory}
+                                className="w-full lg:w-[60%] min-w-[260px] flex-shrink-0 rounded-xl border border-border bg-secondary/30 p-2"
+                            >
                                 <div className="flex flex-col gap-3">
                                     <div className="flex gap-2">
                                         <input type="hidden" name="settings_steamid" value={steamUser.steamid} />
@@ -286,7 +322,10 @@ export function AdvertisePopup({
                             </form>
 
                             {/* Ad form */}
-                            <form onSubmit={submitAd} className="w-full lg:w-1/2 rounded-xl border border-border bg-secondary/30 p-3">
+                            <form
+                                onSubmit={submitAd}
+                                className="w-full lg:w-[320px] flex-shrink-0 rounded-xl border border-border bg-secondary/30 p-2"
+                            >
                                 {/* hidden fields like server */}
                                 <input id="ad_steamid" type="hidden" name="steamid" value={steamUser.steamid} />
                                 <input id="ad_nickname" type="hidden" name="nickname" value={steamUser.nickname} />
@@ -366,9 +405,9 @@ export function AdvertisePopup({
                         <div className="h-px bg-border my-4" />
 
                         {/* Inventory grid */}
-                        <div className="rounded-lg border border-border bg-secondary/10 p-2 min-h-[200px]">
+                        <div className="rounded-lg border border-border bg-secondary/10 p-2 h-[320px] overflow-y-auto overflow-x-hidden">
                             {filteredInventory.length === 0 ? (
-                                <div className="h-[160px] flex items-center justify-center text-xs text-muted-foreground">
+                                <div className="h-full flex items-center justify-center text-xs text-muted-foreground">
                                     {loadingInv ? "Loading..." : "No items yet"}
                                 </div>
                             ) : (
@@ -379,15 +418,19 @@ export function AdvertisePopup({
                                             type="button"
                                             onClick={() => pickItemToSlot(it)}
                                             className="group rounded-md border border-border bg-card overflow-hidden hover:border-primary/60 transition"
+                                            title={it.name}
                                         >
-                                            <img src={it.image} className="w-full aspect-square object-cover" alt="" />
+                                            <img
+                                                src={it.image}
+                                                onError={(e) => (e.currentTarget.src = "/front/svg/default_item_icon.svg")}
+                                                className="w-full aspect-square object-cover"
+                                                alt=""
+                                            />
                                         </button>
                                     ))}
                                 </div>
                             )}
                         </div>
-
-
                     </div>
                 </div>
             </div>

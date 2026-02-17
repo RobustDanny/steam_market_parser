@@ -4,11 +4,14 @@ import { useState, useRef, useCallback, useMemo, useEffect } from "react"
 import { MarketplaceSidebar } from "@/components/marketplace-sidebar"
 import { MarketplaceHeader } from "@/components/marketplace-header"
 import { ItemCard, type ItemCardData } from "@/components/feed-card"
+import { useMe } from "@/hooks/userAuth"
 // import { ScrollControls } from "@/components/scroll-controls"
 // import { ChatFab } from "@/components/chat-fab"
 import { StorePreviewPopup } from "@/components/store-preview-popup"
 import { StoreModal } from "@/components/store-modal"
 import { FeedCard, MostRecent, UserProfileAds } from "@/types/feed"
+import { getInventoryGames, type InventoryGame } from "@/lib/getInventoryGames";
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 
 export function AnimatedCard({
@@ -44,11 +47,23 @@ export function AnimatedCard({
     );
 }
 
-function AdCard({ ad }: { ad: UserProfileAds }) {
+function AdCard({
+    ad,
+    onClick,
+}: {
+    ad: UserProfileAds
+    onClick?: (ad: UserProfileAds) => void
+}) {
     const imgs = [ad.first_item_image, ad.second_item_image, ad.third_item_image, ad.fourth_item_image];
 
     return (
-        <div className="rounded-lg bg-card border border-border overflow-hidden p-2">
+        <div
+            onClick={() => onClick?.(ad)}
+            className={cn(
+                "rounded-lg bg-card border border-border overflow-hidden p-2",
+                onClick && "cursor-pointer hover:border-accent/50 hover:shadow-[0_0_16px_-4px_hsl(var(--accent)/0.15)] transition-all"
+            )}
+        >
             <div className="grid grid-cols-2 gap-1">
                 {imgs.map((src, i) => (
                     <img key={i} src={src} className="w-full h-auto rounded" alt="" />
@@ -57,6 +72,11 @@ function AdCard({ ad }: { ad: UserProfileAds }) {
         </div>
     );
 }
+
+type CardEntry = { key: string; card: FeedCard };
+
+
+
 
 // const ITEM_COLORS = [
 //     "#635bff",
@@ -119,8 +139,9 @@ function hashStr(s: string) {
 }
 
 export default function Page() {
-    const [cards, setCards] = useState<FeedCard[]>([]);
-    const pausedBufferRef = useRef<FeedCard[]>([]);
+    const { steamUser } = useMe();
+    const [cards, setCards] = useState<CardEntry[]>([]);
+    const pausedBufferRef = useRef<CardEntry[]>([]);
     const [currentPage, setCurrentPage] = useState(0);  // 0 = newest
     const [isPaused, setIsPaused] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -129,15 +150,76 @@ export default function Page() {
     const [storeModalName, setStoreModalName] = useState("Project Winter")
     const mainWsRef = useRef<WebSocket | null>(null);
     const seenRef = useRef<Set<string>>(new Set());
+    const [storeSteamId, setStoreSteamId] = useState<string | null>(null);
+    const [storeGames, setStoreGames] = useState<InventoryGame[]>([]);
+
+    const openStore = useCallback(
+        async (traderSteamId: string, storeName: string) => {
+            const buyerSteamId = steamUser?.steamid;
+            if (!buyerSteamId) return;           // buyer must exist
+            if (!traderSteamId) return;          // trader must exist
+
+            setStoreGames([]); // avoid stale UI
+
+            try {
+                const list = await getInventoryGames(traderSteamId);
+                setStoreGames(list ?? []);
+            } catch (e) {
+                console.error(e);
+                setStoreGames([]);
+            }
+
+            setStoreModalName(storeName);
+            setStoreSteamId(traderSteamId);
+            setStoreModalOpen(true);
+        },
+        [steamUser]
+    );
+
+    const buyerId = steamUser?.steamid ?? null;
+    const traderId = storeSteamId ?? null;
+
+    // console.log("buyerId", buyerId)
+    // console.log("traderId", traderId)
+
     // Full store preview popup (from bundle card click)
     const [bundlePreview, setBundlePreview] = useState<{ open: boolean; item: ItemCardData | null }>({
         open: false,
         item: null,
     })
+    const handleAdClick = useCallback((ad: UserProfileAds) => {
+        setStoreSteamId(ad.steamid);
+        const name = ad.nickname ?? "";
+
+        setBundlePreview({
+            open: true,
+            item: {
+                id: Number(hashStr(ad.steamid)),
+                title: name,
+                price: null,
+                type: "bundle",
+                color: "#A8DADC",
+            },
+        });
+    }, []);
+
     const gridRef = useRef<HTMLDivElement>(null)
     const cardAdAppearingRef = useRef<string>("stores_items");
 
     const totalPages = useMemo(() => Math.max(1, Math.ceil(cards.length / PAGE_SIZE)), [cards.length]);
+
+    const adSeqRef = useRef(0);
+
+    function makeAdKey(ad: UserProfileAds) {
+        adSeqRef.current += 1;
+        // stable enough + guaranteed unique on this client
+        return `ad:${ad.steamid}:${Date.now()}:${adSeqRef.current}`;
+    }
+
+    function makeItemKey(it: MostRecent) {
+        // your listinginfo_id is good
+        return `it:${it.listinginfo_id}`;
+    }
 
     const pageItems = useMemo(() => {
         const start = currentPage * PAGE_SIZE;
@@ -158,12 +240,13 @@ export default function Page() {
         setCurrentPage(0);
     }, []);
 
-    const addNewest = useCallback((card: FeedCard) => {
+    const addNewest = useCallback((entry: CardEntry) => {
         setCards(prev => {
             setCurrentPage(p => (p > 0 ? p + 1 : p));
-            return [card, ...prev];
+            return [entry, ...prev];
         });
     }, []);
+
 
     const flushPaused = useCallback(() => {
         const buf = pausedBufferRef.current;
@@ -205,10 +288,10 @@ export default function Page() {
             // respect your card_appearing behavior
             if (cardAdAppearingRef.current !== "stores" && cardAdAppearingRef.current !== "stores_items") return;
 
-            const card: FeedCard = { kind: "ad", data: ad0 };
+            const entry: CardEntry = { key: makeAdKey(ad0), card: { kind: "ad", data: ad0 } };
 
-            if (isPausedRef.current) pausedBufferRef.current.unshift(card);
-            else addNewest(card);
+            if (isPausedRef.current) pausedBufferRef.current.unshift(entry);
+            else addNewest(entry);
         };
 
         main.onmessage = (event) => {
@@ -225,7 +308,10 @@ export default function Page() {
             if (!arr.length) return;
 
             // preserve your ordering logic
-            const mapped: FeedCard[] = arr.map((it) => ({ kind: "item", data: it }));
+            const mapped: CardEntry[] = arr.map((it) => ({
+                key: makeItemKey(it),
+                card: { kind: "item", data: it },
+            }));
 
             if (isPausedRef.current) {
                 for (let i = mapped.length - 1; i >= 0; i--) pausedBufferRef.current.unshift(mapped[i]);
@@ -242,9 +328,12 @@ export default function Page() {
     }, [addNewest]);
 
     const stats = useMemo(() => {
-        const itemCards = cards.filter((c) => c.kind === "item");
+        const itemCards = cards.filter(
+            (c): c is CardEntry & { card: { kind: "item"; data: MostRecent } } =>
+                c.card.kind === "item"
+        );
         const prices = itemCards
-            .map((c) => Number.parseFloat(c.data.converted_price))
+            .map((c) => Number.parseFloat(c.card.data.converted_price))
             .filter((n) => Number.isFinite(n));
 
         return {
@@ -262,19 +351,26 @@ export default function Page() {
     }, [])
 
     // From full preview popup -> open store modal
-    const handleOpenStoreFromPreview = useCallback(() => {
-        if (bundlePreview.item) {
-            setStoreModalName(bundlePreview.item.title)
-        }
-        setBundlePreview({ open: false, item: null })
-        setStoreModalOpen(true)
-    }, [bundlePreview.item])
+    const handleOpenStoreFromPreview = useCallback(
+        async (sid?: string | null) => {
+            const traderSteamId = sid ?? storeSteamId;
+            if (!traderSteamId) return;
+
+            setBundlePreview({ open: false, item: null });
+
+            await openStore(traderSteamId, bundlePreview.item?.title ?? "Store");
+        },
+        [storeSteamId, bundlePreview.item, openStore]
+    );
 
     // From header Store icon -> queue popup -> store modal
-    const handleOpenStoreFromHeader = useCallback(() => {
-        setStoreModalName("Featured Store")
-        setStoreModalOpen(true)
-    }, [])
+    const handleOpenStoreFromHeader = useCallback(async () => {
+        const mySteamId = steamUser?.steamid;
+        if (!mySteamId) return;
+
+        await openStore(mySteamId, steamUser?.nickname ?? "My Store");
+    }, [steamUser, openStore]);
+
 
     function mapMostRecentToItemCardData(it: MostRecent): ItemCardData {
         const priceNum = Number.parseFloat(it.converted_price);
@@ -319,25 +415,32 @@ export default function Page() {
                     headerOpen ? "pt-14" : "pt-0"
                 )}
             >
+
                 <div className="p-3">
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-2">
-                        {pageItems.map((c) => {
-                            const k = getCardKey(c);
+                        {pageItems.map((e) => {
+                            const k = e.key;
+                            const c = e.card;
+
                             const seen = seenRef.current.has(k);
                             if (!seen) seenRef.current.add(k);
 
                             return (
                                 <AnimatedCard key={k} enabled={!seen}>
                                     {c.kind === "ad" ? (
-                                        <AdCard ad={c.data} />
+                                        <AdCard ad={c.data} onClick={handleAdClick} />
                                     ) : (
-                                        <ItemCard item={mapMostRecentToItemCardData(c.data)} onBundleClick={handleBundleClick} />
+                                        <ItemCard
+                                            item={mapMostRecentToItemCardData(c.data)}
+                                            onBundleClick={handleBundleClick}
+                                        />
                                     )}
                                 </AnimatedCard>
                             );
                         })}
                     </div>
                 </div>
+
             </main>
 
             {/* Right scroll controls (hideable) */}
@@ -354,18 +457,25 @@ export default function Page() {
                 isOpen={bundlePreview.open}
                 onClose={() => setBundlePreview({ open: false, item: null })}
                 onOpenStore={handleOpenStoreFromPreview}
-                storeName={bundlePreview.item?.title ?? "Store"}
+                storeSteamId={storeSteamId}
             />
-
             {/* Full store modal */}
-            <StoreModal
-                isOpen={storeModalOpen}
-                onClose={() => setStoreModalOpen(false)}
-                storeName={storeModalName}
-                buyerId="current-user-id"
-                traderId="store-owner-id"
-                role="buyer"
-            />
-        </div>
+
+            {storeModalOpen && buyerId && traderId && (
+
+
+
+                <StoreModal
+                    isOpen={storeModalOpen}
+                    onClose={() => setStoreModalOpen(false)}
+                    storeName={storeModalName}
+                    buyerId={buyerId}
+                    traderId={traderId}
+                    role="buyer"
+                    initialGames={storeGames}
+                />
+            )}
+
+        </div >
     )
 }

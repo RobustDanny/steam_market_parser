@@ -1,25 +1,23 @@
-"use client"
+"use client";
 
-import { Star, Clock, DollarSign, Users, Activity, LogIn } from "lucide-react"
+import { Star, Clock, DollarSign, Users, Activity, LogIn } from "lucide-react";
 
-interface StorePopupProps {
-    isOpen: boolean
-    onClose: () => void
-    onOpenStore: () => void
-    storeName?: string
+interface StorePreviewPopupProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onOpenStore: (storeSteamId?: string | null) => void;
+    storeName?: string;
+    storeSteamId?: string | null;
 }
 
-/**
- * Full store preview with Rating, Status, Queue, Avg offer time, Avg offer price.
- * Shown when clicking a bundle card (4-window card).
- */
 export function StorePreviewPopup({
     isOpen,
     onClose,
     onOpenStore,
     storeName = "Store",
-}: StorePopupProps) {
-    if (!isOpen) return null
+    storeSteamId,
+}: StorePreviewPopupProps) {
+    if (!isOpen) return null;
 
     return (
         <>
@@ -31,31 +29,25 @@ export function StorePreviewPopup({
                     </div>
 
                     <div className="flex flex-col gap-3">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                                <Star className="h-4 w-4" />
-                                <span className="text-sm">Rating</span>
-                            </div>
-                            <span className="text-sm text-foreground">4.8</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                                <Activity className="h-4 w-4" />
-                                <span className="text-sm">Status</span>
-                            </div>
-                            <span className="text-sm text-accent">Online</span>
-                        </div>
+                        <Row icon={<Star className="h-4 w-4" />} label="Rating" value="4.8" />
+                        <Row
+                            icon={<Activity className="h-4 w-4" />}
+                            label="Status"
+                            value={<span className="text-accent">Online</span>}
+                        />
+
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 text-muted-foreground">
                                 <Users className="h-4 w-4" />
                                 <span className="text-sm">Queue</span>
                             </div>
+
                             <div className="flex items-center gap-3">
                                 <span className="text-sm text-foreground">3</span>
                                 <button
                                     onClick={(e) => {
-                                        e.stopPropagation()
-                                        onOpenStore()
+                                        e.stopPropagation();
+                                        onOpenStore(storeSteamId); // ✅ triggers fetch in Page
                                     }}
                                     className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                                     aria-label="Enter store"
@@ -64,37 +56,58 @@ export function StorePreviewPopup({
                                 </button>
                             </div>
                         </div>
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                                <Clock className="h-4 w-4" />
-                                <span className="text-sm">Avg offer time</span>
-                            </div>
-                            <span className="text-sm text-foreground">2m 30s</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                                <DollarSign className="h-4 w-4" />
-                                <span className="text-sm">Avg offer price</span>
-                            </div>
-                            <span className="text-sm text-foreground">$8.50</span>
-                        </div>
+
+                        <Row icon={<Clock className="h-4 w-4" />} label="Avg offer time" value="2m 30s" />
+                        <Row icon={<DollarSign className="h-4 w-4" />} label="Avg offer price" value="$8.50" />
                     </div>
                 </div>
             </div>
         </>
-    )
+    );
 }
+
+function Row({
+    icon,
+    label,
+    value,
+}: {
+    icon: React.ReactNode;
+    label: string;
+    value: React.ReactNode;
+}) {
+    return (
+        <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-muted-foreground">
+                {icon}
+                <span className="text-sm">{label}</span>
+            </div>
+            <span className="text-sm text-foreground">{value}</span>
+        </div>
+    );
+}
+
+
 
 /**
  * Small queue-only popup. Shown when clicking the Store icon in the header bar.
  */
+
+type StoreQuickPreviewProps = {
+    isOpen: boolean;
+    onClose: () => void;
+    onOpenStore: (storeSteamId?: string | null) => void;
+    storeName?: string;
+    storeSteamId?: string | null;
+};
+
 export function StoreQuickPreview({
     isOpen,
     onClose,
     onOpenStore,
     storeName = "Store",
-}: StorePopupProps) {
-    if (!isOpen) return null
+    storeSteamId,
+}: StoreQuickPreviewProps) {
+    if (!isOpen) return null;
 
     return (
         <>
@@ -108,8 +121,8 @@ export function StoreQuickPreview({
                             <span className="text-sm text-muted-foreground">3 ahead</span>
                             <button
                                 onClick={(e) => {
-                                    e.stopPropagation()
-                                    onOpenStore()
+                                    e.stopPropagation();
+                                    onOpenStore(storeSteamId);
                                 }}
                                 className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                                 aria-label="Enter store"
@@ -121,5 +134,5 @@ export function StoreQuickPreview({
                 </div>
             </div>
         </>
-    )
+    );
 }

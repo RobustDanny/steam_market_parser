@@ -9,6 +9,7 @@ export interface ItemCardData {
     price: number | null;
     type: "single" | "bundle";
     color: string;
+    store_id?: string;
     appid?: string;
     market_hash_name?: string;
     icon?: string;

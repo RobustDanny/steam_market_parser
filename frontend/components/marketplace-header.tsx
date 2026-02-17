@@ -34,7 +34,7 @@ interface MarketplaceHeaderProps {
         minPrice: number
         maxPrice: number
     }
-    onOpenStoreModal: () => void
+    onOpenStoreModal: (params: { traderId: string; role: "buyer" | "trader" }) => void
 }
 
 export function MarketplaceHeader({
@@ -216,14 +216,15 @@ export function MarketplaceHeader({
             </header>
 
             {/* Popups */}
+
+            <ProfileDropdown
+                isOpen={profileOpen}
+                onClose={() => setProfileOpen(false)}
+                onOpenSettings={() => setSettingsOpen(true)}
+                isAuthed={!!steamUser}
+            />
             {steamUser ? (
                 <>
-                    <ProfileDropdown
-                        isOpen={profileOpen}
-                        onClose={() => setProfileOpen(false)}
-                        onOpenSettings={() => setSettingsOpen(true)}
-                        isAuthed={!!steamUser}
-                    />
                     <NotificationPopup
                         isOpen={notifOpen}
                         onClose={() => setNotifOpen(false)}
@@ -248,10 +249,16 @@ export function MarketplaceHeader({
                 isOpen={storeQueueOpen}
                 onClose={() => setStoreQueueOpen(false)}
                 onOpenStore={() => {
-                    setStoreQueueOpen(false)
-                    onOpenStoreModal()
+                    setStoreQueueOpen(false);
+
+                    if (!steamUser?.steamid) return; // just in case
+
+                    onOpenStoreModal({
+                        traderId: steamUser.steamid,  // ✅ OPEN MY STORE
+                        role: "trader",               // ✅ I’m the trader in my own store
+                    });
                 }}
-                storeName="Featured Store"
+                storeName="Your Store"
             />
         </>
     )
