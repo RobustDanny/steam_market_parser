@@ -32,6 +32,10 @@ export function useStoreChat(params: {
         trader_present: false,
     });
 
+    useEffect(() => {
+        presenceRef.current = presence;
+    }, [presence]);
+
     const bothInRoom = presence.buyer_present && presence.trader_present;
 
     const [offerId, setOfferId] = useState<string | null>(null);
@@ -97,6 +101,9 @@ export function useStoreChat(params: {
                     trader_present: !!msg.trader_present,
                 });
 
+                setPresence(newPresence);
+                presenceRef.current = newPresence;
+                
                 if (msg.offer_id) setOfferId(String(msg.offer_id));
                 else setOfferId(null);
 
@@ -113,10 +120,8 @@ export function useStoreChat(params: {
                 });
             }
 
-            const presenceRef = useRef(presence);
-            useEffect(() => { presenceRef.current = presence; }, [presence]);
-
             const bothNow = presenceRef.current.buyer_present && presenceRef.current.trader_present;
+            
             if (msg.type === "offer_step") {
                 if (!bothNow) setStatusText("Waiting for both participants in room");
                 else if (msg.step === "accept") {
