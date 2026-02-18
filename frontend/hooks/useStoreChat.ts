@@ -113,10 +113,13 @@ export function useStoreChat(params: {
                 });
             }
 
+            const presenceRef = useRef(presence);
+            useEffect(() => { presenceRef.current = presence; }, [presence]);
+
+            const bothNow = presenceRef.current.buyer_present && presenceRef.current.trader_present;
             if (msg.type === "offer_step") {
-                if (!bothInRoom) {
-                    setStatusText("Waiting for both participants in room");
-                } else if (msg.step === "accept") {
+                if (!bothNow) setStatusText("Waiting for both participants in room");
+                else if (msg.step === "accept") {
                     setStatusText(role === "buyer" ? "Offer accepted. Now you can pay" : "Waiting for buyer to pay");
                 } else if (msg.step === "connect") {
                     setStatusText(msg.text || "");

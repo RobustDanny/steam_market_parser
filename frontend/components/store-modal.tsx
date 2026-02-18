@@ -75,56 +75,56 @@ interface ChatMessage {
     offerChanged?: string[];
 }
 
-const INITIAL_MESSAGES: ChatMessage[] = [
-    {
-        id: 1,
-        type: "system",
-        sender: "System",
-        text: "Trade room opened. Waiting for both participants.",
-        time: "10:01",
-    },
-    { id: 2, type: "system", sender: "System", text: "TRADER CONNECTED", time: "10:01" },
-    { id: 3, type: "trader", sender: "Trader", text: "Hey, welcome! What items are you looking for?", time: "10:02" },
-    { id: 4, type: "buyer", sender: "You", text: "Hi! I'm interested in the Elden Ring cards.", time: "10:02" },
-    {
-        id: 5,
-        type: "offer",
-        sender: "System",
-        time: "10:03",
-        offerStatus: "OFFER SENT",
-        offerPrice: 12,
-        offerItemCount: 3,
-        offerAdded: ["Elden Ring Card ($4.00)", "Elden Ring Card ($4.00)", "Elden Ring Card ($4.00)"],
-        offerRemoved: [],
-        offerChanged: [],
-    },
-    { id: 6, type: "trader", sender: "Trader", text: "Let me know if that works for you.", time: "10:03" },
-    {
-        id: 7,
-        type: "offer",
-        sender: "System",
-        time: "10:04",
-        offerStatus: "OFFER UPDATED",
-        offerPrice: 10,
-        offerItemCount: 3,
-        offerAdded: [],
-        offerRemoved: ["Elden Ring Card ($4.00)"],
-        offerChanged: ["Price: $12.00 -> $10.00"],
-    },
-    { id: 8, type: "system", sender: "System", text: "Reminder: verify items before paying.", time: "10:04" },
-    {
-        id: 9,
-        type: "offer",
-        sender: "System",
-        time: "10:05",
-        offerStatus: "TRADER'S ACCEPTED OFFER",
-        offerPrice: 10,
-        offerItemCount: 2,
-        offerAdded: ["Qbik Booster Pack ($5.00)"],
-        offerRemoved: ["Elden Ring Card ($4.00)"],
-        offerChanged: ["Total items: 3 -> 2"],
-    },
-];
+// const INITIAL_MESSAGES: ChatMessage[] = [
+//     {
+//         id: 1,
+//         type: "system",
+//         sender: "System",
+//         text: "Trade room opened. Waiting for both participants.",
+//         time: "10:01",
+//     },
+//     { id: 2, type: "system", sender: "System", text: "TRADER CONNECTED", time: "10:01" },
+//     { id: 3, type: "trader", sender: "Trader", text: "Hey, welcome! What items are you looking for?", time: "10:02" },
+//     { id: 4, type: "buyer", sender: "You", text: "Hi! I'm interested in the Elden Ring cards.", time: "10:02" },
+//     {
+//         id: 5,
+//         type: "offer",
+//         sender: "System",
+//         time: "10:03",
+//         offerStatus: "OFFER SENT",
+//         offerPrice: 12,
+//         offerItemCount: 3,
+//         offerAdded: ["Elden Ring Card ($4.00)", "Elden Ring Card ($4.00)", "Elden Ring Card ($4.00)"],
+//         offerRemoved: [],
+//         offerChanged: [],
+//     },
+//     { id: 6, type: "trader", sender: "Trader", text: "Let me know if that works for you.", time: "10:03" },
+//     {
+//         id: 7,
+//         type: "offer",
+//         sender: "System",
+//         time: "10:04",
+//         offerStatus: "OFFER UPDATED",
+//         offerPrice: 10,
+//         offerItemCount: 3,
+//         offerAdded: [],
+//         offerRemoved: ["Elden Ring Card ($4.00)"],
+//         offerChanged: ["Price: $12.00 -> $10.00"],
+//     },
+//     { id: 8, type: "system", sender: "System", text: "Reminder: verify items before paying.", time: "10:04" },
+//     {
+//         id: 9,
+//         type: "offer",
+//         sender: "System",
+//         time: "10:05",
+//         offerStatus: "TRADER'S ACCEPTED OFFER",
+//         offerPrice: 10,
+//         offerItemCount: 2,
+//         offerAdded: ["Qbik Booster Pack ($5.00)"],
+//         offerRemoved: ["Elden Ring Card ($4.00)"],
+//         offerChanged: ["Total items: 3 -> 2"],
+//     },
+// ];
 
 const MSG_STYLES: Record<string, { bg: string; accent: string; icon: React.ElementType }> = {
     buyer: { bg: "bg-primary/8", accent: "text-primary", icon: User },
@@ -187,6 +187,11 @@ function mapSteamInventoryToItems(inv: SteamInventoryResponse, fallbackAppid: st
     return out;
 }
 
+function safeJson(s?: string) {
+    if (!s) return null;
+    try { return JSON.parse(s); } catch { return null; }
+}
+
 
 export function StoreModal({
     isOpen,
@@ -199,8 +204,13 @@ export function StoreModal({
 }: StoreModalProps) {
     const [message, setMessage] = useState("");
     const [searchItems, setSearchItems] = useState("");
-    const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
+    const { wsMessages, sendWS, offerId, ensureOfferId, bothInRoom, canPay, canAccept, statusText } = useStoreChat({
+        buyerId,
+        traderId,
+        role,
+    });
     const [showPay, setShowPay] = useState(false);
 
     const [inventory, setInventory] = useState<InventoryItem[]>([]);
@@ -217,6 +227,101 @@ export function StoreModal({
         return inventory.filter((it) => it.name.toLowerCase().includes(q));
     }, [inventory, searchItems]);
 
+    const selectedKeys = useMemo(
+        () => new Set(selectedItems.map((x) => x.key)),
+        [selectedItems]
+    );
+
+
+    useEffect(() => {
+        if (!wsMessages.length) return;
+
+        const msg = wsMessages[wsMessages.length - 1] as any;
+
+        // 1) Chat/system => push to UI
+        if (msg.type === "chat" || msg.type === "system") {
+            setMessages((prev) => [
+                ...prev,
+                {
+                    id: prev.length + 1,
+                    type: msg.type === "system" ? "system" : (msg.from_role as "buyer" | "trader"),
+                    sender: msg.type === "system" ? "System" : (msg.from_role === role ? "You" : "Other"),
+                    text: msg.text ?? "",
+                    time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                },
+            ]);
+            return;
+        }
+
+        // 2) Offer log => render offer message card (like old offer_log)
+        if (msg.type === "offer_log") {
+            // your server already sends json, in old JS you did JSON.parse(msg.text).json
+            const data = msg.json ?? msg.text; // depends on how you send it
+            // normalize:
+            const payload = typeof data === "string" ? safeJson(data) : data;
+            const j = payload?.json ?? payload;
+
+            setMessages((prev) => [
+                ...prev,
+                {
+                    id: prev.length + 1,
+                    type: "offer",
+                    sender: "System",
+                    time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                    offerStatus: "OFFER SENT",
+                    offerPrice: Number(j?.total_price ?? 0),
+                    offerItemCount: Number(j?.total_count ?? 0),
+                    offerAdded: (j?.added_items ?? j?.new_items ?? []).map((x: any) => `${x.item_name} ($${x.item_price})`),
+                    offerRemoved: (j?.removed_items ?? []).map((x: any) => `${x.item_name} ($${x.item_price})`),
+                    offerChanged: (j?.updated_items ?? []).map((x: any) => `${x.item_name}: $${x.item_price}`),
+                },
+            ]);
+            return;
+        }
+
+        // 3) Item asking => show special chat card (optional)
+        if (msg.type === "item_asking") {
+            const data = safeJson(msg.text);
+            if (!data) return;
+            setMessages((prev) => [
+                ...prev,
+                {
+                    id: prev.length + 1,
+                    type: msg.from_role as any,
+                    sender: msg.from_role === role ? "You" : "Other",
+                    text: `${data.text}\n${data.name}`,
+                    time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                },
+            ]);
+            return;
+        }
+
+        // 4) Offer items => if it’s from the other role, overwrite selectedItems (LIKE OLD JS)
+        if (msg.type === "offer_items") {
+            if (msg.from_role === role) return; // same as old JS: ignore my own offer_items
+
+            const items = (msg.items ?? []) as any[];
+            setSelectedItems(
+                items.map((it) => ({
+                    key: String(it.key),                 // assetid
+                    contextid: String(it.contextid ?? ""),
+                    appid: String(it.appid ?? ""),
+                    name: String(it.name ?? ""),
+                    image: String(it.image ?? ""),
+                    link: String(it.link ?? ""),
+                    price: String(it.price ?? ""),       // keep as string
+                }))
+            );
+            return;
+        }
+
+        // 5) Offer step pay => lock UI (like old JS)
+        if (msg.type === "offer_step" && msg.step === "pay") {
+            setShowPay(true); // show payment area
+            // optional: lock price inputs etc based on showPay
+            return;
+        }
+    }, [wsMessages, role]);
 
     useEffect(() => {
         setGames(initialGames ?? []);
@@ -258,13 +363,6 @@ export function StoreModal({
         }
     }
 
-
-    const { sendWS, offerId, ensureOfferId, bothInRoom, canPay, canAccept, statusText } = useStoreChat({
-        buyerId,
-        traderId,
-        role,
-    });
-
     const addToOffer = (item: Omit<SelectedItem, "price">) => {
         setSelectedItems((prev) => {
             if (prev.some((x) => x.key === item.key)) return prev;
@@ -287,13 +385,13 @@ export function StoreModal({
         const offer_id = await ensureOfferId();
 
         const special_for_update_offer = selectedItems.map((it) => ({
-            item_asset_id: it.key,
-            item_contextid: it.contextid,
-            item_appid: it.appid,
-            item_name: it.name,
-            item_price: (it.price || "0").toString(),
-            item_link: it.link,
-            item_image: it.image,
+            item_asset_id: String(it.key),
+            item_contextid: String(it.contextid),
+            item_appid: String(it.appid),
+            item_name: String(it.name),
+            item_price: String(it.price || "0"),
+            item_link: String(it.link || ""),
+            item_image: String(it.image || ""),
         }));
 
         const res = await fetch("/api/offer/update_offer", {
@@ -311,8 +409,8 @@ export function StoreModal({
 
         const wsItems = selectedItems.map((it) => ({
             key: it.key,
-            contextid: it.contextid,
-            appid: it.appid,
+            appid: String(it.appid),
+            contextid: String(it.contextid),
             image: it.image,
             price: Number(it.price) || 0,
             name: it.name,
@@ -344,17 +442,9 @@ export function StoreModal({
     };
 
     const sendMessage = () => {
-        if (!message.trim()) return;
-        setMessages((prev) => [
-            ...prev,
-            {
-                id: prev.length + 1,
-                type: "buyer",
-                sender: "You",
-                text: message,
-                time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-            },
-        ]);
+        const text = message.trim();
+        if (!text) return;
+        sendWS({ type: "chat", text });
         setMessage("");
     };
 
@@ -362,7 +452,6 @@ export function StoreModal({
         if (!appid) return;
         loadInventory();
     }, [appid]);
-
 
     if (!isOpen) return null;
 
@@ -482,6 +571,56 @@ export function StoreModal({
                                         placeholder="Search items..."
                                     />
                                 </div>
+                                {/* Selected items */}
+                                <div className="mt-3 rounded-lg border border-border bg-secondary/10 p-2">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-xs text-muted-foreground">
+                                            Selected: {selectedItems.length}
+                                        </span>
+                                    </div>
+
+                                    {selectedItems.length === 0 ? (
+                                        <div className="text-xs text-muted-foreground py-6 text-center">No selected items</div>
+                                    ) : (
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                                            {selectedItems.map((it) => (
+                                                <div key={it.key} className="rounded-md border border-border bg-card p-2">
+                                                    <div className="flex items-start gap-2">
+                                                        <img src={it.image} className="w-12 h-12 rounded object-cover" alt={it.name} />
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="text-xs truncate">{it.name}</div>
+
+                                                            <div className="mt-1 flex items-center gap-1">
+                                                                <span className="text-xs text-muted-foreground">$</span>
+                                                                <input
+                                                                    className={cn(
+                                                                        "h-7 w-full rounded bg-secondary border border-border px-2 text-xs",
+                                                                        showPay && "opacity-60 cursor-not-allowed"
+                                                                    )}
+                                                                    value={it.price}
+                                                                    onChange={(e) => setItemPrice(it.key, e.target.value)}
+                                                                    placeholder="0"
+                                                                    readOnly={showPay}
+                                                                />
+                                                            </div>
+                                                        </div>
+
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeFromOffer(it.key)}
+                                                            disabled={showPay}
+                                                            className="text-muted-foreground hover:text-foreground disabled:opacity-50"
+                                                            aria-label="Remove"
+                                                            title="Remove"
+                                                        >
+                                                            ✕
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
 
                                 {/* Inventory panel */}
                                 <div className="rounded-lg border border-border bg-secondary/10 p-2 h-[320px] overflow-y-auto overflow-x-hidden">
@@ -492,43 +631,55 @@ export function StoreModal({
                                     ) : (
                                         <TooltipProvider delayDuration={200}>
                                             <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-9 gap-1.5">
-                                                {filteredInventory.map((it) => (
-                                                    <Tooltip key={it.id}>
-                                                        <TooltipTrigger asChild>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() =>
-                                                                    addToOffer({
-                                                                        key: it.assetid,
-                                                                        contextid: it.contextid,
-                                                                        appid: it.appid,
-                                                                        name: it.name,
-                                                                        image: it.image,
-                                                                        link: "",
-                                                                    })
-                                                                }
-                                                                className="group rounded-md border border-border bg-card overflow-hidden hover:border-primary/60 transition"
-                                                                aria-label={it.name}
-                                                            >
-                                                                <img
-                                                                    src={it.image}
-                                                                    onError={(e) => (e.currentTarget.src = "/front/svg/default_item_icon.svg")}
-                                                                    className="w-full aspect-square object-cover"
-                                                                    alt={it.name}
-                                                                />
-                                                            </button>
-                                                        </TooltipTrigger>
+                                                {filteredInventory.map((it) => {
+                                                    const isSelected = selectedKeys.has(it.assetid);
 
-                                                        <TooltipContent side="top" align="center">
-                                                            <span className="text-xs">{it.name}</span>
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                ))}
+                                                    return (
+                                                        <Tooltip key={it.id}>
+                                                            <TooltipTrigger asChild>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                        isSelected
+                                                                            ? removeFromOffer(it.assetid)   // ✅ toggle remove
+                                                                            : addToOffer({
+                                                                                key: it.assetid,
+                                                                                contextid: it.contextid,
+                                                                                appid: it.appid,
+                                                                                name: it.name,
+                                                                                image: it.image,
+                                                                                link: "",
+                                                                            })
+                                                                    }
+                                                                    className={cn(
+                                                                        "group rounded-md border bg-card overflow-hidden transition",
+                                                                        isSelected
+                                                                            ? "border-primary ring-1 ring-primary/30"
+                                                                            : "border-border hover:border-primary/60"
+                                                                    )}
+                                                                    aria-label={it.name}
+                                                                >
+                                                                    <img
+                                                                        src={it.image}
+                                                                        onError={(e) =>
+                                                                            (e.currentTarget.src = "/front/svg/default_item_icon.svg")
+                                                                        }
+                                                                        className="w-full aspect-square object-cover"
+                                                                        alt={it.name}
+                                                                    />
+                                                                </button>
+                                                            </TooltipTrigger>
+
+                                                            <TooltipContent side="top" align="center">
+                                                                <span className="text-xs">{it.name}</span>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    );
+                                                })}
                                             </div>
                                         </TooltipProvider>
                                     )}
                                 </div>
-
                             </div>
                         </div>
                     </div>
