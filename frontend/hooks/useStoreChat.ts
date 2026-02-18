@@ -32,6 +32,12 @@ export function useStoreChat(params: {
         trader_present: false,
     });
 
+    const presenceRef = useRef<Presence>({
+    count: 0,
+    buyer_present: false,
+    trader_present: false,
+});
+
     useEffect(() => {
         presenceRef.current = presence;
     }, [presence]);
@@ -95,20 +101,21 @@ export function useStoreChat(params: {
             const msg = JSON.parse(event.data) as PresenceMsg | ChatMsg;
 
             if (msg.type === "presence") {
-                setPresence({
-                    count: msg.count ?? 0,
-                    buyer_present: !!msg.buyer_present,
-                    trader_present: !!msg.trader_present,
-                });
+            const newPresence: Presence = {
+                count: msg.count ?? 0,
+                buyer_present: !!msg.buyer_present,
+                trader_present: !!msg.trader_present,
+            };
+        
+            setPresence(newPresence);
+            presenceRef.current = newPresence;
+        
+            if (msg.offer_id) setOfferId(String(msg.offer_id));
+            else setOfferId(null);
+        
+            return;
+        }
 
-                setPresence(newPresence);
-                presenceRef.current = newPresence;
-                
-                if (msg.offer_id) setOfferId(String(msg.offer_id));
-                else setOfferId(null);
-
-                return;
-            }
 
             // offer flags from server
             if (msg.type === "send_offer" || msg.type === "accept_offer" || msg.type === "pay_offer") {
