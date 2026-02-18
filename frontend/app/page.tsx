@@ -138,6 +138,42 @@ function hashStr(s: string) {
     return (h >>> 0);
 }
 
+async function addBuyerToQueue(traderId: string, buyerId: string) {
+    const res = await fetch("/api/add_to_store_queue", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        // IMPORTANT: your backend expects buyer_id / trader_id (snake_case)
+        body: JSON.stringify({ buyer_id: buyerId, trader_id: traderId }),
+        // include cookies if your session auth relies on them
+        credentials: "include",
+    });
+
+    if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(`add_to_store_queue failed: ${res.status} ${text}`);
+    }
+
+    return res.json();
+}
+
+async function removeFromStoreQueue(traderId: string): Promise<{ buyer_id: string | null }> {
+    const res = await fetch("/api/remove_from_store_queue", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ trader_id: traderId }),
+        credentials: "include",
+    });
+
+    if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(`remove_from_store_queue failed: ${res.status} ${text}`);
+    }
+
+    return res.json();
+}
+
+
+
 export default function Page() {
     const { steamUser } = useMe();
     const [cards, setCards] = useState<CardEntry[]>([]);
@@ -152,12 +188,29 @@ export default function Page() {
     const seenRef = useRef<Set<string>>(new Set());
     const [storeSteamId, setStoreSteamId] = useState<string | null>(null);
     const [storeGames, setStoreGames] = useState<InventoryGame[]>([]);
+    const [activeBuyerId, setActiveBuyerId] = useState<string | null>(null);
 
     const openStore = useCallback(
         async (traderSteamId: string, storeName: string) => {
             const buyerSteamId = steamUser?.steamid;
-            if (!buyerSteamId) return;           // buyer must exist
-            if (!traderSteamId) return;          // trader must exist
+            if (!buyerSteamId) return;
+            if (!traderSteamId) return;
+
+            // If trader clicks his own store card: do nothing (same as old JS)
+            if (traderSteamId === buyerSteamId) {
+                console.log("Equal");
+                return;
+            }
+
+            // ✅ Queue first (matches old JS: add_buyser_to_queue on enter_store)
+            try {
+                const json = await addBuyerToQueue(traderSteamId, buyerSteamId);
+                console.log("Buyer added to queue:", json);
+            } catch (e) {
+                console.error("add_to_store_queue error:", e);
+                // up to you: either continue opening store or abort
+                // return; // uncomment if you want to block opening store on failure
+            }
 
             setStoreGames([]); // avoid stale UI
 
@@ -176,8 +229,56 @@ export default function Page() {
         [steamUser]
     );
 
+    const openStoreAs = useCallback(
+        async (params: { traderId: string; role: "buyer" | "trader"; storeName?: string }) => {
+            const traderSteamId = params.traderId;
+            if (!traderSteamId) return;
+
+            // BUYER flow (your existing one)
+            if (params.role === "buyer") {
+                await openStore(traderSteamId, params.storeName ?? "Store");
+                return;
+            }
+
+            // ✅ TRADER flow (this matches old enter_my_store)
+            try {
+                const result = await removeFromStoreQueue(traderSteamId);
+                console.log("Buyer removed from queue:", result.buyer_id);
+
+                // Open store UI
+                setStoreGames([]);
+                try {
+                    const list = await getInventoryGames(traderSteamId);
+                    setStoreGames(list ?? []);
+                } catch (e) {
+                    console.error(e);
+                    setStoreGames([]);
+                }
+
+                setStoreModalName(params.storeName ?? "Your Store");
+                setStoreSteamId(traderSteamId);
+                setStoreModalOpen(true);
+
+                // If your StoreModal / WS needs buyerId, store it.
+                // If no buyer exists, keep it null and handle "no buyer" in UI/WS.
+                setActiveBuyerId(result.buyer_id ?? null);
+            } catch (e) {
+                console.error(e);
+                // optional: still open store even if queue pop fails
+                // setStoreModalOpen(true) ...
+            }
+        },
+        [openStore]
+    );
+
     const buyerId = steamUser?.steamid ?? null;
     const traderId = storeSteamId ?? null;
+
+    // who is the "buyer" in the StoreModal?
+    // - if role=buyer: buyer is me
+    // - if role=trader: buyer is dequeued
+    const modalRole = storeSteamId && steamUser?.steamid === storeSteamId ? "trader" : "buyer";
+    const modalBuyerId = modalRole === "buyer" ? (steamUser?.steamid ?? null) : activeBuyerId;
 
     // console.log("buyerId", buyerId)
     // console.log("traderId", traderId)
@@ -388,6 +489,9 @@ export default function Page() {
         };
     }
 
+
+
+
     return (
         <div className="relative h-screen overflow-hidden bg-background">
             {/* Sidebar */}
@@ -403,7 +507,7 @@ export default function Page() {
                 onToggle={() => setHeaderOpen(!headerOpen)}
                 sidebarOpen={sidebarOpen}
                 stats={stats}
-                onOpenStoreModal={handleOpenStoreFromHeader}
+                onOpenStoreModal={openStoreAs}
             />
 
             {/* Main content area */}
@@ -461,21 +565,17 @@ export default function Page() {
             />
             {/* Full store modal */}
 
-            {storeModalOpen && buyerId && traderId && (
-
-
-
+            {storeModalOpen && traderId && modalBuyerId && (
                 <StoreModal
                     isOpen={storeModalOpen}
                     onClose={() => setStoreModalOpen(false)}
                     storeName={storeModalName}
-                    buyerId={buyerId}
+                    buyerId={modalBuyerId}
                     traderId={traderId}
-                    role="buyer"
+                    role={modalRole}
                     initialGames={storeGames}
                 />
             )}
-
         </div >
     )
 }
