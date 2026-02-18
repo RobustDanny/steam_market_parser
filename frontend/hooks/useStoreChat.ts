@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ChatMsg, PresenceMsg, Role } from "@/lib/storeChat";
 import { buildWsUrl } from "@/lib/storeChat";
 
 type Presence = {
     count: number;
     buyer_present: boolean;
-    trader_present: boolean
+    trader_present: boolean;
 };
 
 type OfferFlags = {
@@ -32,11 +32,8 @@ export function useStoreChat(params: {
         trader_present: false,
     });
 
-    const presenceRef = useRef<Presence>({
-    count: 0,
-    buyer_present: false,
-    trader_present: false,
-});
+    // ✅ ref for latest presence inside WS callback
+    const presenceRef = useRef<Presence>(presence);
 
     useEffect(() => {
         presenceRef.current = presence;
@@ -45,6 +42,14 @@ export function useStoreChat(params: {
     const bothInRoom = presence.buyer_present && presence.trader_present;
 
     const [offerId, setOfferId] = useState<string | null>(null);
+
+    // ✅ ref for latest offerId (avoids stale closure in onopen)
+    const offerIdRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        offerIdRef.current = offerId;
+    }, [offerId]);
+
     const [offerFlags, setOfferFlags] = useState<OfferFlags>({
         offerDirty: false,
         offerSent: false,
@@ -53,29 +58,37 @@ export function useStoreChat(params: {
     });
 
     const [wsMessages, setWsMessages] = useState<ChatMsg[]>([]);
-    const [statusText, setStatusText] = useState<string>("Waiting for both participants in room");
+    const [statusText, setStatusText] = useState<string>(
+        "Waiting for both participants in room"
+    );
 
-    // ---- send
     const sendWS = (payload: any) => {
         const ws = wsRef.current;
         if (!ws || ws.readyState !== WebSocket.OPEN) return;
         ws.send(JSON.stringify(payload));
     };
 
-    // ---- buyer: create offer id (replaces getOfferID)
     const ensureOfferId = async () => {
-        if (offerId) return offerId;
+        if (offerIdRef.current) return offerIdRef.current;
+
         const res = await fetch("/api/offer/make_offer", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ trader_id: traderId, buyer_id: buyerId }),
+            body: JSON.stringify({
+                trader_id: traderId,
+                buyer_id: buyerId,
+            }),
         });
+
         if (!res.ok) throw new Error(await res.text());
+
         const data = await res.json();
         const id = String(data.offer_id || "").trim();
         if (!id) throw new Error("offer_id missing");
+
         setOfferId(id);
         sendWS({ type: "set_offer", offer_id: id });
+
         return id;
     };
 
@@ -86,9 +99,9 @@ export function useStoreChat(params: {
         wsRef.current = ws;
 
         ws.onopen = async () => {
-            console.log("store ws is open")
-            // buyer creates offer id on connect
-            if (role === "buyer" && !offerId) {
+            console.log("store ws is open");
+
+            if (role === "buyer" && !offerIdRef.current) {
                 try {
                     await ensureOfferId();
                 } catch (e) {
@@ -98,27 +111,33 @@ export function useStoreChat(params: {
         };
 
         ws.onmessage = (event) => {
-            const msg = JSON.parse(event.data) as PresenceMsg | ChatMsg;
+            const msg = JSON.parse(event.data) as
+                | PresenceMsg
+                | ChatMsg;
 
+            // ---- presence
             if (msg.type === "presence") {
-            const newPresence: Presence = {
-                count: msg.count ?? 0,
-                buyer_present: !!msg.buyer_present,
-                trader_present: !!msg.trader_present,
-            };
-        
-            setPresence(newPresence);
-            presenceRef.current = newPresence;
-        
-            if (msg.offer_id) setOfferId(String(msg.offer_id));
-            else setOfferId(null);
-        
-            return;
-        }
+                const newPresence: Presence = {
+                    count: msg.count ?? 0,
+                    buyer_present: !!msg.buyer_present,
+                    trader_present: !!msg.trader_present,
+                };
 
+                setPresence(newPresence);
+                presenceRef.current = newPresence;
 
-            // offer flags from server
-            if (msg.type === "send_offer" || msg.type === "accept_offer" || msg.type === "pay_offer") {
+                if (msg.offer_id) setOfferId(String(msg.offer_id));
+                else setOfferId(null);
+
+                return;
+            }
+
+            // ---- offer flags
+            if (
+                msg.type === "send_offer" ||
+                msg.type === "accept_offer" ||
+                msg.type === "pay_offer"
+            ) {
                 setOfferFlags({
                     offerDirty: !!msg.offer_dirty,
                     offerSent: !!msg.offer_send,
@@ -127,12 +146,21 @@ export function useStoreChat(params: {
                 });
             }
 
-            const bothNow = presenceRef.current.buyer_present && presenceRef.current.trader_present;
-            
+            const bothNow =
+                presenceRef.current.buyer_present &&
+                presenceRef.current.trader_present;
+
             if (msg.type === "offer_step") {
-                if (!bothNow) setStatusText("Waiting for both participants in room");
-                else if (msg.step === "accept") {
-                    setStatusText(role === "buyer" ? "Offer accepted. Now you can pay" : "Waiting for buyer to pay");
+                if (!bothNow) {
+                    setStatusText(
+                        "Waiting for both participants in room"
+                    );
+                } else if (msg.step === "accept") {
+                    setStatusText(
+                        role === "buyer"
+                            ? "Offer accepted. Now you can pay"
+                            : "Waiting for buyer to pay"
+                    );
                 } else if (msg.step === "connect") {
                     setStatusText(msg.text || "");
                 } else if (msg.step === "pay") {
@@ -152,13 +180,18 @@ export function useStoreChat(params: {
             ws.close(1000, "unmount");
             wsRef.current = null;
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [buyerId, traderId, role]);
 
-    // button gating (replaces updateStoreButtons)
-    const canSend = bothInRoom; // you’ll AND with selectedItems.length>0 in the component
-    const canPay = bothInRoom && offerFlags.offerAccepted && !offerFlags.offerPaid;
-    const canAccept = bothInRoom && offerFlags.offerSent && !offerFlags.offerDirty && !offerFlags.offerAccepted;
+    const canSend = bothInRoom;
+    const canPay =
+        bothInRoom &&
+        offerFlags.offerAccepted &&
+        !offerFlags.offerPaid;
+    const canAccept =
+        bothInRoom &&
+        offerFlags.offerSent &&
+        !offerFlags.offerDirty &&
+        !offerFlags.offerAccepted;
 
     return {
         wsMessages,
