@@ -102,6 +102,8 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsSession {
             }
 
             "offer_log" => {
+
+                println!("{parsed}");
                 self.hub.do_send(Broadcast {
                     room: self.room.clone(),
                     msg_type: "offer_log".to_string(),
@@ -183,7 +185,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsSession {
                 self.hub.do_send(OfferState {
                     room: self.room.clone(),
                     offer_id: self.offer_id.clone(),
-                    msg_type: "paid_offer".to_string(), //I dont use this Offerstate on ws
+                    msg_type: "pay_offer".to_string(),
                     offer_accepted: true,
                     offer_dirty: false,
                     offer_paid: true,
@@ -313,14 +315,14 @@ impl Handler<PaymentSucceeded> for ChatHub {
 
         // 1) broadcast offer_paid state
         let payload = serde_json::json!({
-            "type": "paid_offer",
+            "type": "pay_offer", // <-- was "paid_offer"
             "offer_id": msg.offer_id,
             "offer_dirty": false,
             "offer_send": true,
             "offer_accepted": true,
             "offer_paid": true
-        })
-        .to_string();
+        }).to_string();
+        
 
         for addr in state.clients.keys() {
             addr.do_send(WsText(payload.clone()));

@@ -38,6 +38,7 @@ type InventoryItem = {
     image: string;
     classid: string;
     instanceid: string;
+    link: string;
 };
 
 type SelectedItem = {
@@ -138,18 +139,18 @@ type SteamInventoryResponse = {
         assetid: string;
         classid: string;
         instanceid: string;
-        amount?: string;
-        contextid?: string; // optional (some backends add it)
-        appid?: string;     // optional
+        contextid?: string;
+        appid?: string
     }[];
     descriptions?: {
         classid: string;
         instanceid: string;
         icon_url?: string;
         name?: string;
+        market_hash_name?: string;
+        appid?: string;
     }[];
 };
-
 
 function mapSteamInventoryToItems(inv: SteamInventoryResponse, fallbackAppid: string): InventoryItem[] {
     const assets = inv.assets ?? [];
@@ -168,6 +169,10 @@ function mapSteamInventoryToItems(inv: SteamInventoryResponse, fallbackAppid: st
 
         const image = d.icon_url ? `https://steamcommunity.com/economy/image/${d.icon_url}` : "";
 
+        const appid = d.appid ?? a.appid ?? fallbackAppid;
+        const mh = d.market_hash_name ?? "";
+        const link = mh ? `https://steamcommunity.com/market/listings/${appid}/${encodeURIComponent(mh)}` : "";
+
         // ✅ If your backend doesn't return contextid, you MUST provide it somehow.
         // Most common Steam inventory context for items is "2" (but not always).
         const contextid = a.contextid ?? "2";
@@ -176,11 +181,12 @@ function mapSteamInventoryToItems(inv: SteamInventoryResponse, fallbackAppid: st
             id: a.assetid,           // ✅ unique per item
             assetid: a.assetid,
             contextid,
-            appid: a.appid ?? fallbackAppid,
+            appid,
             classid: a.classid,
             instanceid: a.instanceid,
             name: d.name ?? "Unknown item",
             image,
+            link
         });
     }
 
@@ -206,7 +212,7 @@ export function StoreModal({
     const [searchItems, setSearchItems] = useState("");
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
-    const { wsMessages, sendWS, offerId, ensureOfferId, bothInRoom, canPay, canAccept, statusText } = useStoreChat({
+    const { wsMessages, sendWS, offerId, ensureOfferId, bothInRoom, canPay, canAccept, statusText, setStatusText } = useStoreChat({
         buyerId,
         traderId,
         role,
@@ -279,6 +285,20 @@ export function StoreModal({
             return;
         }
 
+        if (msg.type === "reveal_send_offer") {
+            setMessages((prev) => [
+                ...prev,
+                {
+                    id: prev.length + 1,
+                    type: "system",
+                    sender: "System",
+                    text: msg.text ?? "Trader is sending offer",
+                    time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                },
+            ]);
+            return;
+        }
+
         // 3) Item asking => show special chat card (optional)
         if (msg.type === "item_asking") {
             const data = safeJson(msg.text);
@@ -293,6 +313,26 @@ export function StoreModal({
                     time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
                 },
             ]);
+            return;
+        }
+
+        if (msg.type === "offer_system") {
+            const offer = (msg.text ?? "").trim();
+            if (!offer) return;
+
+            setMessages((prev) => [
+                ...prev,
+                {
+                    id: prev.length + 1,
+                    type: "system",
+                    sender: "System",
+                    text: `Offer ID: ${offer} (click to copy)`,
+                    time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                },
+            ]);
+
+            // optional: store it
+            // setOfferId(offer) // if you expose setter from hook
             return;
         }
 
@@ -317,10 +357,13 @@ export function StoreModal({
 
         // 5) Offer step pay => lock UI (like old JS)
         if (msg.type === "offer_step" && msg.step === "pay") {
-            setShowPay(true); // show payment area
-            // optional: lock price inputs etc based on showPay
+            setShowPay(true);
+            setInventory([]);          // like old JS clearing inventory
+            setSearchItems("");        // optional
+            setStatusText?.(msg.text); // already in hook
             return;
         }
+
     }, [wsMessages, role]);
 
     useEffect(() => {
@@ -623,63 +666,69 @@ export function StoreModal({
                                 </div>
 
                                 {/* Inventory panel */}
-                                <div className="rounded-lg border border-border bg-secondary/10 p-2 h-[320px] overflow-y-auto overflow-x-hidden">
-                                    {filteredInventory.length === 0 ? (
-                                        <div className="h-full flex items-center justify-center text-xs text-muted-foreground">
-                                            {loadingInv ? "Loading..." : "No items yet"}
-                                        </div>
-                                    ) : (
-                                        <TooltipProvider delayDuration={200}>
-                                            <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-9 gap-1.5">
-                                                {filteredInventory.map((it) => {
-                                                    const isSelected = selectedKeys.has(it.assetid);
-
-                                                    return (
-                                                        <Tooltip key={it.id}>
-                                                            <TooltipTrigger asChild>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() =>
-                                                                        isSelected
-                                                                            ? removeFromOffer(it.assetid)   // ✅ toggle remove
-                                                                            : addToOffer({
-                                                                                key: it.assetid,
-                                                                                contextid: it.contextid,
-                                                                                appid: it.appid,
-                                                                                name: it.name,
-                                                                                image: it.image,
-                                                                                link: "",
-                                                                            })
-                                                                    }
-                                                                    className={cn(
-                                                                        "group rounded-md border bg-card overflow-hidden transition",
-                                                                        isSelected
-                                                                            ? "border-primary ring-1 ring-primary/30"
-                                                                            : "border-border hover:border-primary/60"
-                                                                    )}
-                                                                    aria-label={it.name}
-                                                                >
-                                                                    <img
-                                                                        src={it.image}
-                                                                        onError={(e) =>
-                                                                            (e.currentTarget.src = "/front/svg/default_item_icon.svg")
-                                                                        }
-                                                                        className="w-full aspect-square object-cover"
-                                                                        alt={it.name}
-                                                                    />
-                                                                </button>
-                                                            </TooltipTrigger>
-
-                                                            <TooltipContent side="top" align="center">
-                                                                <span className="text-xs">{it.name}</span>
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                    );
-                                                })}
+                                {showPay ? (
+                                    <div className="rounded-lg border border-border bg-secondary/10 p-4">
+                                        {/* payment options (Stripe button etc) */}
+                                    </div>
+                                ) : (
+                                    <div className="rounded-lg border border-border bg-secondary/10 p-2 h-[320px] overflow-y-auto overflow-x-hidden">
+                                        {filteredInventory.length === 0 ? (
+                                            <div className="h-full flex items-center justify-center text-xs text-muted-foreground">
+                                                {loadingInv ? "Loading..." : "No items yet"}
                                             </div>
-                                        </TooltipProvider>
-                                    )}
-                                </div>
+                                        ) : (
+                                            <TooltipProvider delayDuration={200}>
+                                                <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-9 gap-1.5">
+                                                    {filteredInventory.map((it) => {
+                                                        const isSelected = selectedKeys.has(it.assetid);
+
+                                                        return (
+                                                            <Tooltip key={it.id}>
+                                                                <TooltipTrigger asChild>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() =>
+                                                                            isSelected
+                                                                                ? removeFromOffer(it.assetid)   // ✅ toggle remove
+                                                                                : addToOffer({
+                                                                                    key: it.assetid,
+                                                                                    contextid: it.contextid,
+                                                                                    appid: it.appid,
+                                                                                    name: it.name,
+                                                                                    image: it.image,
+                                                                                    link: it.link
+                                                                                })
+                                                                        }
+                                                                        className={cn(
+                                                                            "group rounded-md border bg-card overflow-hidden transition",
+                                                                            isSelected
+                                                                                ? "border-primary ring-1 ring-primary/30"
+                                                                                : "border-border hover:border-primary/60"
+                                                                        )}
+                                                                        aria-label={it.name}
+                                                                    >
+                                                                        <img
+                                                                            src={it.image}
+                                                                            onError={(e) =>
+                                                                                (e.currentTarget.src = "/front/svg/default_item_icon.svg")
+                                                                            }
+                                                                            className="w-full aspect-square object-cover"
+                                                                            alt={it.name}
+                                                                        />
+                                                                    </button>
+                                                                </TooltipTrigger>
+
+                                                                <TooltipContent side="top" align="center">
+                                                                    <span className="text-xs">{it.name}</span>
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </TooltipProvider>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

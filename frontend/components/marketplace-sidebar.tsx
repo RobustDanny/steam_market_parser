@@ -161,7 +161,7 @@ export function MarketplaceSidebar({ isOpen, onToggle, onApplyFilters }: Marketp
                         {/* Apply button */}
                         <Button
                             onClick={() => onApplyFilters({
-                                appid: gameFilter || "Steam",
+                                appid: gameFilter || "",
                                 price_min: String(priceMin[0]),
                                 price_max: String(priceMax[0]),
                                 query: queryFilter,

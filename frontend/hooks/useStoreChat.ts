@@ -122,12 +122,16 @@ export function useStoreChat(params: {
                     buyer_present: !!msg.buyer_present,
                     trader_present: !!msg.trader_present,
                 };
-
+                console.log(newPresence);
                 setPresence(newPresence);
                 presenceRef.current = newPresence;
 
-                if (msg.offer_id) setOfferId(String(msg.offer_id));
-                else setOfferId(null);
+                if ("offer_id" in msg) {
+                    if (msg.offer_id) setOfferId(String(msg.offer_id));
+                    else setOfferId(null);
+                }
+
+                console.log("offer_id", msg.offer_id);
 
                 return;
             }
@@ -201,6 +205,7 @@ export function useStoreChat(params: {
         offerId,
         ensureOfferId,
         offerFlags,
+        setStatusText,
         statusText,
         canSend,
         canPay,
