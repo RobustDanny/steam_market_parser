@@ -108,13 +108,15 @@ export function useStoreChat(params: {
                     console.error(e);
                 }
             }
+            console.log("offer_id", offerIdRef.current);
         };
 
         ws.onmessage = (event) => {
             const msg = JSON.parse(event.data) as
                 | PresenceMsg
                 | ChatMsg;
-
+            console.log(msg.type);
+            console.log(msg);
             // ---- presence
             if (msg.type === "presence") {
                 const newPresence: Presence = {
@@ -130,9 +132,6 @@ export function useStoreChat(params: {
                     if (msg.offer_id) setOfferId(String(msg.offer_id));
                     else setOfferId(null);
                 }
-
-                console.log("offer_id", msg.offer_id);
-
                 return;
             }
 

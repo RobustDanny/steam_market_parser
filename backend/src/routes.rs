@@ -66,6 +66,7 @@ pub async fn load_inventory(_user_inventory: web::Data<UserInventoryState>, para
         let respond = client
             .get(url)
             .header("Accept", "application/json")
+            .header("User-Agent", "Mozilla/5.0")
             .send()
             .await
             .unwrap()

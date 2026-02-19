@@ -238,6 +238,19 @@ export function StoreModal({
         [selectedItems]
     );
 
+    // const lastIdxRef = useRef(0);
+
+    // useEffect(() => {
+    //     if (wsMessages.length === 0) return;
+
+    //     const slice = wsMessages.slice(lastIdxRef.current);
+    //     lastIdxRef.current = wsMessages.length;
+
+    //     for (const msg of slice) {
+    //         // handle each msg.type here
+    //     }
+    // }, [wsMessages]);
+
 
     useEffect(() => {
         if (!wsMessages.length) return;
@@ -261,6 +274,8 @@ export function StoreModal({
 
         // 2) Offer log => render offer message card (like old offer_log)
         if (msg.type === "offer_log") {
+            console.log("im in offer_log", messages);
+
             // your server already sends json, in old JS you did JSON.parse(msg.text).json
             const data = msg.json ?? msg.text; // depends on how you send it
             // normalize:
@@ -282,6 +297,7 @@ export function StoreModal({
                     offerChanged: (j?.updated_items ?? []).map((x: any) => `${x.item_name}: $${x.item_price}`),
                 },
             ]);
+
             return;
         }
 
@@ -320,16 +336,16 @@ export function StoreModal({
             const offer = (msg.text ?? "").trim();
             if (!offer) return;
 
-            setMessages((prev) => [
-                ...prev,
-                {
-                    id: prev.length + 1,
-                    type: "system",
-                    sender: "System",
-                    text: `Offer ID: ${offer} (click to copy)`,
-                    time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-                },
-            ]);
+            // setMessages((prev) => [
+            //     ...prev,
+            //     {
+            //         id: prev.length + 1,
+            //         type: "system",
+            //         sender: "System",
+            //         text: `Offer ID: ${offer} (click to copy)`,
+            //         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            //     },
+            // ]);
 
             // optional: store it
             // setOfferId(offer) // if you expose setter from hook
@@ -740,7 +756,7 @@ export function StoreModal({
                                 {/* Room ID bubble */}
                                 <div className="flex justify-center mb-1">
                                     <div className="bg-primary/12 border border-primary/25 rounded-full px-5 py-2 text-center">
-                                        <p className="text-xs font-mono text-primary">{"70e62d60-6616-48ff-9a69-847b300ae81f"}</p>
+                                        <p className="text-xs font-mono text-primary">{offerId}</p>
                                     </div>
                                 </div>
 
