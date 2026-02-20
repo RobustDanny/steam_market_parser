@@ -26,16 +26,19 @@ pub struct DataBase{
 }
 
 /// One row from offer_log (id, offer_id, round, item_asset_id, item_name, items_price, item_link, time).
-pub struct OfferLogRow {
-    pub id: i64,
-    pub offer_id: String,
-    pub round: i64,
-    pub item_asset_id: String,
-    pub item_name: String,
-    pub items_price: String,
-    pub item_link: String,
-    pub time: String,
-}
+///
+
+// #[derive(Debug)]
+// pub struct OfferLogRow {
+//     pub id: i64,
+//     pub offer_id: String,
+//     pub round: i64,
+//     pub item_asset_id: String,
+//     pub item_name: String,
+//     pub items_price: String,
+//     pub item_link: String,
+//     pub time: String,
+// }
 
 impl DataBase{
     pub fn connect_to_db()-> DataBase{
@@ -470,22 +473,25 @@ impl DataBase{
             item.item_asset_id.clone(), 
             round.clone(), 
             offer_id.clone()],
-         |row| -> Result<OfferLogRow, rusqlite::Error> {
-            Ok(OfferLogRow {
-                id: row.get(0)?,
-                offer_id: row.get(1)?,
-                round: row.get(2)?,
+         |row| -> Result<OfferItems, rusqlite::Error> {
+            Ok(OfferItems {
                 item_asset_id: row.get(3)?,
-                item_name: row.get(4)?,
-                items_price: row.get(5)?,
-                item_link: row.get(6)?,
-                time: row.get(7)?,
+                item_contextid: row.get(4)?,
+                item_appid: row.get(5)?,
+                item_name: row.get(6)?,
+                item_price: row.get(7)?,
+                item_link: row.get(8)?,
+                item_image: row.get(9)?,
             })
          });
 
         match item_quary {
             Err(_) => result.added_items.push(item.clone()),
-            Ok(row) if row.items_price != item.item_price => result.updated_items.push(item.clone()),
+            Ok(row) if row.item_price != item.item_price => {
+        //         println!("item {item:?}");
+        //  println!("item_quary {row:?}");
+                result.updated_items.push(item.clone())
+            },
             Ok(_) => {}
         }
 
@@ -547,6 +553,7 @@ impl DataBase{
 
     pub fn db_offer_check_offer_to_pay(&self, items_and_offer_id: OfferContentToCheck)-> OfferCheckResult{
         // println!("items_and_offer_id {items_and_offer_id:#?}");
+        // println!("I'm In!");
         let offer_id = items_and_offer_id.offer_id;
         let offer_to_check = items_and_offer_id.special_for_save_offer;
         let partner_steam_id = items_and_offer_id.partner_steam_id;
@@ -574,8 +581,8 @@ impl DataBase{
         )
         }).expect("DB: query_map previous_offer").collect::<Result<Vec<_>, _>>().expect("DB: failed to collect previous_offer from offer_log");
 
-        println!("last_offer {last_offer:#?}");
-        println!("offer_to_check {offer_to_check:#?}");
+        // println!("last_offer {last_offer:#?}");
+        // println!("offer_to_check {offer_to_check:#?}");
 
         if offer_to_check == last_offer {
 

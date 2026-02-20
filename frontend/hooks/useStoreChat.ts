@@ -115,8 +115,7 @@ export function useStoreChat(params: {
             const msg = JSON.parse(event.data) as
                 | PresenceMsg
                 | ChatMsg;
-            console.log(msg.type);
-            console.log(msg);
+
             // ---- presence
             if (msg.type === "presence") {
                 const newPresence: Presence = {
@@ -175,6 +174,7 @@ export function useStoreChat(params: {
         };
 
         ws.onclose = () => {
+            console.log("store ws CLOSED!");
             wsRef.current = null;
             setOfferId(null);
         };

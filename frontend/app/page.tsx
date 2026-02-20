@@ -47,27 +47,29 @@ export function AnimatedCard({
     );
 }
 
-function AdCard({
-    ad,
-    onClick,
-}: {
-    ad: UserProfileAds
-    onClick?: (ad: UserProfileAds) => void
-}) {
+function AdCard({ ad, onClick }: { ad: UserProfileAds; onClick?: (ad: UserProfileAds) => void }) {
     const imgs = [ad.first_item_image, ad.second_item_image, ad.third_item_image, ad.fourth_item_image];
 
     return (
         <div
             onClick={() => onClick?.(ad)}
             className={cn(
-                "rounded-lg bg-card border border-border overflow-hidden p-2",
+                "group relative flex flex-col h-full rounded-lg bg-card border border-border overflow-hidden",
                 onClick && "cursor-pointer hover:border-accent/50 hover:shadow-[0_0_16px_-4px_hsl(var(--accent)/0.15)] transition-all"
             )}
         >
-            <div className="grid grid-cols-2 gap-1">
-                {imgs.map((src, i) => (
-                    <img key={i} src={src} className="w-full h-auto rounded" alt="" />
-                ))}
+            {/* Square image area */}
+            <div className="aspect-square p-2">
+                <div className="grid grid-cols-2 gap-1 w-full h-full">
+                    {imgs.map((src, i) => (
+                        <img
+                            key={i}
+                            src={src}
+                            className="w-full h-full object-cover rounded"
+                            alt=""
+                        />
+                    ))}
+                </div>
             </div>
         </div>
     );
@@ -381,7 +383,7 @@ export default function Page() {
         ads.onerror = (e) => console.log("ad_main_ws ERROR", e);
 
         ads.onmessage = (event) => {
-            console.log("ads ws")
+            // console.log("ads ws")
             const payload = JSON.parse(event.data) as { user_ads?: UserProfileAds[] };
             const ad0 = payload.user_ads?.[0];
             if (!ad0) return;
@@ -396,7 +398,7 @@ export default function Page() {
         };
 
         main.onmessage = (event) => {
-            console.log("main ws")
+            // console.log("main ws")
             const payload = JSON.parse(event.data);
 
             // server echoes filters
@@ -521,7 +523,7 @@ export default function Page() {
             >
 
                 <div className="p-3">
-                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-2">
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-2 auto-rows-fr">
                         {pageItems.map((e) => {
                             const k = e.key;
                             const c = e.card;

@@ -42,7 +42,7 @@ export function ItemCard({ item, onBundleClick }: ItemCardProps) {
         <div
             onClick={handleClick}
             className={cn(
-                "group relative flex flex-col rounded-lg bg-card border border-border overflow-hidden transition-all duration-200 hover:border-accent/50 hover:shadow-[0_0_16px_-4px_hsl(var(--accent)/0.15)]",
+                "group relative flex h-full flex-col h-full rounded-lg bg-card border border-border overflow-hidden transition-all duration-200 hover:border-accent/50 hover:shadow-[0_0_16px_-4px_hsl(var(--accent)/0.15)]",
                 item.type === "bundle" && "cursor-pointer"
             )}
         >

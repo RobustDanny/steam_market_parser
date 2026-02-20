@@ -45,7 +45,7 @@ use steam_market_parser::{
 use crate::db::DataBase;
 
 pub async fn load_inventory(_user_inventory: web::Data<UserInventoryState>, params: web::Form<InventoryApp>)-> impl Responder{
-
+    println!("Call load_inventory!");
     let inventory = &*params;
 
     if inventory.settings_steamid.trim().is_empty() {
@@ -252,6 +252,7 @@ pub async fn remove_from_store_queue(state: web::Data<StoreHashMapState>, store_
 }
 
 pub async fn get_inventory_games(params: web::Json<LoadGameInventory>) -> Result<HttpResponse> {
+    println!("Call get_inventory_games!");
     let steamid = params.store_steamid.trim();
     if steamid.is_empty() {
         return Ok(HttpResponse::BadRequest().body("steamid is required"));
@@ -384,7 +385,7 @@ pub async fn offer_check_offer_to_pay(sent_offer: web::Json<OfferContentToCheck>
 
     let mut db = DataBase::connect_to_db();
     let result: OfferCheckResult = db.db_offer_check_offer_to_pay(status_and_offer_id);
-
+    println!("{result:#?}");
     if !result.check_result {
         drop(db);
         return HttpResponse::BadRequest().json(serde_json::json!({
@@ -498,7 +499,7 @@ pub async fn tera_update_data(session: Session,
     let filters: FilterInput = match session.get("filters") {
         Ok(Some(f)) => f,
         _ => FilterInput {
-            appid: "Steam".into(),
+            appid: "".into(),
             price_min: "0".into(),
             price_max: "999999".into(),
             query: "".into(),

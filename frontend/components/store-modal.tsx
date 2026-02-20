@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import {
     ArrowLeft,
     RotateCcw,
@@ -14,6 +14,8 @@ import {
     Plus,
     Minus,
     Repeat,
+    ShoppingBag,
+
     Send as SendIcon,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -71,10 +73,13 @@ interface ChatMessage {
     offerPrice?: number;
     offerItemCount?: number;
     offerStatus?: string;
+    offerNew?: string[];
     offerAdded?: string[];
     offerRemoved?: string[];
     offerChanged?: string[];
 }
+
+const TIME = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
 // const INITIAL_MESSAGES: ChatMessage[] = [
 //     {
@@ -250,137 +255,146 @@ export function StoreModal({
     //         // handle each msg.type here
     //     }
     // }, [wsMessages]);
+    const bottomRef = useRef<HTMLDivElement | null>(null);
+    useEffect(() => {
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [messages]);
 
+    const lastIdxRef = useRef(0);
 
     useEffect(() => {
-        if (!wsMessages.length) return;
+        if (wsMessages.length === 0) return;
 
-        const msg = wsMessages[wsMessages.length - 1] as any;
+        const slice = wsMessages.slice(lastIdxRef.current);
+        lastIdxRef.current = wsMessages.length;
 
-        // 1) Chat/system => push to UI
-        if (msg.type === "chat" || msg.type === "system") {
-            setMessages((prev) => [
-                ...prev,
-                {
-                    id: prev.length + 1,
-                    type: msg.type === "system" ? "system" : (msg.from_role as "buyer" | "trader"),
-                    sender: msg.type === "system" ? "System" : (msg.from_role === role ? "You" : "Other"),
-                    text: msg.text ?? "",
-                    time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-                },
-            ]);
-            return;
+        for (const raw of slice as any[]) {
+
+            // 1) Chat/system => push to UI
+            if (raw.type === "chat" || raw.type === "system") {
+                setMessages((prev) => [
+                    ...prev,
+                    {
+                        id: prev.length + 1,
+                        type: raw.type === "system" ? "system" : (raw.from_role as "buyer" | "trader"),
+                        sender: raw.type === "system" ? "System" : (raw.from_role === role ? "You" : "Other"),
+                        text: raw.text ?? "",
+                        time: TIME,
+                    },
+                ]);
+                return;
+            }
+
+            // 2) Offer log => render offer message card (like old offer_log)
+            if (raw.type === "offer_log") {
+
+                // your server already sends json, in old JS you did JSON.parse(msg.text).json
+                const data = raw.json ?? raw.text; // depends on how you send it
+                // normalize:
+                const payload = typeof data === "string" ? safeJson(data) : data;
+                const j = payload?.json ?? payload;
+
+                setMessages((prev) => [
+                    ...prev,
+                    {
+                        id: prev.length + 1,
+                        type: "offer",
+                        sender: "System",
+                        time: TIME,
+                        offerStatus: "OFFER SENT",
+                        offerPrice: Number(j?.total_price ?? 0),
+                        offerItemCount: Number(j?.total_count ?? 0),
+                        offerNew: (j?.new_items ?? []).map((x: any) => `${x.item_name} $${x.item_price}`),
+                        offerAdded: (j?.added_items ?? []).map((x: any) => `${x.item_name} $${x.item_price}`),
+                        offerRemoved: (j?.removed_items ?? []).map((x: any) => `${x.item_name} $${x.item_price}`),
+                        offerChanged: (j?.updated_items ?? []).map((x: any) => `${x.item_name}: $${x.item_price}`),
+                    },
+                ]);
+
+                return;
+            }
+
+            if (raw.type === "reveal_send_offer") {
+                setMessages((prev) => [
+                    ...prev,
+                    {
+                        id: prev.length + 1,
+                        type: "system",
+                        sender: "System",
+                        text: raw.text ?? "Trader is sending offer",
+                        time: TIME,
+                    },
+                ]);
+                return;
+            }
+
+            // 3) Item asking => show special chat card (optional)
+            if (raw.type === "item_asking") {
+                const data = safeJson(raw.text);
+                if (!data) return;
+                setMessages((prev) => [
+                    ...prev,
+                    {
+                        id: prev.length + 1,
+                        type: raw.from_role as any,
+                        sender: raw.from_role === role ? "You" : "Other",
+                        text: `${data.text}\n${data.name}`,
+                        time: TIME,
+                    },
+                ]);
+                return;
+            }
+
+            if (raw.type === "offer_system") {
+                const offer = (raw.text ?? "").trim();
+                if (!offer) return;
+
+                // setMessages((prev) => [
+                //     ...prev,
+                //     {
+                //         id: prev.length + 1,
+                //         type: "system",
+                //         sender: "System",
+                //         text: `Offer ID: ${offer} (click to copy)`,
+                //         time: TIME,
+                //     },
+                // ]);
+
+                // optional: store it
+                // setOfferId(offer) // if you expose setter from hook
+                return;
+            }
+
+            // 4) Offer items => if it’s from the other role, overwrite selectedItems (LIKE OLD JS)
+            if (raw.type === "offer_items") {
+                if (raw.from_role === role) return; // same as old JS: ignore my own offer_items
+
+                const items = (raw.items ?? []) as any[];
+                setSelectedItems(
+                    items.map((it) => ({
+                        key: String(it.key),                 // assetid
+                        contextid: String(it.contextid ?? ""),
+                        appid: String(it.appid ?? ""),
+                        name: String(it.name ?? ""),
+                        image: String(it.image ?? ""),
+                        link: String(it.link ?? ""),
+                        price: String(it.price ?? ""),       // keep as string
+                    }))
+                );
+                return;
+            }
+
+            // 5) Offer step pay => lock UI (like old JS)
+            if (raw.type === "offer_step" && raw.step === "pay") {
+                setShowPay(true);
+                setInventory([]);          // like old JS clearing inventory
+                setSearchItems("");        // optional
+                setStatusText?.(raw.text); // already in hook
+                return;
+            }
         }
 
-        // 2) Offer log => render offer message card (like old offer_log)
-        if (msg.type === "offer_log") {
-            console.log("im in offer_log", messages);
-
-            // your server already sends json, in old JS you did JSON.parse(msg.text).json
-            const data = msg.json ?? msg.text; // depends on how you send it
-            // normalize:
-            const payload = typeof data === "string" ? safeJson(data) : data;
-            const j = payload?.json ?? payload;
-
-            setMessages((prev) => [
-                ...prev,
-                {
-                    id: prev.length + 1,
-                    type: "offer",
-                    sender: "System",
-                    time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-                    offerStatus: "OFFER SENT",
-                    offerPrice: Number(j?.total_price ?? 0),
-                    offerItemCount: Number(j?.total_count ?? 0),
-                    offerAdded: (j?.added_items ?? j?.new_items ?? []).map((x: any) => `${x.item_name} ($${x.item_price})`),
-                    offerRemoved: (j?.removed_items ?? []).map((x: any) => `${x.item_name} ($${x.item_price})`),
-                    offerChanged: (j?.updated_items ?? []).map((x: any) => `${x.item_name}: $${x.item_price}`),
-                },
-            ]);
-
-            return;
-        }
-
-        if (msg.type === "reveal_send_offer") {
-            setMessages((prev) => [
-                ...prev,
-                {
-                    id: prev.length + 1,
-                    type: "system",
-                    sender: "System",
-                    text: msg.text ?? "Trader is sending offer",
-                    time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-                },
-            ]);
-            return;
-        }
-
-        // 3) Item asking => show special chat card (optional)
-        if (msg.type === "item_asking") {
-            const data = safeJson(msg.text);
-            if (!data) return;
-            setMessages((prev) => [
-                ...prev,
-                {
-                    id: prev.length + 1,
-                    type: msg.from_role as any,
-                    sender: msg.from_role === role ? "You" : "Other",
-                    text: `${data.text}\n${data.name}`,
-                    time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-                },
-            ]);
-            return;
-        }
-
-        if (msg.type === "offer_system") {
-            const offer = (msg.text ?? "").trim();
-            if (!offer) return;
-
-            // setMessages((prev) => [
-            //     ...prev,
-            //     {
-            //         id: prev.length + 1,
-            //         type: "system",
-            //         sender: "System",
-            //         text: `Offer ID: ${offer} (click to copy)`,
-            //         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-            //     },
-            // ]);
-
-            // optional: store it
-            // setOfferId(offer) // if you expose setter from hook
-            return;
-        }
-
-        // 4) Offer items => if it’s from the other role, overwrite selectedItems (LIKE OLD JS)
-        if (msg.type === "offer_items") {
-            if (msg.from_role === role) return; // same as old JS: ignore my own offer_items
-
-            const items = (msg.items ?? []) as any[];
-            setSelectedItems(
-                items.map((it) => ({
-                    key: String(it.key),                 // assetid
-                    contextid: String(it.contextid ?? ""),
-                    appid: String(it.appid ?? ""),
-                    name: String(it.name ?? ""),
-                    image: String(it.image ?? ""),
-                    link: String(it.link ?? ""),
-                    price: String(it.price ?? ""),       // keep as string
-                }))
-            );
-            return;
-        }
-
-        // 5) Offer step pay => lock UI (like old JS)
-        if (msg.type === "offer_step" && msg.step === "pay") {
-            setShowPay(true);
-            setInventory([]);          // like old JS clearing inventory
-            setSearchItems("");        // optional
-            setStatusText?.(msg.text); // already in hook
-            return;
-        }
-
-    }, [wsMessages, role]);
+    }, [wsMessages, role, setStatusText]);
 
     useEffect(() => {
         setGames(initialGames ?? []);
@@ -775,6 +789,7 @@ export function StoreModal({
                                     );
                                 })}
                             </div>
+                            <div ref={bottomRef} />
                         </ScrollArea>
 
                         <div className="p-3 border-t border-border">
@@ -810,6 +825,7 @@ function OfferMessage({ msg }: { msg: ChatMessage }) {
     const hasAdded = msg.offerAdded && msg.offerAdded.length > 0;
     const hasRemoved = msg.offerRemoved && msg.offerRemoved.length > 0;
     const hasChanged = msg.offerChanged && msg.offerChanged.length > 0;
+    const NewItems = msg.offerNew && msg.offerNew.length > 0;
 
     return (
         <div className="rounded-lg px-3 py-3 bg-chart-3/8 border border-chart-3/15">
@@ -826,6 +842,18 @@ function OfferMessage({ msg }: { msg: ChatMessage }) {
                     <p className="text-xs text-muted-foreground">{msg.offerItemCount} items</p>
                 </div>
             )}
+
+            <div className="mb-1.5">
+                <div className="flex items-center gap-1 mb-0.5">
+                    <ShoppingBag className="h-3 w-3 text-chart-0" />
+                </div>
+                {msg.offerNew!.map((item, i) => (
+                    <p key={i} className="text-xs text-foreground pl-4">
+                        {"- "}
+                        {item}
+                    </p>
+                ))}
+            </div>
 
             {hasAdded && (
                 <div className="mb-1.5">

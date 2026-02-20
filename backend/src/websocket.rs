@@ -80,7 +80,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsActor {
             if let Ok(v) = serde_json::from_str::<serde_json::Value>(&text) {
                 if v["type"] == "filters" {
                     self.item_card_filters = MostRecentItemsFilter {
-                        appid: v["appid"].as_str().unwrap_or("Steam").into(),
+                        appid: v["appid"].as_str().unwrap_or("").into(),
                         price_min: v["price_min"].as_str().unwrap_or("0").into(),
                         price_max: v["price_max"].as_str().unwrap_or("999999").into(),
                         query: v["query"].as_str().unwrap_or("").into(),
@@ -230,7 +230,7 @@ pub async fn ws_handler(
     let card_filters: Option<CardAppearingFilter> = session.get("card_filters")?;
 
     let item_filters = item_filters.unwrap_or_else(|| MostRecentItemsFilter {
-        appid: "Steam".into(),
+        appid: "".into(),
         price_min: "0".into(),
         price_max: "99999".into(),
         query: "".into(),
